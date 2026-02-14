@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Header } from "@/components/layout/Header";
+import { RandiLogo } from "@/components/branding/RandiLogo";
 import { useAuth } from "@/contexts/WalletContext";
 
 export default function LandingPage() {
@@ -12,14 +12,8 @@ export default function LandingPage() {
     <div className="min-h-screen bg-gradient-to-b from-background to-background/50">
       <Header />
       <main className="max-w-7xl mx-auto px-4 py-20 text-center">
-        <div className="relative w-40 h-40 mx-auto mb-8 animate-in fade-in zoom-in duration-500">
-           <Image 
-             src="/randi.png" 
-             alt="Randi" 
-             fill 
-             className="object-contain drop-shadow-2xl" 
-             priority 
-           />
+        <div className="mb-8 flex justify-center animate-in fade-in zoom-in duration-500">
+          <RandiLogo size="xl" variant="icon-only" className="drop-shadow-2xl" />
         </div>
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
           Launch AI Agents

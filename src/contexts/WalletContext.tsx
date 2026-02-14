@@ -45,26 +45,6 @@ function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check existing session on mount
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.user) setUser(data.user);
-      })
-      .catch(() => { })
-      .finally(() => setLoading(false));
-  }, []);
-
-  // Auto-trigger sign-in when wallet connects but user is not authenticated
-  useEffect(() => {
-    if (connected && publicKey && signMessage && !user && !loading) {
-      signIn().catch((err) => {
-        console.error("Auto sign-in failed:", err);
-      });
-    }
-  }, [connected, publicKey, signMessage, user, loading, signIn]);
-
   const signIn = useCallback(async () => {
     if (!publicKey || !signMessage) return;
 
@@ -95,6 +75,26 @@ function AuthProvider({ children }: { children: ReactNode }) {
     const { user: userData } = await verifyRes.json();
     setUser(userData);
   }, [publicKey, signMessage]);
+
+  // Check existing session on mount
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.user) setUser(data.user);
+      })
+      .catch(() => { })
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Auto-trigger sign-in when wallet connects but user is not authenticated
+  useEffect(() => {
+    if (connected && publicKey && signMessage && !user && !loading) {
+      signIn().catch((err) => {
+        console.error("Auto sign-in failed:", err);
+      });
+    }
+  }, [connected, publicKey, signMessage, user, loading, signIn]);
 
   const signOut = useCallback(async () => {
     try {

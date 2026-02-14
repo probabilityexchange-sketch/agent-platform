@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCredits } from "@/hooks/useCredits";
+import { RandiLogo } from "@/components/branding/RandiLogo";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: "grid" },
@@ -24,6 +25,9 @@ export function Sidebar() {
 
   return (
     <aside className="w-64 border-r border-border bg-card min-h-[calc(100vh-4rem)] p-4 flex flex-col">
+      <div className="mb-6 px-3">
+        <RandiLogo size="sm" variant="icon-only" />
+      </div>
       <nav className="space-y-1 flex-1">
         {navItems.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");

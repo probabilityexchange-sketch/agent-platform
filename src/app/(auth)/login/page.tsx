@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
+import { RandiLogo } from "@/components/branding/RandiLogo";
 import { useAuth } from "@/contexts/WalletContext";
 
 export default function LoginPage() {
@@ -17,10 +18,15 @@ export default function LoginPage() {
   }, [user, router]);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-b from-background to-background/50">
       <Header />
       <main className="max-w-md mx-auto px-4 py-24 text-center">
-        <h1 className="text-3xl font-bold mb-4">Sign In</h1>
+        <div className="mb-8 flex justify-center">
+          <RandiLogo size="xl" variant="icon-only" />
+        </div>
+        <h1 className="text-3xl font-bold mb-4">
+          Sign In to <span className="text-primary">Randi</span>
+        </h1>
         <p className="text-muted-foreground mb-8">
           Connect your Phantom wallet and sign a message to authenticate.
           No passwords, no email. Just your wallet.
