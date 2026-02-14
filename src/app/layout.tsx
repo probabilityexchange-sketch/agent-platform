@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Agent Platform",
-  description: "Launch hosted AI agent containers with Solana",
+  title: "Randi",
+  description: "Launch hosted AI agent containers with Randi",
 };
 
 export default function RootLayout({
