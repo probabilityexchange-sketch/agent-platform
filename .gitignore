@@ -49,3 +49,6 @@ traefik/acme/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# kombai
+.kombai/
