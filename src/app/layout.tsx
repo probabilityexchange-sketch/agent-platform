@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { WalletContextProvider } from "@/contexts/WalletContext";
+import { PrivyContextProvider } from "@/contexts/PrivyContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -70,7 +70,7 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground min-h-screen`}
       >
-        <WalletContextProvider>{children}</WalletContextProvider>
+        <PrivyContextProvider>{children}</PrivyContextProvider>
       </body>
     </html>
   );

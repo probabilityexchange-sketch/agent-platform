@@ -3,12 +3,11 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/layout/Header";
-import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { RandiLogo } from "@/components/branding/RandiLogo";
-import { useAuth } from "@/contexts/WalletContext";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function LoginPage() {
-  const { user } = useAuth();
+  const { user, signIn, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -20,7 +19,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/50">
       <Header />
-      <main className="max-w-md mx-auto px-4 py-24 text-center">
+      <main className="max-w-md mx-auto px-4 py-20 text-center">
         <div className="mb-8 flex justify-center">
           <RandiLogo size="xl" variant="icon-only" />
         </div>
@@ -28,14 +27,19 @@ export default function LoginPage() {
           Sign In to <span className="text-primary">Randi</span>
         </h1>
         <p className="text-muted-foreground mb-8">
-          Connect your Phantom wallet and sign a message to authenticate.
-          No passwords, no email. Just your wallet.
+          Sign in or create an account with just a few clicks.
+          Use your social accounts or connect any wallet.
         </p>
         <div className="bg-card border border-border rounded-xl p-8 flex flex-col items-center gap-4">
-          <ConnectButton />
+          <button
+            onClick={() => signIn()}
+            disabled={loading}
+            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+          >
+            {loading ? "Loading..." : "Get Started"}
+          </button>
           <p className="text-xs text-muted-foreground">
-            You&apos;ll be asked to sign a message to prove wallet ownership.
-            This does not cost any SOL.
+            Powered by Privy
           </p>
         </div>
       </main>

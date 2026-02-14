@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -20,6 +20,7 @@ model User {
   sessions           Session[]
   containers         Container[]
   creditTransactions  CreditTransaction[]
+  chatSessions       ChatSession[]
 }
 
 model Session {
@@ -36,14 +37,7 @@ model Session {
   @@index([jti])
 }
 
-enum ContainerStatus {
-  PROVISIONING
-  RUNNING
-  STOPPING
-  STOPPED
-  EXPIRED
-  ERROR
-}
+// SQLite doesn't support enums - using String instead
 
 model Container {
   id          String          @id @default(cuid())
@@ -51,7 +45,7 @@ model Container {
   dockerId    String?         @unique
   subdomain   String          @unique
   agentId     String
-  status      ContainerStatus @default(PROVISIONING)
+  status      String          @default("PROVISIONING")
   url         String?
   password    String?
   creditsUsed Int             @default(0)
@@ -68,24 +62,42 @@ model Container {
   @@index([expiresAt])
 }
 
-enum TransactionType {
-  PURCHASE
-  USAGE
-  REFUND
+model ChatSession {
+  id          String   @id @default(cuid())
+  userId      String
+  agentId     String
+  title       String   @default("New Chat")
+  creditsUsed Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent    AgentConfig  @relation(fields: [agentId], references: [id])
+  messages ChatMessage[]
+
+  @@index([userId])
 }
 
-enum TransactionStatus {
-  PENDING
-  CONFIRMED
-  FAILED
-  EXPIRED
+model ChatMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  role      String   // "user", "assistant", "system"
+  content   String
+  toolCalls String?  // JSON string for Composio tool call results
+  createdAt DateTime @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
 }
+
+// SQLite doesn't support enums - using String instead
 
 model CreditTransaction {
   id            String            @id @default(cuid())
   userId        String
-  type          TransactionType
-  status        TransactionStatus @default(PENDING)
+  type      String              // PURCHASE, USAGE, REFUND
+  status    String              @default("PENDING") // PENDING, CONFIRMED, FAILED, EXPIRED
   amount        Int
   txSignature   String?           @unique
   tokenAmount   BigInt?
@@ -113,11 +125,16 @@ model AgentConfig {
   memoryLimit    BigInt
   cpuLimit       BigInt
   pidLimit       Int     @default(256)
-  envVars        Json    @default("{}")
-  volumes        Json    @default("[]")
+  envVars        String  @default("{}")
+  volumes        String  @default("[]")
+  systemPrompt   String  @default("You are a helpful AI assistant.")
+  tools          String  @default("[]")
+  defaultModel   String  @default("meta-llama/llama-3.3-70b-instruct:free")
   active         Boolean @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  containers Container[]
+  containers   Container[]
+  chatSessions ChatSession[]
 }
+
