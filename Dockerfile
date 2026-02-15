@@ -4,6 +4,8 @@ WORKDIR /app
 
 FROM base AS builder
 ENV DATABASE_URL="postgresql://localhost:5432/db?schema=public"
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 COPY package.json ./
 RUN npm install
 COPY . .
