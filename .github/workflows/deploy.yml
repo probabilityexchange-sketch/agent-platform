@@ -49,6 +49,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
+          build-args: |
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3

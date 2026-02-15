@@ -3,6 +3,8 @@ RUN apt-get update && apt-get install -y openssl python3 make g++ && rm -rf /var
 WORKDIR /app
 
 FROM base AS builder
+ARG JWT_SECRET
+ENV JWT_SECRET=$JWT_SECRET
 ENV DATABASE_URL="postgresql://localhost:5432/db?schema=public"
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS="--max-old-space-size=4096"
