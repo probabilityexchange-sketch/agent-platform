@@ -3,7 +3,7 @@ RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 FROM base AS builder
-ENV DATABASE_URL="file:./dev.db?connection_limit=1"
+ENV DATABASE_URL="postgresql://localhost:5432/db?schema=public"
 COPY package.json ./
 RUN npm install
 COPY . .
