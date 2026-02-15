@@ -17,8 +17,9 @@ export async function cleanupExpiredContainers() {
                 const dockerContainer = docker.getContainer(container.dockerId);
                 try {
                     await dockerContainer.stop({ t: 10 });
-                } catch (e: any) {
-                    if (e.statusCode !== 304 && e.statusCode !== 404) throw e;
+                } catch (e: unknown) {
+                    const dockerErr = e as { statusCode?: number };
+                    if (dockerErr.statusCode !== 304 && dockerErr.statusCode !== 404) throw e;
                 }
                 await dockerContainer.remove({ force: true }).catch(() => { });
             }

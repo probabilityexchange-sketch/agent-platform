@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
       expiresAt: new Date(Date.now() + hours * 60 * 60 * 1000).toISOString(),
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Handle rollbacks if we failed after reserving credits
     if (userId && creditsReserved > 0 && createdContainerId) {
       try {

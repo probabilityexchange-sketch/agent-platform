@@ -12,8 +12,9 @@ export async function stopContainer(containerId: string): Promise<void> {
     const dockerContainer = docker.getContainer(container.dockerId);
     await dockerContainer.stop({ t: 10 });
     await dockerContainer.remove({ force: true });
-  } catch (error: any) {
-    if (error.statusCode !== 304 && error.statusCode !== 404) {
+  } catch (error: unknown) {
+    const err = error as { statusCode?: number };
+    if (err.statusCode !== 304 && err.statusCode !== 404) {
       throw error;
     }
   }
