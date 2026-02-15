@@ -10,10 +10,10 @@ interface RandiLogoProps {
 }
 
 const sizeMap = {
-  sm: { width: 32, height: 32, textSize: "text-base" },
-  md: { width: 40, height: 40, textSize: "text-xl" },
-  lg: { width: 64, height: 64, textSize: "text-2xl" },
-  xl: { width: 96, height: 96, textSize: "text-3xl" },
+  sm: { width: 48, height: 48, textSize: "text-lg" },
+  md: { width: 64, height: 64, textSize: "text-2xl" },
+  lg: { width: 96, height: 96, textSize: "text-3xl" },
+  xl: { width: 128, height: 128, textSize: "text-4xl" },
 };
 
 export function RandiLogo({

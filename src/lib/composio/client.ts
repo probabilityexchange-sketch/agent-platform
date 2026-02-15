@@ -1,4 +1,4 @@
-import { ComposioToolSet } from "@composio/core";
+import { Composio } from "@composio/core";
 
 const apiKey = process.env.COMPOSIO_API_KEY;
 
@@ -6,18 +6,13 @@ if (!apiKey) {
     console.warn("COMPOSIO_API_KEY is not set in environment variables");
 }
 
-export const composio = new ComposioToolSet({
-    apiKey: apiKey,
-});
+export const composio = apiKey ? new Composio({ apiKey }) : null;
 
-/**
- * Helper to get tools by names from AgentConfig
- */
-export async function getAgentTools(toolNames: string[]) {
-    if (!toolNames || toolNames.length === 0) return [];
-
-    // Composio allows fetching actions/tools by name
-    // Note: Depending on the SDK version, the method might vary.
-    // We'll use the common pattern for ComposioToolSet.
-    return composio.getTools({ actions: toolNames });
+export async function getAgentTools(toolNames: string[], userId?: string) {
+    if (!composio || !toolNames || toolNames.length === 0) return [];
+    const uid = userId || "default";
+    if (toolNames.length === 1) {
+        return composio.tools.get(uid, toolNames[0]);
+    }
+    return Promise.all(toolNames.map(name => composio.tools.get(uid, name)));
 }

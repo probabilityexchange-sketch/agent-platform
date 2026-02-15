@@ -3,9 +3,9 @@ import { prisma } from "@/lib/db/prisma";
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { sessionId: string } }
+    { params }: { params: Promise<{ sessionId: string }> }
 ) {
-    const { sessionId } = params;
+    const { sessionId } = await params;
 
     const session = await prisma.chatSession.findUnique({
         where: { id: sessionId },

@@ -38,7 +38,7 @@ fi
 
 if ! docker compose version &> /dev/null; then
   echo "  Installing Docker Compose plugin..."
-  apt-get update -qq && apt-get install -y -qq docker-compose-plugin
+  sudo yum install -y docker-compose-plugin
 fi
 
 echo "  $(docker --version)"
@@ -137,8 +137,8 @@ done
 
 # --- 6. Database setup ---
 echo "[6/7] Setting up database..."
-docker compose exec -T app npx prisma db push
-docker compose exec -T app npx tsx prisma/seed.ts
+docker compose exec -T app node ./node_modules/prisma/build/index.js db push --schema=/app/prisma/schema.prisma
+docker compose exec -T app node ./node_modules/prisma/build/index.js db seed --schema=/app/prisma/schema.prisma || echo "  Seed skipped (no seed configured)"
 
 # --- 7. Network security ---
 echo "[7/7] Setting up network policies..."

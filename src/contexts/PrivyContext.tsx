@@ -17,17 +17,11 @@ export function PrivyContextProvider({ children }: { children: ReactNode }) {
         appearance: {
           theme: "dark",
           accentColor: "#6d28d9",
-          logo: "/logo.png", // Ensure this exists or update
+          logo: "/randi.png",
         },
         embeddedWallets: {
           createOnLogin: "users-without-wallets",
         },
-        solanaClusters: [
-          {
-            name: "devnet",
-            endpoint: process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com",
-          },
-        ],
       }}
     >
       {children}
