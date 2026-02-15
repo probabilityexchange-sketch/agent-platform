@@ -51,7 +51,6 @@ jobs:
           provenance: false
           build-args: |
             JWT_SECRET=${{ secrets.JWT_SECRET }}
-            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
 
       - name: Deploy to EC2
