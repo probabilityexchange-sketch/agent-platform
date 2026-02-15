@@ -13,7 +13,7 @@ RUN npm ci --legacy-peer-deps
 COPY . .
 RUN npx prisma generate
 
-RUN npm run build 2>&1 | tee build.log || (tail -100 build.log && exit 1)
+RUN npm run build
 
 FROM base AS runner
 ENV NODE_ENV=production
