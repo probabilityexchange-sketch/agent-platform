@@ -8,11 +8,12 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import bs58 from "bs58";
-import { useConnectedStandardWallets, useStandardSignAndSendTransaction } from "@privy-io/react-auth/solana";
+import { useConnectedStandardWallets } from "@privy-io/react-auth/solana";
+import { useSignTransaction } from "@privy-io/react-auth/solana";
 
 export function useSPLTransfer() {
   const { wallets } = useConnectedStandardWallets();
-  const { signAndSendTransaction } = useStandardSignAndSendTransaction();
+  const { signTransaction } = useSignTransaction();
   const [sending, setSending] = useState(false);
 
   const transfer = useCallback(
@@ -30,10 +31,8 @@ export function useSPLTransfer() {
 
       setSending(true);
       try {
-        const connection = new Connection(
-          process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com",
-          "confirmed"
-        );
+        const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
+        const connection = new Connection(rpcUrl, "confirmed");
 
         const fromWallet = new PublicKey(wallet.address);
         const toWallet = new PublicKey(params.recipient);
@@ -59,34 +58,60 @@ export function useSPLTransfer() {
           data: Buffer.from(params.memo, "utf-8"),
         });
 
-        // Create transaction with dummy blockhash - Privy will replace it with a fresh one
+        // Get fresh blockhash
+        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+
         const tx = new Transaction();
-        tx.recentBlockhash = "11111111111111111111111111111111";
+        tx.recentBlockhash = blockhash;
         tx.feePayer = fromWallet;
         tx.add(transferIx);
         tx.add(memoIx);
 
-        const { signature } = await signAndSendTransaction({
+        console.log("Requesting signature from wallet...");
+
+        // Sign the transaction
+        const { signedTransaction } = await signTransaction({
           wallet,
           transaction: tx.serialize({
             requireAllSignatures: false,
             verifySignatures: false,
           }),
-          chain: `solana:${process.env.NEXT_PUBLIC_SOLANA_NETWORK || "devnet"}`,
         });
 
-        const signatureBase58 = bs58.encode(signature);
-        
-        // Wait for confirmation
-        console.log("Transaction sent:", signatureBase58);
-        await connection.confirmTransaction(signatureBase58, "confirmed");
+        console.log("Transaction signed, broadcasting...");
 
-        return signatureBase58;
+        // Send the signed transaction ourselves
+        const signature = await connection.sendRawTransaction(signedTransaction, {
+          skipPreflight: false,
+          maxRetries: 3,
+        });
+
+        console.log("Transaction broadcast:", signature);
+
+        // Wait for confirmation
+        const confirmation = await connection.confirmTransaction(
+          {
+            signature,
+            blockhash,
+            lastValidBlockHeight,
+          },
+          "confirmed"
+        );
+
+        if (confirmation.value.err) {
+          throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+        }
+
+        console.log("Transaction confirmed!");
+        return signature;
+      } catch (error) {
+        console.error("Transfer error:", error);
+        throw error;
       } finally {
         setSending(false);
       }
     },
-    [wallets, signAndSendTransaction]
+    [wallets, signTransaction]
   );
 
   return { transfer, sending };
