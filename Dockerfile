@@ -26,7 +26,8 @@ RUN npm run build
 FROM base AS runner
 ENV NODE_ENV=production
 RUN groupadd --system --gid 1001 nodejs && \
-    useradd --system --uid 1001 nextjs
+    groupadd --gid 992 docker-host && \
+    useradd --system --uid 1001 --groups docker-host nextjs
 
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
