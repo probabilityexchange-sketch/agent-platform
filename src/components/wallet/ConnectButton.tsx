@@ -1,13 +1,11 @@
 "use client";
 
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useWallet } from "@/hooks/useWallet";
 import { formatAddress } from "@/lib/solana/validation";
 
 export function ConnectButton() {
   const { connected, connecting, walletAddress, user, signIn, signOut } =
     useWallet();
-  const { setVisible } = useWalletModal();
 
   if (connecting) {
     return (
@@ -23,10 +21,10 @@ export function ConnectButton() {
   if (!connected) {
     return (
       <button
-        onClick={() => setVisible(true)}
+        onClick={signIn}
         className="px-4 py-2 bg-primary hover:bg-accent text-primary-foreground rounded-lg font-medium transition-colors"
       >
-        Connect Wallet
+        Sign In
       </button>
     );
   }

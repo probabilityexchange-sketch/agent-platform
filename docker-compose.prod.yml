@@ -35,7 +35,8 @@ services:
       - internal
 
   app:
-    image: ghcr.io/probabilityexchange-sketch/agent-platform:latest
+    image: agent-platform-local:latest
+    build: .
     container_name: agent-platform-web
     restart: unless-stopped
     depends_on:
@@ -65,8 +66,6 @@ networks:
   traefik-net:
     name: traefik-net
     driver: bridge
-    driver_opts:
-      com.docker.network.bridge.enable_icc: "false"
   internal:
     name: internal
     internal: true

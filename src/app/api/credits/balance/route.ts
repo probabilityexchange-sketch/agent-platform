@@ -7,6 +7,7 @@ export async function GET() {
   try {
     const auth = await requireAuth();
     console.log("Fetching balance for user:", auth.userId, "wallet:", auth.wallet);
+    console.log("Bypass check - wallet:", auth.wallet, "isBypass:", isBypassWallet(auth.wallet));
 
     if (isBypassWallet(auth.wallet)) {
       console.log("BYPASS ACTIVE - returning", getBypassCredits(), "credits");

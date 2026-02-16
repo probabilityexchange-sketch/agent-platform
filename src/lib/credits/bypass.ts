@@ -1,13 +1,13 @@
 const BYPASS_WALLETS = [
-  "0xd7BA546746860E8A8347D4C63E02131F0d0683cf",
-  "DZeJeJWherrR8gtpyrDQ4mGfW1LHuK5gETvFWt6rqdzS",
+  "0xd7ba546746860e8a8347d4c63e02131f0d0683cf",
+  "dzejejwherrr8gtpyrdq4mgfw1lhuk5getvfwt6rqdzs",
   "dev-bypass-wallet",
 ];
 
 const BYPASS_CREDITS = 1000000;
 
 export function isBypassWallet(wallet: string): boolean {
-  return BYPASS_WALLETS.includes(wallet);
+  return BYPASS_WALLETS.includes(wallet.toLowerCase());
 }
 
 export function getBypassCredits(): number {

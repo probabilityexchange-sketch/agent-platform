@@ -55,7 +55,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.app.rule=Host(`${NEXT_PUBLIC_DOMAIN:-localhost}`)"
-      - "traefik.http.routers.app.entrypoints=websecure"
+      - "traefik.http.routers.app.entrypoints=web,websecure"
       - "traefik.http.routers.app.tls.certresolver=letsencrypt"
       - "traefik.http.services.app.loadbalancer.server.port=3000"
 
@@ -67,7 +67,7 @@ networks:
     name: traefik-net
     driver: bridge
     driver_opts:
-      com.docker.network.bridge.enable_icc: "false"
+      com.docker.network.bridge.enable_icc: "true"
   internal:
     name: internal
     internal: true

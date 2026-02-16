@@ -28,9 +28,11 @@ export async function requireAuth(): Promise<AuthedRequest> {
   const auth = await getAuthFromCookies();
 
   if (!auth) {
+    console.log("requireAuth: No auth found in cookies");
     throw new AuthError("Unauthorized");
   }
 
+  console.log("requireAuth: Auth found - userId:", auth.userId, "wallet:", auth.wallet);
   return auth;
 }
 
