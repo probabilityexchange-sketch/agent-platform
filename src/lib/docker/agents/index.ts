@@ -21,6 +21,10 @@ export type AgentConfigFactory = (opts: {
 const agentRegistry: Record<string, AgentConfigFactory> = {
   "agent-zero": agentZeroConfig,
   openclaw: openClawConfig,
+  // Map seeded agents to agent-zero config
+  "research-assistant": agentZeroConfig,
+  "code-assistant": agentZeroConfig,
+  "productivity-agent": agentZeroConfig,
 };
 
 export function getAgentConfig(slug: string): AgentConfigFactory | undefined {
