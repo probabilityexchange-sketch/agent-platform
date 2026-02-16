@@ -8,11 +8,21 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import bs58 from "bs58";
-import { useConnectedStandardWallets, useStandardSignAndSendTransaction } from "@privy-io/react-auth/solana";
+
+declare global {
+  interface Window {
+    phantom?: {
+      solana?: {
+        isPhantom?: boolean;
+        connect(): Promise<{ publicKey: { toString(): string } }>;
+        signAndSendTransaction(tx: Transaction): Promise<{ signature: string }>;
+        signTransaction(tx: Transaction): Promise<Transaction>;
+      };
+    };
+  }
+}
 
 export function useSPLTransfer() {
-  const { wallets } = useConnectedStandardWallets();
-  const { signAndSendTransaction } = useStandardSignAndSendTransaction();
   const [sending, setSending] = useState(false);
 
   const transfer = useCallback(
@@ -23,33 +33,33 @@ export function useSPLTransfer() {
       decimals: number;
       memo: string;
     }) => {
-      const wallet = wallets[0];
-      if (!wallet) {
-        throw new Error("Wallet not connected");
-      }
-
-      console.log("Full wallet object:", wallet);
-      console.log("Wallet address:", wallet.address);
-      console.log("Wallet type:", wallet.walletClientType);
-      console.log("Wallet connector:", (wallet as any).connector);
-
       setSending(true);
       try {
+        // Use Phantom directly instead of through Privy
+        const phantom = window.phantom?.solana;
+        if (!phantom?.isPhantom) {
+          throw new Error("Phantom wallet not found. Please install Phantom extension.");
+        }
+
+        console.log("Using Phantom directly");
+
         const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
         const connection = new Connection(rpcUrl, "confirmed");
 
-        const fromWallet = new PublicKey(wallet.address);
+        // Get Phantom's public key
+        const { publicKey: phantomPubkey } = await phantom.connect();
+        const fromWallet = new PublicKey(phantomPubkey.toString());
         const toWallet = new PublicKey(params.recipient);
         const mint = new PublicKey(params.mint);
 
-        console.log("Getting token accounts...");
+        console.log("From wallet:", fromWallet.toBase58());
+
         const fromATA = await getAssociatedTokenAddress(mint, fromWallet);
         const toATA = await getAssociatedTokenAddress(mint, toWallet);
 
         console.log("From ATA:", fromATA.toBase58());
         console.log("To ATA:", toATA.toBase58());
 
-        console.log("Building transaction...");
         const transferIx = createTransferCheckedInstruction(
           fromATA,
           mint,
@@ -77,37 +87,13 @@ export function useSPLTransfer() {
         tx.add(transferIx);
         tx.add(memoIx);
 
-        const serializedTx = tx.serialize({
-          requireAllSignatures: false,
-          verifySignatures: false,
-        });
+        console.log("Requesting signature and broadcast from Phantom...");
 
-        console.log("Transaction serialized, length:", serializedTx.length);
-        console.log("Requesting signature and broadcast...");
+        // Phantom's signAndSendTransaction
+        const result = await phantom.signAndSendTransaction(tx);
+        const signature = result.signature;
 
-        // Try signAndSendTransaction
-        const result = await signAndSendTransaction({
-          wallet,
-          transaction: serializedTx,
-          chain: `solana:${process.env.NEXT_PUBLIC_SOLANA_NETWORK || "devnet"}`,
-        });
-
-        const signature = bs58.encode(result.signature);
-        console.log("Result from signAndSendTransaction:", result);
-        console.log("Signature:", signature);
-
-        // Check if transaction is on chain
-        console.log("Checking if transaction exists on chain...");
-        const status = await connection.getSignatureStatus(signature);
-        console.log("Signature status:", status);
-
-        if (!status.value) {
-          // Transaction was NOT broadcast - let's try to send it manually
-          console.log("Transaction NOT on chain, trying manual broadcast...");
-          
-          // The wallet signed but didn't broadcast. We need a different approach.
-          throw new Error("Wallet signed but did not broadcast the transaction. Please try again and approve quickly.");
-        }
+        console.log("Transaction sent:", signature);
 
         // Wait for confirmation
         console.log("Waiting for confirmation...");
@@ -134,7 +120,7 @@ export function useSPLTransfer() {
         setSending(false);
       }
     },
-    [wallets, signAndSendTransaction]
+    []
   );
 
   return { transfer, sending };
