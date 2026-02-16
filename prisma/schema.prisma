@@ -8,18 +8,20 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  walletAddress String   @unique
-  username      String?  @unique
-  creditBalance Int      @default(0)
-  nonce         String?
+  id             String   @id @default(cuid())
+  walletAddress  String   @unique
+  username       String?  @unique
+  creditBalance  Int      @default(0)
+  nonce          String?
   nonceExpiresAt DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   sessions           Session[]
   containers         Container[]
-  creditTransactions  CreditTransaction[]
+  creditTransactions CreditTransaction[]
+  purchaseIntents    PurchaseIntent[]
+  creditLedger       CreditLedger[]
   chatSessions       ChatSession[]
 }
 
@@ -37,22 +39,20 @@ model Session {
   @@index([jti])
 }
 
-// SQLite doesn't support enums - using String instead
-
 model Container {
-  id          String          @id @default(cuid())
+  id          String   @id @default(cuid())
   userId      String
-  dockerId    String?         @unique
-  subdomain   String          @unique
+  dockerId    String?  @unique
+  subdomain   String   @unique
   agentId     String
-  status      String          @default("PROVISIONING")
+  status      String   @default("PROVISIONING")
   url         String?
   password    String?
-  creditsUsed Int             @default(0)
+  creditsUsed Int      @default(0)
   expiresAt   DateTime
   stoppedAt   DateTime?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   agent AgentConfig @relation(fields: [agentId], references: [id])
@@ -71,8 +71,8 @@ model ChatSession {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  agent    AgentConfig  @relation(fields: [agentId], references: [id])
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent    AgentConfig @relation(fields: [agentId], references: [id])
   messages ChatMessage[]
 
   @@index([userId])
@@ -81,9 +81,9 @@ model ChatSession {
 model ChatMessage {
   id        String   @id @default(cuid())
   sessionId String
-  role      String   // "user", "assistant", "system"
+  role      String
   content   String
-  toolCalls String?  // JSON string for Composio tool call results
+  toolCalls String?
   createdAt DateTime @default(now())
 
   session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -91,21 +91,19 @@ model ChatMessage {
   @@index([sessionId])
 }
 
-// SQLite doesn't support enums - using String instead
-
 model CreditTransaction {
-  id            String            @id @default(cuid())
-  userId        String
-  type      String              // PURCHASE, USAGE, REFUND
-  status    String              @default("PENDING") // PENDING, CONFIRMED, FAILED, EXPIRED
-  amount        Int
-  txSignature   String?           @unique
-  tokenAmount   BigInt?
-  memo          String?
-  containerId   String?
-  description   String?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  status      String   @default("PENDING")
+  amount      Int
+  txSignature String?  @unique
+  tokenAmount BigInt?
+  memo        String?
+  containerId String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -114,9 +112,57 @@ model CreditTransaction {
   @@index([type, status])
 }
 
+model CreditPackage {
+  id          String  @id @default(cuid())
+  code        String  @unique
+  credits     Int
+  priceTokens BigInt
+  mint        String
+  enabled     Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  purchaseIntents PurchaseIntent[]
+}
+
+model PurchaseIntent {
+  id             String               @id @default(uuid())
+  userId         String
+  packageId      String
+  expectedAmount BigInt
+  mint           String
+  treasury       String
+  status         PurchaseIntentStatus @default(PENDING)
+  expiresAt      DateTime
+  createdAt      DateTime             @default(now())
+  confirmedAt    DateTime?
+  txSig          String?              @unique
+
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package CreditPackage @relation(fields: [packageId], references: [id])
+  ledger  CreditLedger?
+
+  @@index([userId, status])
+  @@index([expiresAt])
+}
+
+model CreditLedger {
+  id        String   @id @default(cuid())
+  userId    String
+  intentId  String   @unique
+  delta     Int
+  reason    String
+  createdAt DateTime @default(now())
+
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  intent PurchaseIntent @relation(fields: [intentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
 model AgentConfig {
-  id             String  @id @default(cuid())
-  slug           String  @unique
+  id             String   @id @default(cuid())
+  slug           String   @unique
   name           String
   description    String
   image          String
@@ -124,13 +170,13 @@ model AgentConfig {
   creditsPerHour Int
   memoryLimit    BigInt
   cpuLimit       BigInt
-  pidLimit       Int     @default(256)
-  envVars        String  @default("{}")
-  volumes        String  @default("[]")
-  systemPrompt   String  @default("You are a helpful AI assistant.")
-  tools          String  @default("[]")
-  defaultModel   String  @default("meta-llama/llama-3.3-70b-instruct:free")
-  active         Boolean @default(true)
+  pidLimit       Int      @default(256)
+  envVars        String   @default("{}")
+  volumes        String   @default("[]")
+  systemPrompt   String   @default("You are a helpful AI assistant.")
+  tools          String   @default("[]")
+  defaultModel   String   @default("meta-llama/llama-3.3-70b-instruct:free")
+  active         Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -138,3 +184,9 @@ model AgentConfig {
   chatSessions ChatSession[]
 }
 
+enum PurchaseIntentStatus {
+  PENDING
+  CONFIRMED
+  EXPIRED
+  FAILED
+}

@@ -3,7 +3,26 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  // 1. Research Assistant
+  const tokenMint = process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT || "So11111111111111111111111111111111111111112";
+
+  await prisma.creditPackage.upsert({
+    where: { code: "small" },
+    update: { credits: 100, priceTokens: BigInt("1000000000"), mint: tokenMint, enabled: true },
+    create: { code: "small", credits: 100, priceTokens: BigInt("1000000000"), mint: tokenMint, enabled: true },
+  });
+
+  await prisma.creditPackage.upsert({
+    where: { code: "medium" },
+    update: { credits: 500, priceTokens: BigInt("4500000000"), mint: tokenMint, enabled: true },
+    create: { code: "medium", credits: 500, priceTokens: BigInt("4500000000"), mint: tokenMint, enabled: true },
+  });
+
+  await prisma.creditPackage.upsert({
+    where: { code: "large" },
+    update: { credits: 1200, priceTokens: BigInt("10000000000"), mint: tokenMint, enabled: true },
+    create: { code: "large", credits: 1200, priceTokens: BigInt("10000000000"), mint: tokenMint, enabled: true },
+  });
+
   const researchAgent = await prisma.agentConfig.upsert({
     where: { slug: "research-assistant" },
     update: {},
@@ -23,7 +42,6 @@ async function main() {
     },
   });
 
-  // 2. Code Assistant
   const codeAgent = await prisma.agentConfig.upsert({
     where: { slug: "code-assistant" },
     update: {},
@@ -43,7 +61,6 @@ async function main() {
     },
   });
 
-  // 3. Productivity Agent
   const productivityAgent = await prisma.agentConfig.upsert({
     where: { slug: "productivity-agent" },
     update: {},

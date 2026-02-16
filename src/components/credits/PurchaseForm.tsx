@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useSPLTransfer } from "@/hooks/useSPLTransfer";
 
 interface CreditPackage {
-  id: string;
+  code: string;
   name: string;
   credits: number;
   tokenAmountDisplay: string;
@@ -12,21 +12,17 @@ interface CreditPackage {
 
 interface PurchaseFormProps {
   packages: CreditPackage[];
-  onPurchaseInit: (packageId: string) => Promise<{
-    tokenMint: string;
-    treasuryWallet: string;
-    tokenAmount: string;
-    memo: string;
-    decimals: number;
+  onPurchaseInit: (packageCode: string) => Promise<{
+    intentId: string;
+    expectedAmount: string;
+    mint: string;
+    treasury: string;
+    expiresAt: string;
   }>;
-  onVerify: (txSignature: string, memo: string) => Promise<void>;
+  onVerify: (intentId: string, txSig: string) => Promise<void>;
 }
 
-export function PurchaseForm({
-  packages,
-  onPurchaseInit,
-  onVerify,
-}: PurchaseFormProps) {
+export function PurchaseForm({ packages, onPurchaseInit, onVerify }: PurchaseFormProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "signing" | "verifying" | "done" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -38,21 +34,18 @@ export function PurchaseForm({
     setError(null);
 
     try {
-      // 1. Init purchase on server
-      const purchaseData = await onPurchaseInit(selected);
+      const intent = await onPurchaseInit(selected);
 
-      // 2. Send SPL transfer
       const txSignature = await transfer({
-        mint: purchaseData.tokenMint,
-        recipient: purchaseData.treasuryWallet,
-        amount: purchaseData.tokenAmount,
-        decimals: purchaseData.decimals,
-        memo: purchaseData.memo,
+        mint: intent.mint,
+        recipient: intent.treasury,
+        amount: intent.expectedAmount,
+        decimals: Number(process.env.NEXT_PUBLIC_TOKEN_DECIMALS || 9),
+        memo: intent.intentId,
       });
 
-      // 3. Verify on server
       setStatus("verifying");
-      await onVerify(txSignature, purchaseData.memo);
+      await onVerify(intent.intentId, txSignature);
       setStatus("done");
 
       setTimeout(() => {
@@ -72,36 +65,26 @@ export function PurchaseForm({
       <div className="space-y-3 mb-6">
         {packages.map((pkg) => (
           <button
-            key={pkg.id}
-            onClick={() => setSelected(pkg.id)}
+            key={pkg.code}
+            onClick={() => setSelected(pkg.code)}
             className={`w-full text-left p-4 rounded-lg border transition-colors ${
-              selected === pkg.id
-                ? "border-primary bg-primary/5"
-                : "border-border hover:border-muted-foreground"
+              selected === pkg.code ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground"
             }`}
           >
             <div className="flex justify-between items-center">
               <div>
                 <p className="font-medium">{pkg.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {pkg.credits.toLocaleString()} credits
-                </p>
+                <p className="text-sm text-muted-foreground">{pkg.credits.toLocaleString()} credits</p>
               </div>
-              <span className="text-sm font-medium">
-                {pkg.tokenAmountDisplay} tokens
-              </span>
+              <span className="text-sm font-medium">{pkg.tokenAmountDisplay} tokens</span>
             </div>
           </button>
         ))}
       </div>
 
-      {error && (
-        <p className="text-sm text-destructive mb-4">{error}</p>
-      )}
+      {error && <p className="text-sm text-destructive mb-4">{error}</p>}
 
-      {status === "done" && (
-        <p className="text-sm text-success mb-4">Purchase complete!</p>
-      )}
+      {status === "done" && <p className="text-sm text-success mb-4">Purchase complete!</p>}
 
       <button
         onClick={handlePurchase}
@@ -111,8 +94,8 @@ export function PurchaseForm({
         {status === "signing"
           ? "Confirm in wallet..."
           : status === "verifying"
-          ? "Verifying transaction..."
-          : "Purchase Credits"}
+            ? "Verifying transaction..."
+            : "Purchase Credits"}
       </button>
     </div>
   );

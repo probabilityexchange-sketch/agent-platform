@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useCredits } from "@/hooks/useCredits";
 import { CreditBalance } from "@/components/credits/CreditBalance";
 import { PurchaseForm } from "@/components/credits/PurchaseForm";
 import { TxHistory } from "@/components/credits/TxHistory";
 
 interface PackageDisplay {
-  id: string;
+  code: string;
   name: string;
   credits: number;
   tokenAmountDisplay: string;
@@ -15,19 +14,19 @@ interface PackageDisplay {
 
 const PACKAGES: PackageDisplay[] = [
   {
-    id: "small",
+    code: "small",
     name: "Starter",
     credits: Number(process.env.NEXT_PUBLIC_CREDITS_PACKAGE_SMALL_AMOUNT || 100),
     tokenAmountDisplay: "1",
   },
   {
-    id: "medium",
+    code: "medium",
     name: "Pro",
     credits: Number(process.env.NEXT_PUBLIC_CREDITS_PACKAGE_MEDIUM_AMOUNT || 500),
     tokenAmountDisplay: "4.5",
   },
   {
-    id: "large",
+    code: "large",
     name: "Enterprise",
     credits: Number(process.env.NEXT_PUBLIC_CREDITS_PACKAGE_LARGE_AMOUNT || 1200),
     tokenAmountDisplay: "10",
@@ -35,8 +34,7 @@ const PACKAGES: PackageDisplay[] = [
 ];
 
 export default function CreditsPage() {
-  const { balance, transactions, initiatePurchase, verifyPurchase } =
-    useCredits();
+  const { balance, transactions, initiatePurchase, verifyPurchase } = useCredits();
 
   return (
     <div className="max-w-3xl">
@@ -45,11 +43,7 @@ export default function CreditsPage() {
       <div className="space-y-6">
         <CreditBalance balance={balance} />
 
-        <PurchaseForm
-          packages={PACKAGES}
-          onPurchaseInit={initiatePurchase}
-          onVerify={verifyPurchase}
-        />
+        <PurchaseForm packages={PACKAGES} onPurchaseInit={initiatePurchase} onVerify={verifyPurchase} />
 
         <TxHistory transactions={transactions} />
       </div>

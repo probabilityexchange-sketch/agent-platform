@@ -4,68 +4,43 @@ This project uses GitHub Actions to build and push Docker images to GHCR, then d
 
 ## Architecture
 
-```
+```text
 GitHub Push → GitHub Actions → Build Image → Push to GHCR → SSH to EC2 → Pull & Restart
 ```
 
 ## Required GitHub Secrets
 
-Configure these in your repository under **Settings → Secrets and variables → Actions**:
+Configure these in **Settings → Secrets and variables → Actions**:
 
-| Secret | Description | Example |
-|--------|-------------|---------|
-| `EC2_HOST` | EC2 public IP or DNS | `ec2-1-2-3-4.compute-1.amazonaws.com` |
-| `EC2_USER` | SSH user for deployment | `deploy` |
-| `EC2_SSH_KEY` | Private SSH key for deploy user | `-----BEGIN OPENSSH PRIVATE KEY-----...` |
-| `GHCR_PAT` | GitHub PAT with `read:packages` scope (optional) | `ghp_xxxx` |
+| Secret | Description |
+|--------|-------------|
+| `EC2_HOST` | EC2 public IP or DNS |
+| `EC2_USER` | SSH user for deployment |
+| `EC2_SSH_KEY` | Private SSH key for deploy user |
+| `GHCR_PAT` | GitHub PAT with `read:packages` scope (optional fallback) |
 
-### Notes on Secrets
+## Runtime secrets model
 
-- **GHCR_PAT**: Required for EC2 to pull images from GHCR. Create a Personal Access Token with `read:packages` scope. The workflow will use `GITHUB_TOKEN` for build/push (works automatically), but EC2 pull requires a PAT since GITHUB_TOKEN isn't valid outside GitHub Actions context.
+**Do not pass runtime secrets as Docker build args.**
 
-## GHCR Image
+- Build pipeline only builds/pushes image.
+- Runtime configuration (`JWT_SECRET`, API keys, Solana RPC, etc.) is injected on EC2 through `.env` + `docker-compose.prod.yml`.
+- Keep `/home/ec2-user/agent-platform/.env` permissions strict (`chmod 600`).
 
-- **Image**: `ghcr.io/probabilityexchange-sketch/agent-platform`
-- **Tags**: `latest` and `<git-sha>` on each push to main
+## Routing config
 
-## Container Details
+- Use `APP_HOST` for Traefik `Host()` rules (host only, no scheme/port).
+- `NEXT_PUBLIC_DOMAIN` may include scheme/port for client-facing URL construction, but should not be used in Traefik host matching.
 
-- **Container name**: `agent-platform-web`
-- **Internal port**: 3000
-- **External access**: Via Traefik reverse proxy (ports 80/443)
-
-## EC2 Setup (Pre-configured)
-
-The EC2 instance has:
-1. `deploy` user in `docker` group
-2. Deployment script at `/usr/local/bin/deploy_agent_platform.sh`
-3. Docker Compose v2 installed
-
-## Manual Deployment
-
-To manually trigger a deployment on EC2:
+## Manual deployment
 
 ```bash
 ssh deploy@<EC2_HOST>
 cd /home/ec2-user/agent-platform
-export GHCR_TOKEN="your-pat-here"
+export GHCR_TOKEN="<pat>"
 /usr/local/bin/deploy_agent_platform.sh
 ```
 
-## Troubleshooting
+## Operational warning
 
-### View container logs
-```bash
-docker logs agent-platform-web -f
-```
-
-### Restart services
-```bash
-cd /home/ec2-user/agent-platform
-docker compose -f docker-compose.prod.yml restart app
-```
-
-### Check service status
-```bash
-docker compose -f docker-compose.prod.yml ps
-```
+The app compose service currently mounts `/var/run/docker.sock`. This is equivalent to root-level host control if the app container is compromised. Keep this only if dynamic container lifecycle management is required.

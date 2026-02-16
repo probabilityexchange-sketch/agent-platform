@@ -11,7 +11,8 @@
     "db:push": "npx prisma db push",
     "db:seed": "npx tsx prisma/seed.ts",
     "db:studio": "npx prisma studio",
-    "cleanup": "npx tsx scripts/cleanup-containers.ts"
+    "cleanup": "npx tsx scripts/cleanup-containers.ts",
+    "test": "node --import tsx --test tests/**/*.test.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
