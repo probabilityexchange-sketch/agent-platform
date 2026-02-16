@@ -7,6 +7,9 @@ const BYPASS_WALLETS = [
 const BYPASS_CREDITS = 1000000;
 
 export function isBypassWallet(wallet: string): boolean {
+  if (process.env.NODE_ENV === "production") {
+    return false;
+  }
   return BYPASS_WALLETS.includes(wallet.toLowerCase());
 }
 

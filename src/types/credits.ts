@@ -3,19 +3,18 @@ export type TransactionStatus = "PENDING" | "CONFIRMED" | "FAILED" | "EXPIRED";
 
 export interface CreditPackage {
   id: string;
+  code: string;
   name: string;
   credits: number;
-  tokenAmount: string;
   tokenAmountDisplay: string;
 }
 
-export interface PurchaseInitResponse {
-  transactionId: string;
-  tokenMint: string;
-  treasuryWallet: string;
-  tokenAmount: string;
-  memo: string;
-  decimals: number;
+export interface PurchaseIntentResponse {
+  intentId: string;
+  expectedAmount: string;
+  mint: string;
+  treasury: string;
+  expiresAt: string;
 }
 
 export interface CreditTransaction {

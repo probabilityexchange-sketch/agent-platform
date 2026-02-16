@@ -5,55 +5,53 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useConnectedStandardWallets } from "@privy-io/react-auth/solana";
 
 export function useAuth() {
-    const { ready, authenticated, user, login, logout } = usePrivy();
-    const { wallets, ready: walletsReady } = useConnectedStandardWallets();
+  const { ready, authenticated, user, login, logout } = usePrivy();
+  const { wallets } = useConnectedStandardWallets();
 
-    const primaryWallet = useMemo(() => wallets[0], [wallets]);
+  const primaryWallet = useMemo(() => wallets[0], [wallets]);
 
-    const devBypassEnabled = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true";
+  const syncSession = async () => {
+    if (!user) return;
+    const linkedSolana = user.linkedAccounts?.find(
+      (account) => account.type === "wallet" && (account as any).chainType === "solana",
+    );
+    const walletAddress = (linkedSolana as any)?.address || primaryWallet?.address;
 
-    const syncSession = async () => {
-        if (!user) return;
-        const linkedSolana = user.linkedAccounts?.find(
-            (account) => account.type === "wallet" && (account as any).chainType === "solana"
-        );
-        const walletAddress = (linkedSolana as any)?.address || primaryWallet?.address;
+    if (!walletAddress) return;
 
-        if (!walletAddress) return;
+    await fetch("/api/auth/dev-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wallet: walletAddress }),
+    });
+  };
 
-        await fetch("/api/auth/dev-session", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ wallet: walletAddress }),
-        });
-    };
+  useEffect(() => {
+    if (ready && authenticated) {
+      syncSession().catch((error) => {
+        console.error("Failed to sync session", error);
+      });
+    }
+  }, [ready, authenticated, user, primaryWallet]);
 
-    useEffect(() => {
-        if (ready && authenticated) {
-            syncSession().catch((error) => {
-                console.error("Failed to sync session", error);
-            });
+  return {
+    user: user
+      ? {
+          id: user.id,
+          walletAddress:
+            user.wallet?.address ||
+            primaryWallet?.address ||
+            (user.linkedAccounts?.find(
+              (account) => account.type === "wallet" && (account as any).chainType === "solana",
+            ) as any)?.address,
         }
-    }, [ready, authenticated, user, primaryWallet]);
-
-    return {
-        user: user
-            ? {
-                id: user.id,
-                walletAddress:
-                    user.wallet?.address ||
-                    primaryWallet?.address ||
-                    (user.linkedAccounts?.find(
-                        (account) => account.type === "wallet" && (account as any).chainType === "solana"
-                    ) as any)?.address,
-            }
-            : null,
-        loading: !ready,
-        isAuthenticated: authenticated,
-        signIn: () => login(),
-        signOut: async () => {
-            await logout();
-            await fetch("/api/auth/logout", { method: "POST" });
-        },
-    };
+      : null,
+    loading: !ready,
+    isAuthenticated: authenticated,
+    signIn: () => login(),
+    signOut: async () => {
+      await logout();
+      await fetch("/api/auth/logout", { method: "POST" });
+    },
+  };
 }
