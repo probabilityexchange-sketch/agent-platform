@@ -53,6 +53,7 @@ jobs:
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
             NEXT_PUBLIC_PRIVY_APP_ID=${{ secrets.NEXT_PUBLIC_PRIVY_APP_ID }}
+            NEXT_PUBLIC_TOKEN_MINT=CoEuCG7oy4RJ71cAryMVqSPAgbUH6U4niTDeGwzfGDfv
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
