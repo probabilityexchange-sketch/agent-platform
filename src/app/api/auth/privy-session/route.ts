@@ -35,11 +35,30 @@ export async function POST(request: NextRequest) {
   let wallet: string;
   try {
     wallet = await resolvePrivyWallet(accessToken, parsed.data.wallet);
-  } catch {
-    return NextResponse.json(
-      { error: "Unable to verify authenticated wallet" },
-      { status: 401 }
-    );
+  } catch (error) {
+    // Some wallet adapters can provide a selected address that differs from the
+    // linked wallet returned by Privy. Fall back to any linked Solana wallet.
+    try {
+      wallet = await resolvePrivyWallet(accessToken);
+    } catch (fallbackError) {
+      const primaryReason =
+        error instanceof Error ? error.message : "Unknown Privy verification error";
+      const fallbackReason =
+        fallbackError instanceof Error
+          ? fallbackError.message
+          : "Unknown fallback verification error";
+
+      console.error("Privy session verification failed", {
+        primaryReason,
+        fallbackReason,
+        requestedWallet: parsed.data.wallet ?? null,
+      });
+
+      return NextResponse.json(
+        { error: "Unable to verify authenticated wallet" },
+        { status: 401 }
+      );
+    }
   }
 
   const user = await prisma.user.upsert({
