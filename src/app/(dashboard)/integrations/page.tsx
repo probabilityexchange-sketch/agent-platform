@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 interface IntegrationItem {
@@ -31,7 +31,7 @@ function statusTone(status: string): string {
   return "text-muted-foreground";
 }
 
-export default function IntegrationsPage() {
+function IntegrationsPageContent() {
   const searchParams = useSearchParams();
   const [data, setData] = useState<IntegrationsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -266,5 +266,13 @@ export default function IntegrationsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function IntegrationsPage() {
+  return (
+    <Suspense fallback={<div className="max-w-5xl text-muted-foreground">Loading integrations...</div>}>
+      <IntegrationsPageContent />
+    </Suspense>
   );
 }
