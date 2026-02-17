@@ -15,6 +15,12 @@ function asString(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+function normalizeEnvString(value: string | undefined): string | null {
+  if (!value) return null;
+  const normalized = value.trim().replace(/^['"]|['"]$/g, "");
+  return normalized.length > 0 ? normalized : null;
+}
+
 function isSolanaChain(chainType: string | null): boolean {
   if (!chainType) return false;
   const normalized = chainType.toLowerCase();
@@ -91,7 +97,9 @@ export async function resolvePrivyWallet(
   accessToken: string,
   requestedWallet?: string
 ): Promise<string> {
-  const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+  const appId =
+    normalizeEnvString(process.env.PRIVY_APP_ID) ||
+    normalizeEnvString(process.env.NEXT_PUBLIC_PRIVY_APP_ID);
   if (!appId) {
     throw new Error("NEXT_PUBLIC_PRIVY_APP_ID is not configured");
   }
@@ -108,7 +116,12 @@ export async function resolvePrivyWallet(
   });
 
   if (!response.ok) {
-    throw new Error("Unable to validate Privy access token");
+    const details = await response.text().catch(() => "");
+    const compactDetails = details.trim().slice(0, 200);
+    const suffix = compactDetails ? `: ${compactDetails}` : "";
+    throw new Error(
+      `Unable to validate Privy access token (status ${response.status})${suffix}`
+    );
   }
 
   const rawPayload = asRecord(await response.json());
