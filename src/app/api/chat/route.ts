@@ -23,7 +23,7 @@ const schema = z
 const MAX_HISTORY_MESSAGES = 20;
 const MAX_TOOL_LOOP_STEPS = 4;
 const TOOL_USAGE_SYSTEM_INSTRUCTION =
-  "You have access to tools. For requests involving external services (GitHub, Slack, Notion, Gmail, Calendar, Hacker News), call the best matching tool first before replying. Do not claim lack of access when tools are available.";
+  "You have access to tools. For requests involving external services (GitHub, Slack, Notion, Gmail, Calendar, Hacker News), call the best matching tool first before replying. Do not claim lack of access when tools are available. Never simulate or invent tool results.";
 
 type ChatMessageParam = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 type ChatTool = OpenAI.Chat.Completions.ChatCompletionTool;
@@ -48,6 +48,22 @@ function shouldForceToolCall(message: string): boolean {
     );
 
   return mentionsService && mentionsAction;
+}
+
+function summarizeToolFailure(toolCalls: ToolExecutionLog[]): string | null {
+  if (toolCalls.length === 0) return null;
+
+  const failures = toolCalls.filter(
+    (toolCall) => typeof toolCall.error === "string" && toolCall.error.length > 0
+  );
+  if (failures.length === 0) return null;
+  if (failures.length < toolCalls.length) return null;
+
+  const firstFailure = failures[0];
+  const toolName = firstFailure.name || "requested tool";
+  const errorMessage = firstFailure.error || "Unknown tool execution error";
+
+  return `I tried to execute ${toolName}, but the tool call failed: ${errorMessage}. Please verify your Composio connected account for this service and try again.`;
 }
 
 function parseJsonSafely(value: string): unknown {
@@ -270,7 +286,20 @@ export async function POST(req: NextRequest) {
       auth.userId,
       forceFirstToolCall
     );
-    const normalizedResponseText = responseText.trim() || "I could not generate a response.";
+
+    let resolvedResponseText = responseText.trim();
+    if (forceFirstToolCall && toolCalls.length === 0) {
+      resolvedResponseText =
+        "I could not execute a required tool for this request. Please ensure the relevant Composio account is connected, then try again.";
+    }
+
+    const allToolsFailedMessage = summarizeToolFailure(toolCalls);
+    if (allToolsFailedMessage) {
+      resolvedResponseText = allToolsFailedMessage;
+    }
+
+    const normalizedResponseText =
+      resolvedResponseText || "I could not generate a response.";
 
     let currentSessionId = existingSession?.id;
     if (!currentSessionId) {
