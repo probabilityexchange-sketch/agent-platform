@@ -3,10 +3,27 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
+  const researchTools = JSON.stringify({
+    toolkits: ["hackernews"],
+    tools: [],
+  });
+
+  const codeTools = JSON.stringify({
+    toolkits: ["github"],
+    tools: [],
+  });
+
+  const productivityTools = JSON.stringify({
+    toolkits: ["googlecalendar", "slack", "notion", "gmail"],
+    tools: [],
+  });
+
   // 1. Research Assistant
   const researchAgent = await prisma.agentConfig.upsert({
     where: { slug: "research-assistant" },
-    update: {},
+    update: {
+      tools: researchTools,
+    },
     create: {
       slug: "research-assistant",
       name: "Research Assistant",
@@ -17,7 +34,7 @@ async function main() {
       memoryLimit: BigInt(0),
       cpuLimit: BigInt(0),
       systemPrompt: "You are an expert research assistant. Use search tools to find the most up-to-date and accurate information. Always cite your sources.",
-      tools: JSON.stringify(["google_search", "web_browser"]),
+      tools: researchTools,
       defaultModel: "meta-llama/llama-3.3-70b-instruct:free",
       active: true,
     },
@@ -26,7 +43,9 @@ async function main() {
   // 2. Code Assistant
   const codeAgent = await prisma.agentConfig.upsert({
     where: { slug: "code-assistant" },
-    update: {},
+    update: {
+      tools: codeTools,
+    },
     create: {
       slug: "code-assistant",
       name: "Code Assistant",
@@ -37,7 +56,7 @@ async function main() {
       memoryLimit: BigInt(0),
       cpuLimit: BigInt(0),
       systemPrompt: "You are an expert software engineer. Provide clean, efficient, and well-documented code. Use code interpreter for verification when needed.",
-      tools: JSON.stringify(["github_api", "code_interpreter"]),
+      tools: codeTools,
       defaultModel: "meta-llama/llama-3.3-70b-instruct:free",
       active: true,
     },
@@ -46,7 +65,9 @@ async function main() {
   // 3. Productivity Agent
   const productivityAgent = await prisma.agentConfig.upsert({
     where: { slug: "productivity-agent" },
-    update: {},
+    update: {
+      tools: productivityTools,
+    },
     create: {
       slug: "productivity-agent",
       name: "Productivity Agent",
@@ -57,7 +78,7 @@ async function main() {
       memoryLimit: BigInt(0),
       cpuLimit: BigInt(0),
       systemPrompt: "You are a highly efficient productivity assistant. Help the user manage their time and communications professionally.",
-      tools: JSON.stringify(["google_calendar", "slack_api", "notion_api"]),
+      tools: productivityTools,
       defaultModel: "meta-llama/llama-3.3-70b-instruct:free",
       active: true,
     },
