@@ -20,7 +20,10 @@ function getBearerToken(request: NextRequest): string | null {
 export async function POST(request: NextRequest) {
   const accessToken = getBearerToken(request);
   if (!accessToken) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Unauthorized", code: "missing_access_token" },
+      { status: 401 }
+    );
   }
 
   const body = await request.json().catch(() => ({}));
@@ -55,7 +58,10 @@ export async function POST(request: NextRequest) {
       });
 
       return NextResponse.json(
-        { error: "Unable to verify authenticated wallet" },
+        {
+          error: "Unable to verify authenticated wallet",
+          code: "wallet_verification_failed",
+        },
         { status: 401 }
       );
     }
