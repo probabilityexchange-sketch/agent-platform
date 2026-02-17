@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { StatusBadge } from "@/components/containers/StatusBadge";
 import { LogViewer } from "@/components/containers/LogViewer";
 import type { ContainerInfo } from "@/types/container";
@@ -9,14 +9,15 @@ import type { ContainerInfo } from "@/types/container";
 export default function ContainerDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const containerId = String(params.containerId);
   const [container, setContainer] = useState<ContainerInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [extending, setExtending] = useState(false);
   const [stopping, setStopping] = useState(false);
 
-  const fetchContainer = async () => {
+  const fetchContainer = useCallback(async () => {
     try {
-      const res = await fetch(`/api/containers/${params.containerId}`);
+      const res = await fetch(`/api/containers/${containerId}`);
       if (res.ok) {
         setContainer(await res.json());
       }
@@ -25,18 +26,18 @@ export default function ContainerDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [containerId]);
 
   useEffect(() => {
-    fetchContainer();
+    void fetchContainer();
     const interval = setInterval(fetchContainer, 10000);
     return () => clearInterval(interval);
-  }, [params.containerId]);
+  }, [fetchContainer]);
 
   const handleStop = async () => {
     setStopping(true);
     try {
-      await fetch(`/api/containers/${params.containerId}`, { method: "DELETE" });
+      await fetch(`/api/containers/${containerId}`, { method: "DELETE" });
       await fetchContainer();
     } catch {
       // ignore
@@ -48,7 +49,7 @@ export default function ContainerDetailPage() {
   const handleExtend = async (hours: number) => {
     setExtending(true);
     try {
-      await fetch(`/api/containers/${params.containerId}/extend`, {
+      await fetch(`/api/containers/${containerId}/extend`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hours }),

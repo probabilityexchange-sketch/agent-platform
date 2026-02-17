@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import { MessageBubble } from "./MessageBubble";
 import { ChatInput } from "./ChatInput";
 
@@ -22,8 +21,6 @@ export function ChatWindow({ agentId, sessionId, initialMessages = [] }: ChatWin
     const [messages, setMessages] = useState<Message[]>(initialMessages);
     const [isTyping, setIsTyping] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
-    const { user } = useAuth();
-
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;

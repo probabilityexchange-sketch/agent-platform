@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useCredits } from "@/hooks/useCredits";
 import { CreditBalance } from "@/components/credits/CreditBalance";
 import { PurchaseForm } from "@/components/credits/PurchaseForm";

@@ -83,6 +83,40 @@ Verify the happy-path flow in order:
 6. Credits UI can complete end-to-end flow.
 7. No sustained 5xx for auth/credits/purchase-intent routes.
 
+### Focused Smoke Test: Agent Configuration + Devnet Purchase
+
+Use this checklist for the issue you described (agent creates but cannot be configured) and for end-to-end devnet purchase validation.
+
+Preconditions:
+- [ ] `.env` has `AGENT_PERSISTENT_STORAGE=true`.
+- [ ] `.env` has valid `TOKEN_MINT`, `TREASURY_WALLET`, `NEXT_PUBLIC_SOLANA_NETWORK=devnet`, and `NEXT_PUBLIC_SOLANA_RPC_URL`.
+- [ ] Test wallet has both devnet SOL (fees) and the configured token mint balance.
+- [ ] App can reach Docker via `DOCKER_HOST` (`http://docker-proxy:2375` in compose deployment).
+
+Agent creation/configuration/persistence:
+1. Sign in and set username in dashboard profile.
+2. Create one container for `agent-zero` and one for `openclaw`.
+3. Open each agent URL and save a visible config artifact:
+   - `agent-zero`: create a marker under `/data` (or equivalent settings/state entry).
+   - `openclaw`: create a marker under `/app/data` (or equivalent settings/state entry).
+4. Stop both containers from dashboard.
+5. Recreate the same two agents with the same account.
+6. Confirm the saved artifacts are still present.
+7. Confirm `GET /api/containers` shows new container records and no `ERROR` status.
+
+Devnet token purchase verification:
+1. Open Credits page and buy one package (Small is sufficient).
+2. Confirm `POST /api/credits/purchase` returns `transactionId`, `memo`, `tokenMint`, `treasuryWallet`.
+3. Sign and submit SPL transfer from test wallet to treasury with the exact `memo`.
+4. Confirm `POST /api/credits/verify` returns success and new balance.
+5. Refresh Credits page and confirm:
+   - balance increased by expected package amount
+   - transaction appears as `CONFIRMED`
+6. Replay the same verify request and confirm:
+   - API returns `409` duplicate/replay protection
+   - no additional credits are added
+7. Check app logs for errors in auth/credits/purchase-intent routes.
+
 ### Reconciliation Checklist
 
 - [ ] Verified purchase intents count matches confirmed credit transactions.

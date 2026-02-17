@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface LogViewerProps {
   containerId: string;
@@ -11,7 +11,7 @@ export function LogViewer({ containerId }: LogViewerProps) {
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       const res = await fetch(`/api/containers/${containerId}/logs?tail=200`);
       if (res.ok) {
@@ -23,13 +23,13 @@ export function LogViewer({ containerId }: LogViewerProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [containerId]);
 
   useEffect(() => {
-    fetchLogs();
+    void fetchLogs();
     const interval = setInterval(fetchLogs, 5000);
     return () => clearInterval(interval);
-  }, [containerId]);
+  }, [fetchLogs]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });

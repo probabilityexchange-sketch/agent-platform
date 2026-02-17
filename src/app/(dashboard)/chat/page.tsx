@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useAuth } from "@/hooks/useAuth";
 import { RandiLogo } from "@/components/branding/RandiLogo";
 
 interface Agent {
@@ -27,8 +26,6 @@ export default function ChatHubPage() {
     const [agents, setAgents] = useState<Agent[]>([]);
     const [sessions, setSessions] = useState<ChatSession[]>([]);
     const [activeTab, setActiveTab] = useState<"new" | "recent">("new");
-    const { user } = useAuth();
-
     useEffect(() => {
         // Fetch agents
         fetch("/api/agents")

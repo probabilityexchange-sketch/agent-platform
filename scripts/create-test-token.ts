@@ -7,7 +7,6 @@ import {
   createMint,
   getOrCreateAssociatedTokenAccount,
   mintTo,
-  TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import bs58 from "bs58";
@@ -31,7 +30,7 @@ async function main() {
       await connection.confirmTransaction(sig);
       balance = await connection.getBalance(payer.publicKey);
       console.log(`Airdrop successful! Balance: ${balance / LAMPORTS_PER_SOL} SOL`);
-    } catch (e) {
+    } catch {
       attempts++;
       console.log(`Airdrop attempt ${attempts} failed, waiting...`);
       await new Promise(r => setTimeout(r, 5000));
