@@ -20,8 +20,6 @@ const getJwtSecret = () => {
   return new TextEncoder().encode(devFallback);
 };
 
-const JWT_SECRET = getJwtSecret();
-
 const JWT_ISSUER = "agent-platform";
 const JWT_EXPIRY = "24h";
 
@@ -51,14 +49,14 @@ export async function signToken(
     .setIssuedAt()
     .setIssuer(JWT_ISSUER)
     .setExpirationTime(JWT_EXPIRY)
-    .sign(JWT_SECRET);
+    .sign(getJwtSecret());
 }
 
 export async function verifyToken(
   token: string
 ): Promise<TokenPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET, {
+    const { payload } = await jwtVerify(token, getJwtSecret(), {
       issuer: JWT_ISSUER,
     });
 
