@@ -32,7 +32,11 @@ interface ParsedAgentToolConfig {
 export function resolveComposioUserId(userId: string): string {
   const override = process.env.COMPOSIO_ENTITY_ID?.trim();
   if (override) return override;
-  return userId || "default";
+  const normalizedUserId = userId?.trim();
+  if (!normalizedUserId) {
+    throw new Error("Missing authenticated user id for Composio user mapping");
+  }
+  return normalizedUserId;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
