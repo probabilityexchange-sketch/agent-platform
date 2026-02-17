@@ -9,7 +9,7 @@ interface PackageDisplay {
   id: string;
   name: string;
   credits: number;
-  tokenAmountDisplay: string;
+  usdAmount: string;
 }
 
 const PACKAGES: PackageDisplay[] = [
@@ -17,19 +17,19 @@ const PACKAGES: PackageDisplay[] = [
     id: "small",
     name: "Starter",
     credits: Number(process.env.NEXT_PUBLIC_CREDITS_PACKAGE_SMALL_AMOUNT || 100),
-    tokenAmountDisplay: "1",
+    usdAmount: process.env.NEXT_PUBLIC_CREDITS_PACKAGE_SMALL_USD || "5",
   },
   {
     id: "medium",
     name: "Pro",
     credits: Number(process.env.NEXT_PUBLIC_CREDITS_PACKAGE_MEDIUM_AMOUNT || 500),
-    tokenAmountDisplay: "4.5",
+    usdAmount: process.env.NEXT_PUBLIC_CREDITS_PACKAGE_MEDIUM_USD || "20",
   },
   {
     id: "large",
     name: "Enterprise",
     credits: Number(process.env.NEXT_PUBLIC_CREDITS_PACKAGE_LARGE_AMOUNT || 1200),
-    tokenAmountDisplay: "10",
+    usdAmount: process.env.NEXT_PUBLIC_CREDITS_PACKAGE_LARGE_USD || "40",
   },
 ];
 

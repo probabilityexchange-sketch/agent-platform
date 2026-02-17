@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { PublicKey, Connection, Transaction, TransactionInstruction } from "@solana/web3.js";
 import {
+  createBurnCheckedInstruction,
   createTransferCheckedInstruction,
   getAssociatedTokenAddress,
   TOKEN_PROGRAM_ID,
@@ -30,6 +31,7 @@ export function useSPLTransfer() {
       amount: string;
       decimals: number;
       memo: string;
+      burnAmount?: string;
     }) => {
       setSending(true);
       try {
@@ -62,6 +64,19 @@ export function useSPLTransfer() {
           TOKEN_PROGRAM_ID
         );
 
+        const burnAmount = params.burnAmount ? BigInt(params.burnAmount) : BigInt(0);
+        const burnIx = burnAmount > BigInt(0)
+          ? createBurnCheckedInstruction(
+              fromATA,
+              mint,
+              fromWallet,
+              burnAmount,
+              params.decimals,
+              [],
+              TOKEN_PROGRAM_ID
+            )
+          : null;
+
         // Add memo instruction
         const memoIx = new TransactionInstruction({
           keys: [{ pubkey: fromWallet, isSigner: true, isWritable: false }],
@@ -75,6 +90,7 @@ export function useSPLTransfer() {
         tx.recentBlockhash = blockhash;
         tx.feePayer = fromWallet;
         tx.add(transferIx);
+        if (burnIx) tx.add(burnIx);
         tx.add(memoIx);
 
         const signedTx = await phantom.signTransaction(tx);

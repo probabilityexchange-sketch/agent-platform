@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
+import { AuthError, requireAuth, handleAuthError } from "@/lib/auth/middleware";
 import { getPackageById } from "@/lib/credits/engine";
 import { prisma } from "@/lib/db/prisma";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
+import {
+  quoteTokenAmountForUsd,
+  splitTokenAmountsByBurn,
+} from "@/lib/payments/token-pricing";
 
 const schema = z.object({
   packageId: z.enum(["small", "medium", "large"]),
@@ -38,7 +42,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const memo = `ap:purchase:${Date.now()}:${auth.userId.slice(-6)}`;
+    const tokenMint = process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT;
+    const treasuryWallet = process.env.TREASURY_WALLET;
+    const decimals = Number(process.env.TOKEN_DECIMALS) || 9;
+
+    if (!tokenMint || !treasuryWallet) {
+      return NextResponse.json(
+        { error: "Payment configuration is missing" },
+        { status: 500 }
+      );
+    }
+
+    const quote = await quoteTokenAmountForUsd({
+      usdAmount: pkg.usdAmount,
+      tokenMint,
+      tokenDecimals: decimals,
+    });
+
+    const split = splitTokenAmountsByBurn(quote.tokenAmountBaseUnits);
+    const memo = `ap:purchase:${Date.now()}:${auth.userId.slice(-6)}:b${split.burnBps}`;
 
     const tx = await prisma.creditTransaction.create({
       data: {
@@ -46,21 +68,36 @@ export async function POST(request: NextRequest) {
         type: "PURCHASE",
         status: "PENDING",
         amount: pkg.credits,
-        tokenAmount: pkg.tokenAmount,
+        tokenAmount: quote.tokenAmountBaseUnits,
         memo,
-        description: `Purchase ${pkg.name} package (${pkg.credits} credits)`,
+        description: `Purchase ${pkg.name} package (${pkg.credits} credits, $${quote.usdAmount})`,
       },
     });
 
     return NextResponse.json({
       transactionId: tx.id,
-      tokenMint: process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT,
-      treasuryWallet: process.env.TREASURY_WALLET,
-      tokenAmount: pkg.tokenAmount.toString(),
+      tokenMint,
+      treasuryWallet,
+      tokenAmount: split.treasuryTokenAmount.toString(),
+      burnAmount: split.burnTokenAmount.toString(),
+      grossTokenAmount: quote.tokenAmountBaseUnits.toString(),
       memo,
-      decimals: Number(process.env.TOKEN_DECIMALS) || 9,
+      decimals,
+      quote: {
+        packageUsd: quote.usdAmount,
+        tokenUsdPrice: quote.tokenUsdPrice,
+        tokenAmountDisplay: quote.tokenAmountDisplay,
+        source: quote.source,
+        burnBps: split.burnBps,
+      },
     });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return handleAuthError(error);
+    }
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
     return handleAuthError(error);
   }
 }

@@ -4,6 +4,10 @@ import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
 import { verifyTransaction } from "@/lib/solana/tx-verification";
 import { addCredits } from "@/lib/credits/engine";
 import { prisma } from "@/lib/db/prisma";
+import {
+  parseBurnBpsFromMemo,
+  splitTokenAmountsByBurn,
+} from "@/lib/payments/token-pricing";
 
 const schema = z.object({
   txSignature: z.string().min(1, "Transaction signature required"),
@@ -52,13 +56,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!pendingTx.tokenAmount) {
+      await prisma.creditTransaction.update({
+        where: { id: pendingTx.id },
+        data: { status: "FAILED", txSignature },
+      });
+      return NextResponse.json(
+        { error: "Pending purchase is missing token amount" },
+        { status: 400 }
+      );
+    }
+
+    const burnBps = parseBurnBpsFromMemo(pendingTx.memo || memo);
+    const split = splitTokenAmountsByBurn(pendingTx.tokenAmount, burnBps);
+
     // Verify on-chain
     const result = await verifyTransaction(
       txSignature,
       (process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT)!,
       process.env.TREASURY_WALLET!,
-      pendingTx.tokenAmount!,
-      memo
+      split.treasuryTokenAmount,
+      memo,
+      split.burnTokenAmount
     );
 
     if (!result.valid) {

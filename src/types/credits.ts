@@ -5,8 +5,7 @@ export interface CreditPackage {
   id: string;
   name: string;
   credits: number;
-  tokenAmount: string;
-  tokenAmountDisplay: string;
+  usdAmount: string;
 }
 
 export interface PurchaseInitResponse {
@@ -14,8 +13,17 @@ export interface PurchaseInitResponse {
   tokenMint: string;
   treasuryWallet: string;
   tokenAmount: string;
+  burnAmount?: string;
+  grossTokenAmount?: string;
   memo: string;
   decimals: number;
+  quote?: {
+    packageUsd: string;
+    tokenUsdPrice: string;
+    tokenAmountDisplay: string;
+    source: string;
+    burnBps: number;
+  };
 }
 
 export interface CreditTransaction {

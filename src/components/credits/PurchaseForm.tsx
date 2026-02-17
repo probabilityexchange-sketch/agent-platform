@@ -7,7 +7,7 @@ interface CreditPackage {
   id: string;
   name: string;
   credits: number;
-  tokenAmountDisplay: string;
+  usdAmount: string;
 }
 
 interface PurchaseFormProps {
@@ -18,6 +18,14 @@ interface PurchaseFormProps {
     tokenAmount: string;
     memo: string;
     decimals: number;
+    burnAmount?: string;
+    quote?: {
+      packageUsd: string;
+      tokenUsdPrice: string;
+      tokenAmountDisplay: string;
+      source: string;
+      burnBps: number;
+    };
   }>;
   onVerify: (txSignature: string, memo: string) => Promise<void>;
 }
@@ -48,6 +56,7 @@ export function PurchaseForm({
         amount: purchaseData.tokenAmount,
         decimals: purchaseData.decimals,
         memo: purchaseData.memo,
+        burnAmount: purchaseData.burnAmount,
       });
 
       // 3. Verify on server
@@ -88,9 +97,12 @@ export function PurchaseForm({
                 </p>
               </div>
               <span className="text-sm font-medium">
-                {pkg.tokenAmountDisplay} tokens
+                ${pkg.usdAmount}
               </span>
             </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Token amount is quoted at checkout.
+            </p>
           </button>
         ))}
       </div>

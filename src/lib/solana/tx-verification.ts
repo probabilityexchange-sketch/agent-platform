@@ -10,8 +10,9 @@ export async function verifyTransaction(
   txSignature: string,
   expectedMint: string,
   expectedRecipient: string,
-  expectedAmount: bigint,
-  expectedMemo: string
+  expectedTreasuryAmount: bigint,
+  expectedMemo: string,
+  expectedBurnAmount: bigint = BigInt(0)
 ): Promise<VerificationResult> {
   try {
     const tx = await connection.getParsedTransaction(txSignature, {
@@ -29,39 +30,48 @@ export async function verifyTransaction(
 
     const instructions = tx.transaction.message.instructions;
 
-    // Find SPL transfer instruction
-    let transferFound = false;
+    let transferredToTreasury = BigInt(0);
+    let burnedAmount = BigInt(0);
+    const treasuryKey = new PublicKey(expectedRecipient);
+    const mintKey = new PublicKey(expectedMint);
+    const { getAssociatedTokenAddress } = await import("@solana/spl-token");
+    const expectedATA = await getAssociatedTokenAddress(mintKey, treasuryKey);
+
     for (const ix of instructions) {
-      if ("parsed" in ix && ix.parsed?.type === "transferChecked") {
+      if (!("parsed" in ix) || !ix.parsed?.type) continue;
+
+      if (ix.parsed.type === "transferChecked") {
         const info = ix.parsed.info;
         const mintAddress = info.mint;
         const destination = info.destination;
         const tokenAmount = BigInt(info.tokenAmount.amount);
 
-        if (mintAddress !== expectedMint) {
-          return { valid: false, error: "Wrong token mint" };
-        }
+        if (mintAddress !== expectedMint) continue;
+        if (destination !== expectedATA.toBase58()) continue;
 
-        // Verify the destination ATA belongs to the treasury
-        const treasuryKey = new PublicKey(expectedRecipient);
-        const mintKey = new PublicKey(expectedMint);
-        const { getAssociatedTokenAddress } = await import("@solana/spl-token");
-        const expectedATA = await getAssociatedTokenAddress(mintKey, treasuryKey);
+        transferredToTreasury += tokenAmount;
+      }
 
-        if (destination !== expectedATA.toBase58()) {
-          return { valid: false, error: "Wrong recipient" };
-        }
+      if (ix.parsed.type === "burnChecked") {
+        const info = ix.parsed.info;
+        const mintAddress = info.mint;
+        const tokenAmount = BigInt(info.tokenAmount.amount);
 
-        if (tokenAmount < expectedAmount) {
-          return { valid: false, error: "Insufficient amount" };
-        }
-
-        transferFound = true;
+        if (mintAddress !== expectedMint) continue;
+        burnedAmount += tokenAmount;
       }
     }
 
-    if (!transferFound) {
+    if (transferredToTreasury === BigInt(0)) {
       return { valid: false, error: "No SPL transfer found in transaction" };
+    }
+
+    if (transferredToTreasury < expectedTreasuryAmount) {
+      return { valid: false, error: "Insufficient transfer amount" };
+    }
+
+    if (expectedBurnAmount > BigInt(0) && burnedAmount < expectedBurnAmount) {
+      return { valid: false, error: "Insufficient burn amount" };
     }
 
     // Verify memo

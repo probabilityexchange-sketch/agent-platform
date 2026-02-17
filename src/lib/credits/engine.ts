@@ -4,35 +4,28 @@ export interface CreditPackage {
   id: string;
   name: string;
   credits: number;
-  tokenAmount: bigint;
-  tokenAmountDisplay: string;
+  usdAmount: string;
 }
 
 export function getCreditPackages(): CreditPackage[] {
-  const decimals = Number(process.env.TOKEN_DECIMALS) || 9;
-  const divisor = BigInt(10 ** decimals);
-
   return [
     {
       id: "small",
       name: "Starter",
       credits: Number(process.env.CREDITS_PACKAGE_SMALL_AMOUNT) || 100,
-      tokenAmount: BigInt(process.env.CREDITS_PACKAGE_SMALL_TOKENS || "1000000000"),
-      tokenAmountDisplay: `${Number(BigInt(process.env.CREDITS_PACKAGE_SMALL_TOKENS || "1000000000")) / Number(divisor)}`,
+      usdAmount: process.env.CREDITS_PACKAGE_SMALL_USD || "5",
     },
     {
       id: "medium",
       name: "Pro",
       credits: Number(process.env.CREDITS_PACKAGE_MEDIUM_AMOUNT) || 500,
-      tokenAmount: BigInt(process.env.CREDITS_PACKAGE_MEDIUM_TOKENS || "4500000000"),
-      tokenAmountDisplay: `${Number(BigInt(process.env.CREDITS_PACKAGE_MEDIUM_TOKENS || "4500000000")) / Number(divisor)}`,
+      usdAmount: process.env.CREDITS_PACKAGE_MEDIUM_USD || "20",
     },
     {
       id: "large",
       name: "Enterprise",
       credits: Number(process.env.CREDITS_PACKAGE_LARGE_AMOUNT) || 1200,
-      tokenAmount: BigInt(process.env.CREDITS_PACKAGE_LARGE_TOKENS || "10000000000"),
-      tokenAmountDisplay: `${Number(BigInt(process.env.CREDITS_PACKAGE_LARGE_TOKENS || "10000000000")) / Number(divisor)}`,
+      usdAmount: process.env.CREDITS_PACKAGE_LARGE_USD || "40",
     },
   ];
 }
