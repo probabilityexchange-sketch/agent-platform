@@ -10,8 +10,10 @@ export interface CreditPackage {
 
 export interface PurchaseInitResponse {
   transactionId: string;
-  tokenMint: string;
+  paymentAsset: "spl" | "sol";
+  tokenMint: string | null;
   treasuryWallet: string;
+  burnWallet: string | null;
   tokenAmount: string;
   burnAmount?: string;
   grossTokenAmount?: string;

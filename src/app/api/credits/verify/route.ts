@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
-import { verifyTransaction } from "@/lib/solana/tx-verification";
+import {
+  verifyNativeSolTransaction,
+  verifyTransaction,
+} from "@/lib/solana/tx-verification";
 import { addCredits } from "@/lib/credits/engine";
 import { prisma } from "@/lib/db/prisma";
 import {
   parseBurnBpsFromMemo,
+  resolvePaymentAsset,
+  resolveSolBurnWallet,
   splitTokenAmountsByBurn,
 } from "@/lib/payments/token-pricing";
 
@@ -69,16 +74,35 @@ export async function POST(request: NextRequest) {
 
     const burnBps = parseBurnBpsFromMemo(pendingTx.memo || memo);
     const split = splitTokenAmountsByBurn(pendingTx.tokenAmount, burnBps);
+    const paymentAsset = resolvePaymentAsset();
 
-    // Verify on-chain
-    const result = await verifyTransaction(
-      txSignature,
-      (process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT)!,
-      process.env.TREASURY_WALLET!,
-      split.treasuryTokenAmount,
-      memo,
-      split.burnTokenAmount
-    );
+    const treasuryWallet = process.env.TREASURY_WALLET;
+    if (!treasuryWallet) {
+      return NextResponse.json(
+        { error: "Payment verification is missing treasury wallet config" },
+        { status: 500 }
+      );
+    }
+
+    const result =
+      paymentAsset === "sol"
+        ? await verifyNativeSolTransaction({
+            txSignature,
+            expectedRecipient: treasuryWallet,
+            expectedTreasuryAmountLamports: split.treasuryTokenAmount,
+            expectedMemo: memo,
+            expectedBurnAmountLamports: split.burnTokenAmount,
+            expectedBurnRecipient: resolveSolBurnWallet(),
+            expectedSender: auth.wallet,
+          })
+        : await verifyTransaction(
+            txSignature,
+            (process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT)!,
+            treasuryWallet,
+            split.treasuryTokenAmount,
+            memo,
+            split.burnTokenAmount
+          );
 
     if (!result.valid) {
       await prisma.creditTransaction.update({

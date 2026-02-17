@@ -13,8 +13,10 @@ interface CreditPackage {
 interface PurchaseFormProps {
   packages: CreditPackage[];
   onPurchaseInit: (packageId: string) => Promise<{
-    tokenMint: string;
+    paymentAsset: "spl" | "sol";
+    tokenMint: string | null;
     treasuryWallet: string;
+    burnWallet: string | null;
     tokenAmount: string;
     memo: string;
     decimals: number;
@@ -51,12 +53,14 @@ export function PurchaseForm({
 
       // 2. Send SPL transfer
       const txSignature = await transfer({
+        paymentAsset: purchaseData.paymentAsset,
         mint: purchaseData.tokenMint,
         recipient: purchaseData.treasuryWallet,
         amount: purchaseData.tokenAmount,
         decimals: purchaseData.decimals,
         memo: purchaseData.memo,
         burnAmount: purchaseData.burnAmount,
+        burnRecipient: purchaseData.burnWallet,
       });
 
       // 3. Verify on server

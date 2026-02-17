@@ -1,6 +1,7 @@
 const USD_SCALE = 6;
 const PRICE_SCALE = 12;
 const DEFAULT_CACHE_MS = 20_000;
+const DEFAULT_SOL_BURN_WALLET = "1nc1nerator11111111111111111111111111111111";
 
 type PriceQuote = {
   mint: string;
@@ -187,4 +188,17 @@ export function parseBurnBpsFromMemo(memo: string): number {
   if (!Number.isFinite(parsed) || parsed < 0) return 0;
   if (parsed > 10_000) return 10_000;
   return Math.trunc(parsed);
+}
+
+export type PaymentAsset = "spl" | "sol";
+
+export function resolvePaymentAsset(): PaymentAsset {
+  const raw = (process.env.PAYMENT_ASSET || "spl").trim().toLowerCase();
+  return raw === "sol" ? "sol" : "spl";
+}
+
+export function resolveSolBurnWallet(): string {
+  const configured = process.env.SOL_BURN_WALLET?.trim();
+  if (!configured) return DEFAULT_SOL_BURN_WALLET;
+  return configured;
 }

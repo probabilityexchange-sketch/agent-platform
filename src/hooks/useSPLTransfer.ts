@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { PublicKey, Connection, Transaction, TransactionInstruction } from "@solana/web3.js";
+import {
+  PublicKey,
+  Connection,
+  Transaction,
+  TransactionInstruction,
+  SystemProgram,
+} from "@solana/web3.js";
 import {
   createBurnCheckedInstruction,
   createTransferCheckedInstruction,
@@ -26,12 +32,14 @@ export function useSPLTransfer() {
 
   const transfer = useCallback(
     async (params: {
-      mint: string;
+      mint?: string | null;
+      paymentAsset?: "spl" | "sol";
       recipient: string;
       amount: string;
       decimals: number;
       memo: string;
       burnAmount?: string;
+      burnRecipient?: string | null;
     }) => {
       setSending(true);
       try {
@@ -47,35 +55,85 @@ export function useSPLTransfer() {
         const { publicKey: phantomPubkey } = await phantom.connect();
         const fromWallet = new PublicKey(phantomPubkey.toString());
         const toWallet = new PublicKey(params.recipient);
-        const mint = new PublicKey(params.mint);
+        const paymentAsset = params.paymentAsset || "spl";
 
-        const fromATA = await getAssociatedTokenAddress(mint, fromWallet);
-        const toATA = await getAssociatedTokenAddress(mint, toWallet);
+        const tx = new Transaction();
 
-        // Build transfer instruction
-        const transferIx = createTransferCheckedInstruction(
-          fromATA,
-          mint,
-          toATA,
-          fromWallet,
-          BigInt(params.amount),
-          params.decimals,
-          [],
-          TOKEN_PROGRAM_ID
-        );
+        if (paymentAsset === "sol") {
+          const amountLamports = BigInt(params.amount);
+          if (amountLamports <= BigInt(0)) {
+            throw new Error("Invalid SOL amount");
+          }
+          if (amountLamports > BigInt(Number.MAX_SAFE_INTEGER)) {
+            throw new Error("SOL amount is too large");
+          }
 
-        const burnAmount = params.burnAmount ? BigInt(params.burnAmount) : BigInt(0);
-        const burnIx = burnAmount > BigInt(0)
-          ? createBurnCheckedInstruction(
-              fromATA,
-              mint,
-              fromWallet,
-              burnAmount,
-              params.decimals,
-              [],
-              TOKEN_PROGRAM_ID
-            )
-          : null;
+          tx.add(
+            SystemProgram.transfer({
+              fromPubkey: fromWallet,
+              toPubkey: toWallet,
+              lamports: Number(amountLamports),
+            })
+          );
+
+          const burnAmountLamports = params.burnAmount
+            ? BigInt(params.burnAmount)
+            : BigInt(0);
+          if (burnAmountLamports > BigInt(0)) {
+            if (burnAmountLamports > BigInt(Number.MAX_SAFE_INTEGER)) {
+              throw new Error("SOL burn amount is too large");
+            }
+            const burnRecipient = params.burnRecipient
+              ? new PublicKey(params.burnRecipient)
+              : new PublicKey("1nc1nerator11111111111111111111111111111111");
+
+            tx.add(
+              SystemProgram.transfer({
+                fromPubkey: fromWallet,
+                toPubkey: burnRecipient,
+                lamports: Number(burnAmountLamports),
+              })
+            );
+          }
+        } else {
+          if (!params.mint) {
+            throw new Error("Missing token mint for SPL transfer");
+          }
+
+          const mint = new PublicKey(params.mint);
+          const fromATA = await getAssociatedTokenAddress(mint, fromWallet);
+          const toATA = await getAssociatedTokenAddress(mint, toWallet);
+
+          // Build transfer instruction
+          const transferIx = createTransferCheckedInstruction(
+            fromATA,
+            mint,
+            toATA,
+            fromWallet,
+            BigInt(params.amount),
+            params.decimals,
+            [],
+            TOKEN_PROGRAM_ID
+          );
+          tx.add(transferIx);
+
+          const burnAmount = params.burnAmount
+            ? BigInt(params.burnAmount)
+            : BigInt(0);
+          if (burnAmount > BigInt(0)) {
+            tx.add(
+              createBurnCheckedInstruction(
+                fromATA,
+                mint,
+                fromWallet,
+                burnAmount,
+                params.decimals,
+                [],
+                TOKEN_PROGRAM_ID
+              )
+            );
+          }
+        }
 
         // Add memo instruction
         const memoIx = new TransactionInstruction({
@@ -86,11 +144,8 @@ export function useSPLTransfer() {
 
         // Get fresh blockhash
         const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-        const tx = new Transaction();
         tx.recentBlockhash = blockhash;
         tx.feePayer = fromWallet;
-        tx.add(transferIx);
-        if (burnIx) tx.add(burnIx);
         tx.add(memoIx);
 
         const signedTx = await phantom.signTransaction(tx);

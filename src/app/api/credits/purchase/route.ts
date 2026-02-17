@@ -6,6 +6,8 @@ import { prisma } from "@/lib/db/prisma";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
 import {
   quoteTokenAmountForUsd,
+  resolvePaymentAsset,
+  resolveSolBurnWallet,
   splitTokenAmountsByBurn,
 } from "@/lib/payments/token-pricing";
 
@@ -42,20 +44,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const paymentAsset = resolvePaymentAsset();
     const tokenMint = process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT;
     const treasuryWallet = process.env.TREASURY_WALLET;
-    const decimals = Number(process.env.TOKEN_DECIMALS) || 9;
+    const decimals = paymentAsset === "sol" ? 9 : Number(process.env.TOKEN_DECIMALS) || 9;
+    const solBurnWallet = resolveSolBurnWallet();
 
-    if (!tokenMint || !treasuryWallet) {
+    if (!treasuryWallet) {
       return NextResponse.json(
-        { error: "Payment configuration is missing" },
+        { error: "Payment configuration is missing treasury wallet" },
+        { status: 500 }
+      );
+    }
+    if (paymentAsset === "spl" && !tokenMint) {
+      return NextResponse.json(
+        { error: "Payment configuration is missing token mint for SPL mode" },
         { status: 500 }
       );
     }
 
     const quote = await quoteTokenAmountForUsd({
       usdAmount: pkg.usdAmount,
-      tokenMint,
+      tokenMint: paymentAsset === "sol" ? "SOL" : tokenMint!,
       tokenDecimals: decimals,
     });
 
@@ -76,8 +86,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       transactionId: tx.id,
-      tokenMint,
+      paymentAsset,
+      tokenMint: paymentAsset === "spl" ? tokenMint : null,
       treasuryWallet,
+      burnWallet: paymentAsset === "sol" ? solBurnWallet : null,
       tokenAmount: split.treasuryTokenAmount.toString(),
       burnAmount: split.burnTokenAmount.toString(),
       grossTokenAmount: quote.tokenAmountBaseUnits.toString(),
