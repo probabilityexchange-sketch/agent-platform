@@ -29,6 +29,12 @@ interface ParsedAgentToolConfig {
   fallbackTools: string[];
 }
 
+function resolveComposioUserId(userId: string): string {
+  const override = process.env.COMPOSIO_ENTITY_ID?.trim();
+  if (override) return override;
+  return userId || "default";
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -165,6 +171,7 @@ export async function getAgentToolsFromConfig(
   userId: string
 ): Promise<OpenAITool[]> {
   if (!composio) return [];
+  const resolvedUserId = resolveComposioUserId(userId);
 
   const parsed = parseAgentToolConfig(rawConfig);
   if (
@@ -178,18 +185,20 @@ export async function getAgentToolsFromConfig(
   const collectedTools: OpenAITool[] = [];
 
   if (parsed.explicitTools.length > 0) {
-    collectedTools.push(...(await fetchToolsByQuery(userId, { tools: parsed.explicitTools })));
+    collectedTools.push(
+      ...(await fetchToolsByQuery(resolvedUserId, { tools: parsed.explicitTools }))
+    );
   }
 
   if (parsed.toolkitHints.length > 0) {
     collectedTools.push(
-      ...(await fetchToolsByQuery(userId, { toolkits: parsed.toolkitHints }))
+      ...(await fetchToolsByQuery(resolvedUserId, { toolkits: parsed.toolkitHints }))
     );
   }
 
   if (collectedTools.length === 0) {
     for (const fallbackTool of parsed.fallbackTools) {
-      const tool = await fetchToolBySlug(userId, fallbackTool);
+      const tool = await fetchToolBySlug(resolvedUserId, fallbackTool);
       if (tool) collectedTools.push(tool);
     }
   }
@@ -204,9 +213,10 @@ export async function executeOpenAIToolCall(
   if (!composio) {
     return JSON.stringify({ error: "COMPOSIO_API_KEY is not configured." });
   }
+  const resolvedUserId = resolveComposioUserId(userId);
 
   try {
-    return await composio.provider.executeToolCall(userId, toolCall);
+    return await composio.provider.executeToolCall(resolvedUserId, toolCall);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Tool execution failed";
