@@ -1,0 +1,67 @@
+name: Payment and credits issue
+description: Report token payment, verification, or credit balance problems.
+title: "[Payments] "
+labels: ["payments", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for checkout errors, failed verification, incorrect credits, or ledger mismatches.
+  - type: dropdown
+    id: network
+    attributes:
+      label: Network
+      options:
+        - Solana Mainnet
+        - Solana Devnet
+        - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: asset
+    attributes:
+      label: Payment asset
+      options:
+        - Native SOL
+        - SPL token
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: wallet
+    attributes:
+      label: Wallet address used for payment
+      placeholder: 4zMMC9...
+    validations:
+      required: true
+  - type: input
+    id: tx_signature
+    attributes:
+      label: Transaction signature
+      description: Required if transaction was submitted.
+      placeholder: 5N8...abc
+  - type: input
+    id: package
+    attributes:
+      label: Package selected
+      placeholder: Starter / Pro / Enterprise
+  - type: textarea
+    id: issue
+    attributes:
+      label: What went wrong
+      placeholder: Simulation failed with "Attempt to debit an account but found no record of a prior credit."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected outcome
+      placeholder: Transaction verifies and credits are added.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or API responses
+      description: Paste `/api/credits/purchase` or `/api/credits/verify` responses if available.
+      render: shell

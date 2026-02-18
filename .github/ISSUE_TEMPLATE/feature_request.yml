@@ -1,0 +1,43 @@
+name: Feature request
+description: Propose a product improvement.
+title: "[Feature] "
+labels: ["enhancement", "triage"]
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      placeholder: Add usage analytics per agent
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What user pain does this address?
+      placeholder: Users cannot easily track which agent consumed credits.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      placeholder: Add per-agent usage charts on dashboard.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: Manual CSV export from transaction history.
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Expected impact
+      options:
+        - Critical
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true

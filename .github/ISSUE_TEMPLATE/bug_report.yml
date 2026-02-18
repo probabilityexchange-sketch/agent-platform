@@ -1,0 +1,77 @@
+name: Bug report
+description: Report a product or API bug.
+title: "[Bug] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for functional issues, UI bugs, or API failures.
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One-line description of the problem.
+      placeholder: Chat response disappears after send
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps from a clean page load.
+      placeholder: |
+        1. Go to /chat
+        2. Open Productivity Agent
+        3. Send message "..."
+        4. Observe error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: Assistant responds and message persists in session.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: Assistant output flashes and disappears.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Auth
+        - Chat
+        - Integrations
+        - Credits and payments
+        - Agents and containers
+        - Deployment
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: Chrome 131 on macOS
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and errors
+      description: Paste browser console, network response, or server logs.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submit checks
+      options:
+        - label: I searched existing issues first.
+          required: true
+        - label: I included reproduction steps and error output.
+          required: true

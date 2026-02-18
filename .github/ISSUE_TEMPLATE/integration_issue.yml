@@ -1,0 +1,68 @@
+name: Integration issue
+description: Report Composio connection or tool execution issues.
+title: "[Integration] "
+labels: ["integrations", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for toolkit connection failures, wrong auth config mapping, or tool-call failures.
+  - type: dropdown
+    id: toolkit
+    attributes:
+      label: Toolkit
+      options:
+        - GitHub
+        - Slack
+        - Notion
+        - Gmail
+        - Google Calendar
+        - Prompmate
+        - CoinMarketCap
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: auth_config_id
+    attributes:
+      label: Auth config id
+      description: Example: ac_xxxxx
+      placeholder: ac_12345
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Integration mode
+      description: Shared mode uses COMPOSIO_ENTITY_ID; per-user mode does not.
+      options:
+        - Per-user mode
+        - Shared entity mode
+        - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: symptom
+    attributes:
+      label: Symptom
+      options:
+        - Cannot connect toolkit
+        - Connect succeeds but status is not ACTIVE
+        - Wrong auth config appears in app
+        - Tool call not executed in chat
+        - Tool call executes but result is incorrect
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Include exact messages and what you expected.
+      placeholder: "No auth config found for this toolkit" on Integrations page.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste app logs or request/response payloads.
+      render: shell
