@@ -9,10 +9,16 @@ import {
   getAgentToolsFromConfig,
 } from "@/lib/composio/client";
 
+const optionalNonEmptyString = z.preprocess((value) => {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}, z.string().min(1).optional());
+
 const schema = z
   .object({
-    agentId: z.string().min(1).optional(),
-    sessionId: z.string().min(1).optional(),
+    agentId: optionalNonEmptyString,
+    sessionId: optionalNonEmptyString,
     message: z.string().min(1).max(4000),
     model: z.string().min(1).default(DEFAULT_MODEL),
   })

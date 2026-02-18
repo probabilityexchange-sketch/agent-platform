@@ -26,6 +26,7 @@ export function ChatWindow({
 }: ChatWindowProps) {
     const [messages, setMessages] = useState<Message[]>(initialMessages);
     const [isTyping, setIsTyping] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(sessionId);
     const scrollRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
@@ -40,6 +41,7 @@ export function ChatWindow({
 
     const handleSendMessage = async (content: string) => {
         if (!content.trim()) return;
+        setError(null);
 
         const userMessage: Message = {
             id: Date.now().toString(),
@@ -52,19 +54,29 @@ export function ChatWindow({
         setIsTyping(true);
 
         try {
-            // API call to /api/chat
+            const payload: {
+                message: string;
+                agentId?: string;
+                sessionId?: string;
+            } = {
+                message: content,
+            };
+            if (currentSessionId) {
+                payload.sessionId = currentSessionId;
+            }
+            if (agentId && agentId.trim().length > 0) {
+                payload.agentId = agentId;
+            }
+
             const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    agentId,
-                    sessionId: currentSessionId,
-                    message: content,
-                }),
+                body: JSON.stringify(payload),
             });
 
             if (!response.ok) {
-                throw new Error("Failed to send message");
+                const details = await response.json().catch(() => null) as { error?: string } | null;
+                throw new Error(details?.error || "Failed to send message");
             }
 
             // Handle streaming or simple response
@@ -85,7 +97,7 @@ export function ChatWindow({
             setMessages((prev) => [...prev, assistantMessage]);
         } catch (error) {
             console.error("Chat error:", error);
-            // Show error in chat?
+            setError(error instanceof Error ? error.message : "Failed to send message");
         } finally {
             setIsTyping(false);
         }
@@ -129,6 +141,9 @@ export function ChatWindow({
             </div>
 
             <div className="p-4 border-t border-border bg-card/50">
+                {error && (
+                    <p className="mb-2 text-sm text-rose-400">{error}</p>
+                )}
                 <ChatInput onSend={handleSendMessage} disabled={isTyping} />
             </div>
         </div>
