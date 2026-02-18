@@ -11,6 +11,12 @@ Supported ticket types:
 - Payment and credits issue
 - Feature request
 
+Automated guardrails:
+
+- New/edited issues are auto-checked for required diagnostics.
+- Low-information tickets are labeled `needs-info` and `invalid-report`.
+- `needs-info` tickets auto-close after 5 days without updates.
+
 ## How Users Should File Issues
 
 1. Open the Issues tab and click `New issue`.
@@ -49,6 +55,12 @@ Supported ticket types:
 3. Apply labels and priority.
 4. Request missing diagnostics when needed.
 5. Link fix PR and close ticket with release/deploy reference.
+
+## Anti-Abuse Policy
+
+- Tickets missing required diagnostics are not triaged until completed.
+- Repeated low-signal reports are auto-gated via labels.
+- Closed `needs-info` tickets must be re-opened as a fresh report with full details.
 
 ## Suggested Priority Levels
 

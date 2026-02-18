@@ -1,0 +1,185 @@
+name: Issue Guardrails
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  quality-gate:
+    if: ${{ !github.event.issue.pull_request }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply triage guardrails
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const issueNumber = issue.number;
+            const body = (issue.body || "").trim();
+            const labels = issue.labels.map((l) => l.name);
+
+            const REQUIRED_LABELS = [
+              { name: "needs-info", color: "D93F0B", description: "Needs reporter follow-up before triage can continue" },
+              { name: "valid-report", color: "0E8A16", description: "Issue includes enough data for engineering triage" },
+              { name: "invalid-report", color: "B60205", description: "Issue is missing required details or is low-quality" },
+            ];
+
+            async function ensureLabel({ name, color, description }) {
+              try {
+                await github.rest.issues.getLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name,
+                });
+              } catch (error) {
+                if (error.status === 404) {
+                  await github.rest.issues.createLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name,
+                    color,
+                    description,
+                  });
+                } else {
+                  throw error;
+                }
+              }
+            }
+
+            for (const label of REQUIRED_LABELS) {
+              await ensureLabel(label);
+            }
+
+            function extractSection(title) {
+              const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+              const pattern = new RegExp(`###\\s+${escaped}\\s*\\n([\\s\\S]*?)(?=\\n###\\s+|$)`, "i");
+              const match = body.match(pattern);
+              return (match?.[1] || "").trim();
+            }
+
+            function hasLowSignalText(text) {
+              const normalized = text.toLowerCase().replace(/[`*_>\n\r]/g, " ").trim();
+              if (!normalized) return true;
+              if (normalized.length < 12) return true;
+              return /^(n\/a|na|none|idk|tbd|test|same|no|nothing)\.?$/.test(normalized);
+            }
+
+            const isBug = labels.includes("bug");
+            const isIntegration = labels.includes("integrations");
+            const isPayment = labels.includes("payments");
+
+            let failures = [];
+
+            if (isBug) {
+              const required = [
+                "Summary",
+                "Steps to reproduce",
+                "Expected behavior",
+                "Actual behavior",
+              ];
+              for (const section of required) {
+                const value = extractSection(section);
+                if (hasLowSignalText(value)) {
+                  failures.push(`Add a complete "${section}" section.`);
+                }
+              }
+            }
+
+            if (isIntegration) {
+              const required = ["Toolkit", "Integration mode", "Symptom", "Details"];
+              for (const section of required) {
+                const value = extractSection(section);
+                if (hasLowSignalText(value)) {
+                  failures.push(`Add a complete "${section}" section.`);
+                }
+              }
+            }
+
+            if (isPayment) {
+              const required = [
+                "Network",
+                "Payment asset",
+                "Wallet address used for payment",
+                "What went wrong",
+                "Expected outcome",
+              ];
+              for (const section of required) {
+                const value = extractSection(section);
+                if (hasLowSignalText(value)) {
+                  failures.push(`Add a complete "${section}" section.`);
+                }
+              }
+            }
+
+            if ((isBug || isIntegration || isPayment) && body.length < 220) {
+              failures.push("Provide more detail so the issue can be reproduced.");
+            }
+
+            const hasGuardrailComment = async () => {
+              const comments = await github.paginate(
+                github.rest.issues.listComments,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  per_page: 100,
+                }
+              );
+              return comments.some((comment) =>
+                comment.user?.type === "Bot" &&
+                comment.body?.includes("<!-- issue-guardrails -->")
+              );
+            };
+
+            async function addLabels(names) {
+              if (!names.length) return;
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                labels: names,
+              });
+            }
+
+            async function removeLabel(name) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  name,
+                });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+              }
+            }
+
+            if (failures.length > 0) {
+              await addLabels(["needs-info", "invalid-report"]);
+              await removeLabel("valid-report");
+
+              if (!(await hasGuardrailComment())) {
+                const checklist = failures.map((f) => `- ${f}`).join("\n");
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  body: `<!-- issue-guardrails -->
+Thanks for the report. This ticket is currently gated as **needs-info**.
+
+Please update the issue with the missing details:
+${checklist}
+
+Once updated, this will be re-checked automatically.`,
+                });
+              }
+              return;
+            }
+
+            await removeLabel("needs-info");
+            await removeLabel("invalid-report");
+            await addLabels(["valid-report"]);
