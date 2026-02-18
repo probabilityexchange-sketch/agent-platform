@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: User Guide
+    url: https://randi.chat
+    about: Review setup and troubleshooting before opening a ticket.
+  - name: Security Report (Private)
+    url: https://github.com/<your-org>/<private-code-repo>/security/advisories/new
+    about: Report vulnerabilities privately. Do not file security issues publicly.

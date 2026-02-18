@@ -1,0 +1,50 @@
+name: Integration issue
+description: Report toolkit connection or tool execution issues.
+title: "[Integration] "
+labels: ["integrations", "triage"]
+body:
+  - type: dropdown
+    id: toolkit
+    attributes:
+      label: Toolkit
+      options:
+        - GitHub
+        - Slack
+        - Notion
+        - Gmail
+        - Google Calendar
+        - Prompmate
+        - CoinMarketCap
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: auth_config_id
+    attributes:
+      label: Auth config id
+      placeholder: ac_xxxxx
+  - type: dropdown
+    id: symptom
+    attributes:
+      label: Symptom
+      options:
+        - Cannot connect toolkit
+        - Connected but status not ACTIVE
+        - Wrong auth config shown
+        - Tool call not executed in chat
+        - Tool output appears incorrect
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      placeholder: Include exact error text and what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and API responses
+      render: shell

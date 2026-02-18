@@ -1,0 +1,110 @@
+name: Issue Guardrails
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  quality-gate:
+    if: ${{ !github.event.issue.pull_request }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply triage guardrails
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const body = (issue.body || "").trim();
+            const labels = issue.labels.map((l) => l.name);
+
+            const REQUIRED_LABELS = [
+              { name: "needs-info", color: "D93F0B", description: "Needs reporter follow-up before triage can continue" },
+              { name: "valid-report", color: "0E8A16", description: "Issue includes enough data for engineering triage" },
+              { name: "invalid-report", color: "B60205", description: "Issue is missing required details or is low-quality" },
+            ];
+
+            for (const label of REQUIRED_LABELS) {
+              try {
+                await github.rest.issues.getLabel({ owner: context.repo.owner, repo: context.repo.repo, name: label.name });
+              } catch (error) {
+                if (error.status === 404) {
+                  await github.rest.issues.createLabel({ owner: context.repo.owner, repo: context.repo.repo, ...label });
+                } else {
+                  throw error;
+                }
+              }
+            }
+
+            function extractSection(title) {
+              const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+              const pattern = new RegExp(`###\\s+${escaped}\\s*\\n([\\s\\S]*?)(?=\\n###\\s+|$)`, "i");
+              return (body.match(pattern)?.[1] || "").trim();
+            }
+
+            function lowSignal(text) {
+              const t = (text || "").toLowerCase().replace(/[`*_>\n\r]/g, " ").trim();
+              if (!t || t.length < 12) return true;
+              return /^(n\/a|na|none|idk|tbd|test|same|no|nothing)\.?$/.test(t);
+            }
+
+            const checks = [];
+            if (labels.includes("bug")) {
+              checks.push("Summary", "Steps to reproduce", "Expected behavior", "Actual behavior");
+            }
+            if (labels.includes("integrations")) {
+              checks.push("Toolkit", "Symptom", "Details");
+            }
+            if (labels.includes("payments")) {
+              checks.push("Network", "Payment asset", "Wallet address used for payment", "What went wrong", "Expected outcome");
+            }
+
+            const failures = [...new Set(checks)]
+              .filter((section) => lowSignal(extractSection(section)))
+              .map((section) => `Add a complete "${section}" section.`);
+
+            if (checks.length > 0 && body.length < 220) {
+              failures.push("Provide more detail so the issue can be reproduced.");
+            }
+
+            async function addLabels(labelNames) {
+              if (!labelNames.length) return;
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: labelNames,
+              });
+            }
+
+            async function removeLabel(name) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  name,
+                });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+              }
+            }
+
+            if (failures.length > 0) {
+              await addLabels(["needs-info", "invalid-report"]);
+              await removeLabel("valid-report");
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `This report is currently gated as **needs-info**.\n\nPlease update with:\n${failures.map((f) => `- ${f}`).join("\n")}`,
+              });
+              return;
+            }
+
+            await removeLabel("needs-info");
+            await removeLabel("invalid-report");
+            await addLabels(["valid-report"]);

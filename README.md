@@ -6,6 +6,7 @@ Token-powered AI agent platform with wallet auth, chat, containerized agent laun
 
 - User guide: `docs/USER_GUIDE.md`
 - Support and ticket workflow: `docs/SUPPORT_AND_TICKETING.md`
+- Private code/public support migration: `docs/PRIVATE_CODE_PUBLIC_SUPPORT_MIGRATION.md`
 - Deployment runbook: `DEPLOYMENT.md`
 - Payments operations: `PAYMENTS.md`
 

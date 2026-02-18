@@ -1,0 +1,45 @@
+name: Bug report
+description: Report a product or API bug.
+title: "[Bug] "
+labels: ["bug", "triage"]
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      placeholder: Chat response disappears after send
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: Chrome 131 on macOS
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and errors
+      description: Paste browser/network/server errors.
+      render: shell
