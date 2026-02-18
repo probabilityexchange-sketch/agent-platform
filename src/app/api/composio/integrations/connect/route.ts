@@ -67,10 +67,13 @@ export async function POST(request: NextRequest) {
         toolkit,
         limit: 20,
       });
+      const scopedItems = authConfigs.items.filter(
+        (item) => item.toolkit.slug === toolkit
+      );
 
       authConfigId =
-        authConfigs.items.find((item) => item.status === "ENABLED")?.id ??
-        authConfigs.items[0]?.id ??
+        scopedItems.find((item) => item.status === "ENABLED")?.id ??
+        scopedItems[0]?.id ??
         null;
     }
 

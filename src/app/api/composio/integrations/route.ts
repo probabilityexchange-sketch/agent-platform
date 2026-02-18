@@ -79,16 +79,19 @@ export async function GET() {
               toolkit: toolkit.slug,
               limit: 20,
             });
+            const scopedItems = authConfigs.items.filter(
+              (item) => item.toolkit.slug === toolkit.slug
+            );
             const selected =
-              authConfigs.items.find((item) => item.status === "ENABLED") ??
-              authConfigs.items[0] ??
+              scopedItems.find((item) => item.status === "ENABLED") ??
+              scopedItems[0] ??
               null;
 
             return {
               toolkit: toolkit.slug,
               selectedAuthConfigId: selected?.id ?? null,
               selectedAuthConfigName: selected?.name ?? null,
-              authConfigCount: authConfigs.items.length,
+              authConfigCount: scopedItems.length,
               authConfigError: null as string | null,
             };
           } catch (error) {
