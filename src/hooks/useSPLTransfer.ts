@@ -18,6 +18,38 @@ import {
   TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
 
+let cachedRpcUrl: string | null = null;
+
+async function resolveRpcUrl(): Promise<string> {
+  if (cachedRpcUrl) {
+    return cachedRpcUrl;
+  }
+
+  try {
+    const response = await fetch("/api/config", {
+      method: "GET",
+      cache: "no-store",
+      credentials: "same-origin",
+    });
+
+    if (response.ok) {
+      const config = (await response.json()) as { solanaRpcUrl?: string };
+      const runtimeRpc =
+        typeof config.solanaRpcUrl === "string" ? config.solanaRpcUrl.trim() : "";
+      if (runtimeRpc.length > 0) {
+        cachedRpcUrl = runtimeRpc;
+        return runtimeRpc;
+      }
+    }
+  } catch {
+    // Fall back to build-time env var when runtime config endpoint is unavailable.
+  }
+
+  cachedRpcUrl =
+    process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
+  return cachedRpcUrl;
+}
+
 declare global {
   interface Window {
     phantom?: {
@@ -51,7 +83,7 @@ export function useSPLTransfer() {
           throw new Error("Phantom wallet not found. Please install Phantom extension.");
         }
 
-        const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
+        const rpcUrl = await resolveRpcUrl();
         const connection = new Connection(rpcUrl, "confirmed");
 
         // Connect to Phantom
@@ -106,7 +138,7 @@ export function useSPLTransfer() {
           const mint = new PublicKey(params.mint);
           const mintAccountInfo = await connection.getAccountInfo(mint, "confirmed");
           if (!mintAccountInfo) {
-            throw new Error("Token mint not found on selected Solana network");
+            throw new Error(`Token mint not found on selected Solana network (${rpcUrl})`);
           }
 
           const tokenProgramId = mintAccountInfo.owner.equals(TOKEN_PROGRAM_ID)
