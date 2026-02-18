@@ -37,6 +37,34 @@ async function callRpc(url: string, payload: unknown): Promise<Response> {
   });
 }
 
+function shouldRetryRpcResponse(status: number, responseText: string): boolean {
+  if (status === 401 || status === 403 || status === 429 || status >= 500) {
+    return true;
+  }
+
+  try {
+    const parsed = JSON.parse(responseText) as {
+      error?: { code?: number | string; message?: string };
+    };
+    const codeValue = parsed?.error?.code;
+    const numericCode =
+      typeof codeValue === "number" ? codeValue : Number.parseInt(String(codeValue), 10);
+    const message = (parsed?.error?.message || "").toLowerCase();
+
+    if (numericCode === 401 || numericCode === 403 || numericCode === 429) {
+      return true;
+    }
+
+    if (message.includes("access forbidden") || message.includes("too many requests")) {
+      return true;
+    }
+  } catch {
+    // Non-JSON or malformed response; treat as terminal for this candidate.
+  }
+
+  return false;
+}
+
 export async function POST(request: NextRequest) {
   let payload: unknown;
   try {
@@ -50,15 +78,12 @@ export async function POST(request: NextRequest) {
   let lastResponseText = "";
 
   for (const rpcUrl of rpcCandidates) {
+    const hasFallbackCandidate = rpcCandidates[rpcCandidates.length - 1] !== rpcUrl;
     try {
       const response = await callRpc(rpcUrl, payload);
       const responseText = await response.text();
 
-      // Retry with next candidate on common provider-level auth/rate/network HTTP failures.
-      if (
-        (response.status === 401 || response.status === 403 || response.status === 429 || response.status >= 500) &&
-        rpcCandidates.length > 1
-      ) {
+      if (hasFallbackCandidate && shouldRetryRpcResponse(response.status, responseText)) {
         upstreamResponse = response;
         lastResponseText = responseText;
         continue;
