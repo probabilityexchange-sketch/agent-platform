@@ -33,6 +33,7 @@ async function callRpc(url: string, payload: unknown): Promise<Response> {
     },
     body: JSON.stringify(payload),
     cache: "no-store",
+    signal: AbortSignal.timeout(8000),
   });
 }
 
