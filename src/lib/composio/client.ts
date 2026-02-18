@@ -24,6 +24,9 @@ const LEGACY_TOOLKIT_ALIASES: Record<string, string> = {
   prompmate_api: "prompmate",
   promptmate_api: "prompmate",
   promptmate: "prompmate",
+  coinmarketcap_api: "coinmarketcap",
+  cmc_api: "coinmarketcap",
+  cmc: "coinmarketcap",
 };
 
 interface ParsedAgentToolConfig {

@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   const researchTools = JSON.stringify({
-    toolkits: ["hackernews"],
+    toolkits: ["hackernews", "coinmarketcap"],
     tools: [],
   });
 

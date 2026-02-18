@@ -45,7 +45,7 @@ interface ToolExecutionLog {
 function shouldForceToolCall(message: string): boolean {
   const normalized = message.toLowerCase();
   const mentionsService =
-    /\b(github|slack|notion|gmail|calendar|google calendar|hacker ?news|prompmate|promptmate)\b/.test(
+    /\b(github|slack|notion|gmail|calendar|google calendar|hacker ?news|prompmate|promptmate|coinmarketcap|coin market cap|cmc)\b/.test(
       normalized
     );
   const mentionsAction =
