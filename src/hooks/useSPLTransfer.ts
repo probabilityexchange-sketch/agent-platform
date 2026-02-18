@@ -25,27 +25,14 @@ async function resolveRpcUrl(): Promise<string> {
     return cachedRpcUrl;
   }
 
-  try {
-    const response = await fetch("/api/config", {
-      method: "GET",
-      cache: "no-store",
-      credentials: "same-origin",
-    });
-
-    if (response.ok) {
-      const config = (await response.json()) as { solanaRpcUrl?: string };
-      const runtimeRpc =
-        typeof config.solanaRpcUrl === "string" ? config.solanaRpcUrl.trim() : "";
-      if (runtimeRpc.length > 0) {
-        cachedRpcUrl = runtimeRpc;
-        return runtimeRpc;
-      }
-    }
-  } catch {
-    // Fall back to build-time env var when runtime config endpoint is unavailable.
+  if (typeof window !== "undefined") {
+    cachedRpcUrl = `${window.location.origin}/api/solana-rpc`;
+    return cachedRpcUrl;
   }
 
-  return process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
+  cachedRpcUrl =
+    process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
+  return cachedRpcUrl;
 }
 
 declare global {
