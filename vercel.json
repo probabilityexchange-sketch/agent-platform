@@ -4,7 +4,7 @@
     "buildCommand": "npx prisma generate && next build",
     "framework": "nextjs",
     "regions": [
-        "cle1"
+        "iad1"
     ],
     "env": {
         "NEXT_PUBLIC_APP_URL": "https://randi-agents.vercel.app",
