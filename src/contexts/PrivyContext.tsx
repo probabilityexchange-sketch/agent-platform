@@ -21,7 +21,10 @@ export function PrivyContextProvider({ children }: { children: ReactNode }) {
   const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || defaultRpcUrl;
 
   if (!appId) {
-    throw new Error("NEXT_PUBLIC_PRIVY_APP_ID is required");
+    if (process.env.NODE_ENV === "production") {
+      console.warn("NEXT_PUBLIC_PRIVY_APP_ID is missing. Skipping PrivyProvider during build.");
+    }
+    return <>{children}</>;
   }
 
   return (
