@@ -1,8 +1,8 @@
 import OpenAI from "openai";
 
-const apiKey = process.env.OPENROUTER_API_KEY;
+const apiKey = process.env.OPENROUTER_API_KEY || "sk-no-key-set";
 
-if (!apiKey) {
+if (!process.env.OPENROUTER_API_KEY && process.env.NODE_ENV === "production") {
     console.warn("OPENROUTER_API_KEY is not set in environment variables");
 }
 
