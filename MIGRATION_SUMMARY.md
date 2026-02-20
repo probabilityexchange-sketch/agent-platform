@@ -177,14 +177,21 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
 ---
 
-## 🐛 Known Issues / TODOs
+## ✅ Recent Refinements (Feb 20, 2026)
 
-1. **Privy Middleware**: Auth middleware needs update to verify Privy JWT tokens
-2. **x402 Payment Logic**: Placeholder for paid model enforcement (currently allows all)
-3. **Composio Tool Calling**: Tool integration in chat API needs full implementation
-4. **Streaming Responses**: Chat API returns full response, not streaming yet
-5. **Session Title Generation**: Currently uses first 50 chars of message
-6. **Error Handling**: Need better user-facing error messages in chat UI
+1. **Streaming Responses**: Chat API and UI now support real-time streaming for a better AI experience.
+2. **Pro Subscription Guard**: Implemented actual enforcement for premium (metered) models.
+3. **AI Session Titles**: Switched from truncation to AI-summarized chat titles.
+4. **Transparency Dashboard**: Created `/transparency` to monitor RANDI price and burn stats.
+5. **Prisma Provider**: Fixed provider mismatch to ensure local SQLite works correctly.
+
+---
+
+## 🐛 Remaining TODOs
+
+1. **Composio Tool Calling**: Further refine tool selection accuracy for complex queries.
+2. **Performance**: Optimize database queries for large chat histories.
+3. **Deployment**: Finalize Supabase and Vercel production configuration.
 
 ---
 

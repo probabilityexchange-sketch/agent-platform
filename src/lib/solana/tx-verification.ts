@@ -4,6 +4,7 @@ import { connection } from "./connection";
 export interface VerificationResult {
   valid: boolean;
   error?: string;
+  retryable?: boolean;
 }
 
 function hasExpectedMemo(
@@ -22,7 +23,8 @@ export async function verifyTransaction(
   expectedRecipient: string,
   expectedTreasuryAmount: bigint,
   expectedMemo: string,
-  expectedBurnAmount: bigint = BigInt(0)
+  expectedBurnAmount: bigint = BigInt(0),
+  expectedSender?: string
 ): Promise<VerificationResult> {
   try {
     const tx = await connection.getParsedTransaction(txSignature, {
@@ -31,7 +33,7 @@ export async function verifyTransaction(
     });
 
     if (!tx) {
-      return { valid: false, error: "Transaction not found" };
+      return { valid: false, error: "Transaction not found", retryable: true };
     }
 
     if (tx.meta?.err) {
@@ -54,14 +56,22 @@ export async function verifyTransaction(
       getAssociatedTokenAddress(mintKey, treasuryKey, false, TOKEN_2022_PROGRAM_ID),
     ]);
 
+    const expectedSenderNormalized = expectedSender || null;
+
     for (const ix of instructions) {
       if (!("parsed" in ix) || !ix.parsed?.type) continue;
 
-      if (ix.parsed.type === "transferChecked") {
+      if (ix.parsed.type === "transferChecked" || ix.parsed.type === "transfer") {
         const info = ix.parsed.info;
         const mintAddress = info.mint;
         const destination = info.destination;
-        const tokenAmount = BigInt(info.tokenAmount.amount);
+        const authority =
+          info.authority || info.owner || info.multisigAuthority || "";
+        const tokenAmountRaw =
+          ix.parsed.type === "transferChecked"
+            ? info.tokenAmount?.amount
+            : info.amount;
+        const tokenAmount = BigInt(tokenAmountRaw || "0");
 
         if (mintAddress !== expectedMint) continue;
         if (
@@ -70,16 +80,43 @@ export async function verifyTransaction(
         ) {
           continue;
         }
+        if (
+          expectedSenderNormalized &&
+          authority &&
+          authority !== expectedSenderNormalized
+        ) {
+          continue;
+        }
+        if (expectedSenderNormalized && !authority) {
+          continue;
+        }
 
         transferredToTreasury += tokenAmount;
       }
 
-      if (ix.parsed.type === "burnChecked") {
+      if (ix.parsed.type === "burnChecked" || ix.parsed.type === "burn") {
         const info = ix.parsed.info;
         const mintAddress = info.mint;
-        const tokenAmount = BigInt(info.tokenAmount.amount);
+        const authority =
+          info.authority || info.owner || info.multisigAuthority || "";
+        const tokenAmountRaw =
+          ix.parsed.type === "burnChecked"
+            ? info.tokenAmount?.amount
+            : info.amount;
+        const tokenAmount = BigInt(tokenAmountRaw || "0");
 
         if (mintAddress !== expectedMint) continue;
+        if (
+          expectedSenderNormalized &&
+          authority &&
+          authority !== expectedSenderNormalized
+        ) {
+          continue;
+        }
+        if (expectedSenderNormalized && !authority) {
+          continue;
+        }
+
         burnedAmount += tokenAmount;
       }
     }
@@ -104,6 +141,7 @@ export async function verifyTransaction(
   } catch (error) {
     return {
       valid: false,
+      retryable: true,
       error: `Verification failed: ${error instanceof Error ? error.message : "Unknown error"}`,
     };
   }
@@ -129,7 +167,7 @@ export async function verifyNativeSolTransaction(
     });
 
     if (!tx) {
-      return { valid: false, error: "Transaction not found" };
+      return { valid: false, error: "Transaction not found", retryable: true };
     }
 
     if (tx.meta?.err) {
@@ -193,6 +231,7 @@ export async function verifyNativeSolTransaction(
   } catch (error) {
     return {
       valid: false,
+      retryable: true,
       error: `Verification failed: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,

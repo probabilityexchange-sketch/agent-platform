@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
+import { useTokenPrice } from "@/hooks/useTokenPrice";
 
 interface ChatSession {
   id: string;
@@ -14,7 +15,8 @@ interface ChatSession {
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { balance } = useCredits();
+  const { isSubscribed, subscription } = useCredits();
+  const { priceUsd } = useTokenPrice();
   const [recentSessions, setRecentSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState("");
@@ -54,48 +56,87 @@ export default function DashboardPage() {
     }
   };
 
+  const walletDisplay = user?.walletAddress
+    ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}`
+    : "User";
+
+  const daysLeft = subscription.expiresAt
+    ? Math.max(0, Math.ceil((new Date(subscription.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : null;
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Welcome back, {user?.walletAddress ? `${user.walletAddress.slice(0, 6)}...` : "User"}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Welcome back, {walletDisplay}</h1>
           <p className="text-muted-foreground">Manage your AI agents and chat history.</p>
         </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-6 mb-12">
+        {/* Subscription Status */}
         <div className="glass-card rounded-2xl p-6">
-          <p className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">Credit Balance</p>
-          <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-3xl font-bold text-primary">{balance.toLocaleString()}</span>
-            <span className="text-xs text-muted-foreground italic">Available</span>
-          </div>
-          <Link href="/credits" className="mt-6 block w-full text-center py-2 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-lg text-sm font-semibold transition-all">
-            Top Up Credits
-          </Link>
+          <p className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">Subscription</p>
+          {isSubscribed ? (
+            <>
+              <div className="flex items-baseline gap-2 mt-2">
+                <span className="text-2xl font-bold text-success">Randi Pro</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {daysLeft !== null ? `${daysLeft} days remaining` : "Active"}
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="flex items-baseline gap-2 mt-2">
+                <span className="text-2xl font-bold text-muted-foreground">Free Tier</span>
+              </div>
+              <Link href="/credits" className="mt-4 block w-full text-center py-2 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-lg text-sm font-semibold transition-all">
+                Subscribe — $20/mo
+              </Link>
+            </>
+          )}
         </div>
 
+        {/* Model Access */}
         <div className="glass-card rounded-2xl p-6">
-          <p className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">Model Access</p>
-          <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-3xl font-bold">INCLUDED MODELS</span>
+          <p className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">AI Models</p>
+          <div className="flex flex-col gap-1.5 mt-3">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
+              Llama 3.3 70B
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
+              Gemini 2.0 Flash
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
+              DeepSeek R1
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-4">
-            Llama 3, Gemini Flash, and DeepSeek are available now.
-          </p>
         </div>
 
+        {/* RANDI Price */}
         <div className="glass-card rounded-2xl p-6">
-          <p className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">Active Agents</p>
+          <p className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">RANDI Token</p>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-3xl font-bold">3 READY</span>
+            <span className="text-2xl font-bold font-mono">
+              {priceUsd ? `$${priceUsd.toFixed(8)}` : "—"}
+            </span>
           </div>
-          <Link href="/agents" className="mt-6 block w-full text-center py-2 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-lg text-sm font-semibold transition-all">
-            View Agent Catalog
-          </Link>
+          <a
+            href="https://dexscreener.com/solana/9i5scvvg8pkqksmkstshtx2chsmnmwmruha6hncoboqs"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-4 block w-full text-center py-2 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-lg text-sm font-semibold transition-all"
+          >
+            View on DexScreener
+          </a>
         </div>
       </div>
 
+      {/* Profile */}
       <div className="glass-card rounded-2xl p-6 mb-8">
         <h2 className="text-lg font-bold mb-4">Profile URL (Optional)</h2>
         <p className="text-sm text-muted-foreground mb-4">
@@ -124,6 +165,7 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      {/* Recent Conversations */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold">Recent Conversations</h2>

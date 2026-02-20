@@ -66,6 +66,12 @@ export default function LandingPage() {
           </a>
         </div>
 
+        <div className="mb-16 text-center">
+          <Link href="/demo" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+            See How It Works →
+          </Link>
+        </div>
+
         <div className="grid md:grid-cols-3 gap-8 text-left">
           <div className="bg-card border border-border rounded-xl p-6 hover:border-primary/30 transition-colors">
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">

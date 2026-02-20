@@ -6,6 +6,19 @@ import { type ReactNode } from "react";
 
 export function PrivyContextProvider({ children }: { children: ReactNode }) {
   const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+  const networkRaw = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "devnet").toLowerCase();
+  const solanaClusterName = networkRaw.includes("mainnet")
+    ? "mainnet-beta"
+    : networkRaw.includes("testnet")
+      ? "testnet"
+      : "devnet";
+  const defaultRpcUrl =
+    solanaClusterName === "mainnet-beta"
+      ? "https://api.mainnet-beta.solana.com"
+      : solanaClusterName === "testnet"
+        ? "https://api.testnet.solana.com"
+        : "https://api.devnet.solana.com";
+  const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || defaultRpcUrl;
 
   if (!appId) {
     throw new Error("NEXT_PUBLIC_PRIVY_APP_ID is required");
@@ -35,8 +48,8 @@ export function PrivyContextProvider({ children }: { children: ReactNode }) {
         },
         solanaClusters: [
           {
-            name: "devnet",
-            rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com",
+            name: solanaClusterName,
+            rpcUrl,
           },
         ],
       }}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { MessageBubble } from "./MessageBubble";
 import { ChatInput } from "./ChatInput";
 
@@ -9,6 +9,7 @@ export interface Message {
     role: "user" | "assistant" | "system";
     content: string;
     createdAt: Date | string;
+    error?: boolean;
 }
 
 interface ChatWindowProps {
@@ -29,6 +30,8 @@ export function ChatWindow({
     const [error, setError] = useState<string | null>(null);
     const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(sessionId);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const lastFailedMessage = useRef<string | null>(null);
+
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -39,12 +42,13 @@ export function ChatWindow({
         setCurrentSessionId(sessionId);
     }, [sessionId]);
 
-    const handleSendMessage = async (content: string) => {
+    const sendMessage = useCallback(async (content: string) => {
         if (!content.trim()) return;
         setError(null);
+        lastFailedMessage.current = null;
 
         const userMessage: Message = {
-            id: Date.now().toString(),
+            id: `user-${Date.now()}`,
             role: "user",
             content,
             createdAt: new Date(),
@@ -76,32 +80,70 @@ export function ChatWindow({
 
             if (!response.ok) {
                 const details = await response.json().catch(() => null) as { error?: string } | null;
-                throw new Error(details?.error || "Failed to send message");
+                throw new Error(details?.error || `Request failed (${response.status})`);
             }
 
-            // Handle streaming or simple response
-            const data = await response.json();
-
-            if (!currentSessionId && typeof data.sessionId === "string" && data.sessionId.length > 0) {
-                setCurrentSessionId(data.sessionId);
-                onSessionCreated?.(data.sessionId);
+            if (!response.body) {
+                throw new Error("Response body is empty");
             }
 
+            // Create placeholder assistant message
+            const assistantId = `asst-${Date.now()}`;
             const assistantMessage: Message = {
-                id: (Date.now() + 1).toString(),
+                id: assistantId,
                 role: "assistant",
-                content: data.response,
+                content: "",
                 createdAt: new Date(),
             };
-
             setMessages((prev) => [...prev, assistantMessage]);
-        } catch (error) {
-            console.error("Chat error:", error);
-            setError(error instanceof Error ? error.message : "Failed to send message");
+            setIsTyping(false); // Stop typing indicator since we're streaming
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let accumulatedContent = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                accumulatedContent += chunk;
+
+                setMessages((prev) =>
+                    prev.map((msg) =>
+                        msg.id === assistantId
+                            ? { ...msg, content: accumulatedContent }
+                            : msg
+                    )
+                );
+            }
+        } catch (err) {
+            console.error("Chat error:", err);
+            const errorMsg = err instanceof Error ? err.message : "Failed to send message";
+            setError(errorMsg);
+            lastFailedMessage.current = content;
+
+            setMessages((prev) =>
+                prev.map((msg, i) =>
+                    i === prev.length - 1 && msg.role === "user"
+                        ? { ...msg, error: true }
+                        : msg
+                )
+            );
         } finally {
             setIsTyping(false);
         }
-    };
+    }, [agentId, currentSessionId, onSessionCreated]);
+
+    const handleRetry = useCallback(() => {
+        if (lastFailedMessage.current) {
+            setMessages((prev) => prev.filter((msg) => !msg.error));
+            const msg = lastFailedMessage.current;
+            lastFailedMessage.current = null;
+            setError(null);
+            sendMessage(msg);
+        }
+    }, [sendMessage]);
 
     return (
         <div className="flex flex-col h-full bg-card/30 rounded-xl border border-border overflow-hidden">
@@ -142,9 +184,19 @@ export function ChatWindow({
 
             <div className="p-4 border-t border-border bg-card/50">
                 {error && (
-                    <p className="mb-2 text-sm text-rose-400">{error}</p>
+                    <div className="mb-2 flex items-center justify-between gap-2 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2">
+                        <p className="text-sm text-rose-400">{error}</p>
+                        {lastFailedMessage.current && (
+                            <button
+                                onClick={handleRetry}
+                                className="text-xs bg-red-500/20 hover:bg-red-500/30 text-red-200 px-2 py-1 rounded transition-colors whitespace-nowrap"
+                            >
+                                Retry
+                            </button>
+                        )}
+                    </div>
                 )}
-                <ChatInput onSend={handleSendMessage} disabled={isTyping} />
+                <ChatInput onSend={sendMessage} disabled={isTyping} />
             </div>
         </div>
     );

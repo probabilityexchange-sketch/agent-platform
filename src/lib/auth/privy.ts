@@ -173,8 +173,15 @@ async function fetchPrivyUserPayload(
     "Content-Type": "application/json",
   };
 
-  if (originHint) {
-    headers["Origin"] = originHint;
+  const origin =
+    originHint ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.NEXT_PUBLIC_DOMAIN
+      ? `https://${process.env.NEXT_PUBLIC_DOMAIN}`
+      : undefined);
+  if (origin) {
+    headers["Origin"] = origin.replace(/\/+$/, "");
+    headers["Referer"] = `${headers["Origin"]}/`;
   }
 
   const response = await fetch(`${PRIVY_BASE_URL}/api/v1/users/me`, {

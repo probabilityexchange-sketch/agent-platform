@@ -4,6 +4,11 @@ export const SUPPORTED_COMPOSIO_TOOLKITS = [
   { slug: "notion", label: "Notion", envKey: "COMPOSIO_AUTH_CONFIG_NOTION" },
   { slug: "gmail", label: "Gmail", envKey: "COMPOSIO_AUTH_CONFIG_GMAIL" },
   {
+    slug: "googlesheets",
+    label: "Google Sheets",
+    envKey: "COMPOSIO_AUTH_CONFIG_GOOGLESHEETS",
+  },
+  {
     slug: "prompmate",
     label: "Prompmate",
     envKey: "COMPOSIO_AUTH_CONFIG_PROMPMATE",
@@ -17,6 +22,16 @@ export const SUPPORTED_COMPOSIO_TOOLKITS = [
     slug: "googlecalendar",
     label: "Google Calendar",
     envKey: "COMPOSIO_AUTH_CONFIG_GOOGLECALENDAR",
+  },
+  {
+    slug: "supabase",
+    label: "Supabase",
+    envKey: "COMPOSIO_AUTH_CONFIG_SUPABASE",
+  },
+  {
+    slug: "vercel",
+    label: "Vercel",
+    envKey: "COMPOSIO_AUTH_CONFIG_VERCEL",
   },
 ] as const;
 

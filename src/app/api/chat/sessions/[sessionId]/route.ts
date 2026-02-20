@@ -10,12 +10,13 @@ export async function GET(
     const auth = await requireAuth();
     const { sessionId } = await params;
 
+    const { searchParams } = new URL(_req.url);
+    const cursor = searchParams.get("cursor");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
+
     const session = await prisma.chatSession.findUnique({
       where: { id: sessionId },
       include: {
-        messages: {
-          orderBy: { createdAt: "asc" },
-        },
         agent: {
           select: { name: true },
         },
@@ -26,9 +27,18 @@ export async function GET(
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
+    const messages = await prisma.chatMessage.findMany({
+      where: { sessionId },
+      take: limit,
+      skip: cursor ? 1 : 0,
+      cursor: cursor ? { id: cursor } : undefined,
+      orderBy: { createdAt: "asc" },
+    });
+
     return NextResponse.json({
-      messages: session.messages,
+      messages,
       agent: session.agent,
+      nextCursor: messages.length === limit ? messages[messages.length - 1].id : null,
     });
   } catch (error) {
     return handleAuthError(error);

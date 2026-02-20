@@ -1,13 +1,35 @@
-import { Composio } from "@composio/core";
+import type { Composio as ComposioClient } from "@composio/core";
 import type OpenAI from "openai";
 
-const apiKey = process.env.COMPOSIO_API_KEY;
+const apiKey = process.env.COMPOSIO_API_KEY?.trim() || "";
+const globalForComposio = globalThis as unknown as {
+  composioClientPromise?: Promise<ComposioClient | null>;
+};
+let loggedMissingComposioApiKey = false;
 
-if (!apiKey) {
-  console.warn("COMPOSIO_API_KEY is not set in environment variables");
+export async function getComposioClient(): Promise<ComposioClient | null> {
+  if (!apiKey) {
+    if (!loggedMissingComposioApiKey) {
+      console.warn("COMPOSIO_API_KEY is not set in environment variables");
+      loggedMissingComposioApiKey = true;
+    }
+    return null;
+  }
+
+  if (!globalForComposio.composioClientPromise) {
+    globalForComposio.composioClientPromise = (async () => {
+      try {
+        const { Composio } = await import("@composio/core");
+        return new Composio({ apiKey }) as ComposioClient;
+      } catch (error) {
+        console.error("Failed to initialize Composio client", error);
+        return null;
+      }
+    })();
+  }
+
+  return globalForComposio.composioClientPromise;
 }
-
-export const composio = apiKey ? new Composio({ apiKey }) : null;
 
 type OpenAITool = OpenAI.Chat.Completions.ChatCompletionTool;
 type OpenAIToolCall = OpenAI.Chat.Completions.ChatCompletionMessageToolCall;
@@ -21,12 +43,15 @@ const LEGACY_TOOLKIT_ALIASES: Record<string, string> = {
   slack_api: "slack",
   notion_api: "notion",
   google_calendar: "googlecalendar",
+  google_sheets: "googlesheets",
   prompmate_api: "prompmate",
   promptmate_api: "prompmate",
   promptmate: "prompmate",
   coinmarketcap_api: "coinmarketcap",
   cmc_api: "coinmarketcap",
   cmc: "coinmarketcap",
+  supabase_api: "supabase",
+  vercel_api: "vercel",
 };
 
 interface ParsedAgentToolConfig {
@@ -149,15 +174,14 @@ type ComposioToolQuery =
   | { kind: "toolkits"; toolkits: string[] };
 
 async function fetchToolsByQuery(
+  composioClient: ComposioClient,
   userId: string,
   query: ComposioToolQuery
 ): Promise<OpenAITool[]> {
-  if (!composio) return [];
-
   try {
     const tools = query.kind === "tools"
-      ? await composio.tools.get(userId, { tools: query.tools })
-      : await composio.tools.get(userId, {
+      ? await composioClient.tools.get(userId, { tools: query.tools })
+      : await composioClient.tools.get(userId, {
           toolkits: query.toolkits,
           limit: MAX_TOOL_DEFINITIONS,
         });
@@ -170,11 +194,13 @@ async function fetchToolsByQuery(
   }
 }
 
-async function fetchToolBySlug(userId: string, slug: string): Promise<OpenAITool | null> {
-  if (!composio) return null;
-
+async function fetchToolBySlug(
+  composioClient: ComposioClient,
+  userId: string,
+  slug: string
+): Promise<OpenAITool | null> {
   try {
-    const tool = await composio.tools.get(userId, slug);
+    const tool = await composioClient.tools.get(userId, slug);
     const wrappedTools = toOpenAITools(tool);
     return wrappedTools[0] ?? null;
   } catch {
@@ -186,7 +212,8 @@ export async function getAgentToolsFromConfig(
   rawConfig: string | null | undefined,
   userId: string
 ): Promise<OpenAITool[]> {
-  if (!composio) return [];
+  const composioClient = await getComposioClient();
+  if (!composioClient) return [];
   const resolvedUserId = resolveComposioUserId(userId);
 
   const parsed = parseAgentToolConfig(rawConfig);
@@ -202,7 +229,7 @@ export async function getAgentToolsFromConfig(
 
   if (parsed.explicitTools.length > 0) {
     collectedTools.push(
-      ...(await fetchToolsByQuery(resolvedUserId, {
+      ...(await fetchToolsByQuery(composioClient, resolvedUserId, {
         kind: "tools",
         tools: parsed.explicitTools,
       }))
@@ -211,7 +238,7 @@ export async function getAgentToolsFromConfig(
 
   if (parsed.toolkitHints.length > 0) {
     collectedTools.push(
-      ...(await fetchToolsByQuery(resolvedUserId, {
+      ...(await fetchToolsByQuery(composioClient, resolvedUserId, {
         kind: "toolkits",
         toolkits: parsed.toolkitHints,
       }))
@@ -220,7 +247,11 @@ export async function getAgentToolsFromConfig(
 
   if (collectedTools.length === 0) {
     for (const fallbackTool of parsed.fallbackTools) {
-      const tool = await fetchToolBySlug(resolvedUserId, fallbackTool);
+      const tool = await fetchToolBySlug(
+        composioClient,
+        resolvedUserId,
+        fallbackTool
+      );
       if (tool) collectedTools.push(tool);
     }
   }
@@ -232,13 +263,18 @@ export async function executeOpenAIToolCall(
   userId: string,
   toolCall: OpenAIToolCall
 ): Promise<string> {
-  if (!composio) {
+  const composioClient = await getComposioClient();
+  if (!composioClient) {
     return JSON.stringify({ error: "COMPOSIO_API_KEY is not configured." });
   }
   const resolvedUserId = resolveComposioUserId(userId);
+  const normalizedToolCall = normalizeToolCallArguments(toolCall);
 
   try {
-    return await composio.provider.executeToolCall(resolvedUserId, toolCall);
+    return await composioClient.provider.executeToolCall(
+      resolvedUserId,
+      normalizedToolCall
+    );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Tool execution failed";
@@ -246,5 +282,46 @@ export async function executeOpenAIToolCall(
       error: message,
       tool: toolCall.function.name,
     });
+  }
+}
+
+function normalizeToolCallArguments(toolCall: OpenAIToolCall): OpenAIToolCall {
+  const normalizedArguments = normalizeToolCallArgumentsJson(
+    toolCall.function.arguments
+  );
+
+  if (normalizedArguments === toolCall.function.arguments) return toolCall;
+
+  return {
+    ...toolCall,
+    function: {
+      ...toolCall.function,
+      arguments: normalizedArguments,
+    },
+  };
+}
+
+function normalizeToolCallArgumentsJson(rawArgs: unknown): string {
+  if (typeof rawArgs !== "string") return "{}";
+
+  const trimmed = rawArgs.trim();
+  if (!trimmed) return "{}";
+
+  const lowered = trimmed.toLowerCase();
+  if (
+    lowered === "undefined" ||
+    lowered === "null" ||
+    lowered === "\"undefined\"" ||
+    lowered === "\"null\""
+  ) {
+    return "{}";
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (!isRecord(parsed) || Array.isArray(parsed)) return "{}";
+    return JSON.stringify(parsed);
+  } catch {
+    return "{}";
   }
 }

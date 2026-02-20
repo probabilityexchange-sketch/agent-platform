@@ -132,6 +132,39 @@ If the rollout causes payment/ledger instability:
 3. Restore pre-deploy DB snapshot if schema/data mismatch is present.
 4. Re-run smoke tests and reconciliation before closing incident.
 
+---
+
+## Vercel + Supabase Deployment (Modern App)
+
+For the modern chat-centric platform, we recommend Vercel for the frontend/API and Supabase for the PostgreSQL database.
+
+### 1. Supabase Setup
+- Create a new project on [Supabase](https://supabase.com).
+- Go to `Project Settings -> Database`.
+- Copy the **Connection String** (Transaction mode, port 6543) for the `DATABASE_URL`.
+- Copy the **Direct Connection String** (port 5432) for `DIRECT_URL`.
+
+### 2. Vercel Environment Variables
+Add these to your Vercel project:
+- `DATABASE_URL`: Your Supabase transaction pooler URL.
+- `DIRECT_URL`: Your Supabase direct connection URL.
+- `NEXT_PUBLIC_PRIVY_APP_ID`: From Privy Dashboard.
+- `PRIVY_APP_SECRET`: From Privy Dashboard.
+- `OPENROUTER_API_KEY`: For AI responses.
+- `COMPOSIO_API_KEY`: For tool integrations.
+- `JWT_SECRET`: A long random string (at least 32 chars).
+- `NEXT_PUBLIC_APP_URL`: Your Vercel deployment URL.
+
+### 3. Deploy
+- Connect your GitHub repo to Vercel.
+- The `vercel.json` included in the root handles the build and prisma generation.
+
+### 4. Database Migration
+Run this locally (targeting the remote DB) or via a CI pipeline:
+```bash
+DATABASE_URL="your_direct_supabase_url" npx prisma db push
+```
+
 ## Change Ticket Template
 
 Use this for production rollout approvals and audit trail:

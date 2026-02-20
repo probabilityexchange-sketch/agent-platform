@@ -4,6 +4,7 @@ import { signToken } from "@/lib/auth/jwt";
 import { prisma } from "@/lib/db/prisma";
 import { resolvePrivyWallet } from "@/lib/auth/privy";
 import { ensureUserHasUsername } from "@/lib/utils/username";
+import { isValidSolanaAddress } from "@/lib/solana/validation";
 
 const schema = z.object({
   wallet: z.string().optional(),
@@ -50,6 +51,8 @@ export async function POST(request: NextRequest) {
     request.nextUrl.origin ||
     process.env.NEXT_PUBLIC_APP_URL ||
     undefined;
+  const demoAuthBypassEnabled = process.env.DEMO_AUTH_BYPASS === "true";
+  const demoAuthBypassWallet = process.env.DEMO_AUTH_BYPASS_WALLET?.trim() || null;
 
   let wallet: string;
   try {
@@ -88,13 +91,54 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      return NextResponse.json(
-        {
-          error: "Unable to verify authenticated wallet",
-          code: "wallet_verification_failed",
-        },
-        { status: 401 }
-      );
+      if (!demoAuthBypassEnabled) {
+        if (
+          process.env.NODE_ENV === "development" &&
+          (primaryReason.includes("No linked Solana wallet") ||
+            fallbackReason.includes("No linked Solana wallet"))
+        ) {
+          console.warn(
+            "Dev Mode: User authenticated but no Solana wallet found. Using mock address for testing."
+          );
+          wallet = demoAuthBypassWallet || "DevWallethE1pM8uW26x7pSxD9B5pXwYpZ6x7pSxD9B5p";
+        } else {
+          return NextResponse.json(
+            {
+              error:
+                "Unable to verify authenticated wallet. If using Email login, please ensure your embedded wallet is initialized.",
+              code: "wallet_verification_failed",
+            },
+            { status: 401 }
+          );
+        }
+      } else {
+        const fallbackWallet = parsed.data.wallet?.trim() || demoAuthBypassWallet;
+        if (!fallbackWallet || !isValidSolanaAddress(fallbackWallet)) {
+          return NextResponse.json(
+            {
+              error:
+                "Demo auth bypass is enabled, but no valid wallet was provided for session creation.",
+              code: "demo_bypass_missing_wallet",
+            },
+            { status: 401 }
+          );
+        }
+
+        if (demoAuthBypassWallet && fallbackWallet !== demoAuthBypassWallet) {
+          return NextResponse.json(
+            {
+              error: "Wallet is not allowed for demo auth bypass.",
+              code: "demo_bypass_wallet_not_allowed",
+            },
+            { status: 401 }
+          );
+        }
+
+        console.warn("DEMO_AUTH_BYPASS used to issue auth session", {
+          wallet: fallbackWallet,
+        });
+        wallet = fallbackWallet;
+      }
     }
   }
 
@@ -119,7 +163,7 @@ export async function POST(request: NextRequest) {
   response.cookies.set("auth-token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
     maxAge: 24 * 60 * 60,
     path: "/",
   });

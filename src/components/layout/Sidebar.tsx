@@ -1,15 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCredits } from "@/hooks/useCredits";
+import { useTokenPrice } from "@/hooks/useTokenPrice";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: "grid" },
   { href: "/agents", label: "Agents", icon: "cpu" },
   { href: "/chat", label: "Chat", icon: "message" },
   { href: "/integrations", label: "Integrations", icon: "link" },
-  { href: "/credits", label: "Credits", icon: "coins" },
+  { href: "/transparency", label: "Transparency", icon: "shield" },
+  { href: "/credits", label: "Subscribe", icon: "coins" },
 ];
 
 const icons: Record<string, string> = {
@@ -18,14 +21,17 @@ const icons: Record<string, string> = {
   message: "M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z",
   link: "M13.828 10.172a4 4 0 000 5.656l.586.586a4 4 0 005.656-5.656l-1.172-1.172a4 4 0 00-5.656 0M10.172 13.828a4 4 0 000-5.656l-.586-.586a4 4 0 10-5.656 5.656l1.172 1.172a4 4 0 005.656 0",
   coins: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+  shield: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
 };
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { balance } = useCredits();
+  const { isSubscribed } = useCredits();
+  const { priceUsd } = useTokenPrice();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  return (
-    <aside className="w-64 border-r border-border bg-card min-h-[calc(100vh-3.5rem)] p-4 flex flex-col">
+  const sidebar = (
+    <>
       <nav className="space-y-1 flex-1">
         {navItems.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -33,9 +39,10 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setMobileOpen(false)}
               className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${active
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
             >
               <svg
@@ -52,16 +59,74 @@ export function Sidebar() {
                 />
               </svg>
               {item.label}
+              {item.icon === "coins" && isSubscribed && (
+                <span className="ml-auto text-[10px] bg-success/10 text-success px-1.5 py-0.5 rounded-full">PRO</span>
+              )}
             </Link>
           );
         })}
       </nav>
-      <div className="border-t border-border pt-4">
+      <div className="border-t border-border pt-4 space-y-3">
+        {/* Subscription Status */}
         <div className="px-3 py-2 bg-muted/50 rounded-lg">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Account Balance</p>
-          <p className="text-lg font-bold text-primary">{balance.toLocaleString()} CREDITS</p>
+          {isSubscribed ? (
+            <>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Status</p>
+              <p className="text-sm font-bold text-success">Randi Pro Active</p>
+            </>
+          ) : (
+            <>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Status</p>
+              <p className="text-sm font-semibold text-muted-foreground">Free Tier</p>
+              <Link href="/credits" className="text-xs text-primary hover:underline mt-1 inline-block">
+                Upgrade →
+              </Link>
+            </>
+          )}
         </div>
+        {/* RANDI Price */}
+        {priceUsd !== null && (
+          <div className="px-3 py-2 bg-muted/50 rounded-lg">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">RANDI Price</p>
+            <p className="text-sm font-mono font-bold">${priceUsd.toFixed(8)}</p>
+          </div>
+        )}
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile hamburger */}
+      <button
+        onClick={() => setMobileOpen(!mobileOpen)}
+        className="lg:hidden fixed bottom-4 right-4 z-50 w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-primary/30 text-white"
+        aria-label="Toggle menu"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+            d={mobileOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+        </svg>
+      </button>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/60 z-40"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile sidebar */}
+      <aside className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border p-4 flex flex-col transform transition-transform duration-300 ${mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}>
+        {sidebar}
+      </aside>
+
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex w-64 border-r border-border bg-card min-h-[calc(100vh-3.5rem)] p-4 flex-col">
+        {sidebar}
+      </aside>
+    </>
   );
 }

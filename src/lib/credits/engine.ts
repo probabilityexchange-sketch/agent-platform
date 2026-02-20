@@ -1,39 +1,91 @@
 import { prisma } from "@/lib/db/prisma";
 
-export interface CreditPackage {
+export const SUBSCRIPTION_USD = 20;
+export const SUBSCRIPTION_CREDITS = 999_999; // unlimited while active
+
+export interface SubscriptionPlan {
   id: string;
   name: string;
-  credits: number;
   usdAmount: string;
+  period: string;
+  features: string[];
 }
 
-export function getCreditPackages(): CreditPackage[] {
-  return [
-    {
-      id: "small",
-      name: "Starter",
-      credits: Number(process.env.CREDITS_PACKAGE_SMALL_AMOUNT) || 100,
-      usdAmount: process.env.CREDITS_PACKAGE_SMALL_USD || "5",
-    },
-    {
-      id: "medium",
-      name: "Pro",
-      credits: Number(process.env.CREDITS_PACKAGE_MEDIUM_AMOUNT) || 500,
-      usdAmount: process.env.CREDITS_PACKAGE_MEDIUM_USD || "20",
-    },
-    {
-      id: "large",
-      name: "Enterprise",
-      credits: Number(process.env.CREDITS_PACKAGE_LARGE_AMOUNT) || 1200,
-      usdAmount: process.env.CREDITS_PACKAGE_LARGE_USD || "40",
-    },
-  ];
+export function getSubscriptionPlan(): SubscriptionPlan {
+  return {
+    id: "monthly",
+    name: "Randi Pro",
+    usdAmount: String(SUBSCRIPTION_USD),
+    period: "month",
+    features: [
+      "Unlimited AI agent chats",
+      "All tool integrations",
+      "Priority access to new agents",
+      "1000+ Composio tool integrations",
+    ],
+  };
 }
 
-export function getPackageById(id: string): CreditPackage | undefined {
-  return getCreditPackages().find((p) => p.id === id);
+export async function getUserSubscription(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      subscriptionStatus: true,
+      subscriptionExpiresAt: true,
+      creditBalance: true,
+    },
+  });
+
+  if (!user) return null;
+
+  const isActive =
+    user.subscriptionStatus === "active" &&
+    user.subscriptionExpiresAt &&
+    new Date(user.subscriptionExpiresAt) > new Date();
+
+  return {
+    status: isActive ? "active" as const : user.subscriptionStatus as "none" | "expired",
+    expiresAt: user.subscriptionExpiresAt,
+    creditBalance: user.creditBalance,
+  };
 }
 
+export async function activateSubscription(
+  userId: string,
+  txSignature: string,
+  tokenAmount: bigint,
+  memo: string
+): Promise<void> {
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
+
+  await prisma.$transaction(async (tx) => {
+    // Update/claim the pending transaction
+    const claim = await tx.creditTransaction.updateMany({
+      where: { memo, userId, status: "PENDING" },
+      data: {
+        status: "CONFIRMED",
+        txSignature,
+        tokenAmount,
+      },
+    });
+
+    if (claim.count === 0) {
+      return;
+    }
+
+    // Activate subscription
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        subscriptionStatus: "active",
+        subscriptionExpiresAt: expiresAt,
+      },
+    });
+  });
+}
+
+/** Legacy: still used if credit-based containers exist */
 export async function deductCredits(
   userId: string,
   amount: number,
@@ -43,10 +95,33 @@ export async function deductCredits(
   return await prisma.$transaction(async (tx) => {
     const user = await tx.user.findUnique({
       where: { id: userId },
-      select: { creditBalance: true },
+      select: { creditBalance: true, subscriptionStatus: true, subscriptionExpiresAt: true },
     });
 
-    if (!user || user.creditBalance < amount) {
+    if (!user) return false;
+
+    // If user has active subscription, always allow
+    const isSubscribed =
+      user.subscriptionStatus === "active" &&
+      user.subscriptionExpiresAt &&
+      new Date(user.subscriptionExpiresAt) > new Date();
+
+    if (isSubscribed) {
+      await tx.creditTransaction.create({
+        data: {
+          userId,
+          type: "USAGE",
+          status: "CONFIRMED",
+          amount: 0,
+          containerId,
+          description: `[Subscription] ${description}`,
+        },
+      });
+      return true;
+    }
+
+    // Fallback to credit-based deduction
+    if (user.creditBalance < amount) {
       return false;
     }
 
@@ -78,18 +153,22 @@ export async function addCredits(
   memo: string
 ): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    await tx.user.update({
-      where: { id: userId },
-      data: { creditBalance: { increment: amount } },
-    });
-
-    await tx.creditTransaction.updateMany({
+    const claim = await tx.creditTransaction.updateMany({
       where: { memo, userId, status: "PENDING" },
       data: {
         status: "CONFIRMED",
         txSignature,
         tokenAmount,
       },
+    });
+
+    if (claim.count === 0) {
+      return;
+    }
+
+    await tx.user.update({
+      where: { id: userId },
+      data: { creditBalance: { increment: amount } },
     });
   });
 }

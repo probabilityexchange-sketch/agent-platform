@@ -3,7 +3,7 @@ import { z } from "zod";
 import { nanoid } from "nanoid";
 import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
 import { prisma } from "@/lib/db/prisma";
-import { provisionContainer } from "@/lib/docker/provisioner";
+import { provisionContainer, ProvisioningError } from "@/lib/docker/provisioner";
 import { cleanupExpiredContainers } from "@/lib/docker/cleanup";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
 import { ensureUserHasUsername } from "@/lib/utils/username";
@@ -12,6 +12,47 @@ const provisionSchema = z.object({
   agentId: z.string().min(1),
   hours: z.number().int().min(1).max(72),
 });
+
+function mapProvisioningError(error: ProvisioningError): {
+  status: number;
+  payload: { error: string; detail?: string };
+} {
+  switch (error.code) {
+    case "AGENT_NOT_AVAILABLE":
+      return {
+        status: 404,
+        payload: { error: "Agent not available", detail: error.message },
+      };
+    case "DOCKER_NETWORK_NOT_FOUND":
+      return {
+        status: 500,
+        payload: { error: "Docker network is not available", detail: error.message },
+      };
+    case "DOCKER_IMAGE_PULL_FAILED":
+      return {
+        status: 500,
+        payload: {
+          error: "Failed to pull agent image from registry",
+          detail: error.message,
+        },
+      };
+    case "DOCKER_CONTAINER_CREATE_FAILED":
+      return {
+        status: 500,
+        payload: { error: "Failed to create agent container", detail: error.message },
+      };
+    case "DOCKER_CONTAINER_START_FAILED":
+      return {
+        status: 500,
+        payload: { error: "Agent container failed to start", detail: error.message },
+      };
+    default:
+      return {
+        status: 500,
+        payload: { error: "Failed to provision agent container", detail: error.message },
+      };
+  }
+}
 
 export async function GET() {
   try {
@@ -151,7 +192,15 @@ export async function POST(request: NextRequest) {
       );
     } catch (dockerError) {
       console.error("Docker provisioning failed:", dockerError);
-      throw new Error("DOCKER_PROVISION_FAILED");
+      if (dockerError instanceof ProvisioningError) {
+        throw dockerError;
+      }
+      throw new ProvisioningError(
+        "DOCKER_PROVISION_FAILED",
+        dockerError instanceof Error
+          ? dockerError.message
+          : "Unknown provisioning failure"
+      );
     }
 
     // 3. Update container record with final status and Docker metadata
@@ -208,6 +257,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (error instanceof Error) {
+      if (error instanceof ProvisioningError) {
+        const mapped = mapProvisioningError(error);
+        return NextResponse.json(mapped.payload, { status: mapped.status });
+      }
+
       const message = error.message;
       if (message === "AGENT_NOT_FOUND") return NextResponse.json({ error: "Agent not found" }, { status: 404 });
       if (message === "INSUFFICIENT_CREDITS") return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });

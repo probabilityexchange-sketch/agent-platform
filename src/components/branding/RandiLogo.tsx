@@ -39,7 +39,8 @@ export function RandiLogo({
           alt="Randi"
           fill
           className="object-contain"
-          priority={size === "lg" || size === "xl"}
+          priority
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 164px"
         />
       </div>
       {showText && (

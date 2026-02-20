@@ -8,7 +8,7 @@ export async function GET() {
 
     const user = await prisma.user.findUnique({
       where: { id: auth.userId },
-      select: { creditBalance: true },
+      select: { creditBalance: true, subscriptionStatus: true, subscriptionExpiresAt: true },
     });
 
     const transactions = (await prisma.creditTransaction.findMany({
@@ -28,6 +28,8 @@ export async function GET() {
 
     return NextResponse.json({
       balance: user?.creditBalance || 0,
+      subscriptionStatus: user?.subscriptionStatus || "none",
+      subscriptionExpiresAt: user?.subscriptionExpiresAt?.toISOString() || null,
       transactions,
     });
   } catch (error) {

@@ -2,11 +2,13 @@ const USD_SCALE = 6;
 const PRICE_SCALE = 12;
 const DEFAULT_CACHE_MS = 20_000;
 const DEFAULT_SOL_BURN_WALLET = "1nc1nerator11111111111111111111111111111111";
+const DEFAULT_MIN_LIQUIDITY_USD = 5_000;
 
 type PriceQuote = {
   mint: string;
   priceUsd: string;
   source: string;
+  pairAddress?: string;
   fetchedAtMs: number;
 };
 
@@ -49,7 +51,7 @@ function formatAmount(amountBaseUnits: bigint, decimals: number, maxFraction = 6
 }
 
 function parseBurnBps(): number {
-  const raw = process.env.PAYMENT_BURN_BPS || "0";
+  const raw = process.env.PAYMENT_BURN_BPS || "1000";
   const parsed = Number(raw);
   if (!Number.isFinite(parsed)) return 0;
   if (parsed < 0) return 0;
@@ -63,7 +65,27 @@ function getPriceCacheMs(): number {
   return raw;
 }
 
-async function fetchDexScreenerPriceUsd(mint: string): Promise<string> {
+function getMinLiquidityUsd(): number {
+  const raw = Number(process.env.TOKEN_PRICE_MIN_LIQUIDITY_USD || DEFAULT_MIN_LIQUIDITY_USD);
+  if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_MIN_LIQUIDITY_USD;
+  return raw;
+}
+
+function getAllowedPairAddresses(): Set<string> {
+  const raw = process.env.TOKEN_PRICE_ALLOWED_PAIR_ADDRESSES?.trim();
+  if (!raw) return new Set<string>();
+
+  const addresses = raw
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .filter((value) => value.length > 0);
+
+  return new Set(addresses);
+}
+
+async function fetchDexScreenerPriceUsd(
+  mint: string
+): Promise<{ priceUsd: string; pairAddress?: string }> {
   const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${mint}`, {
     method: "GET",
     cache: "no-store",
@@ -76,31 +98,52 @@ async function fetchDexScreenerPriceUsd(mint: string): Promise<string> {
   const data = (await response.json()) as {
     pairs?: Array<{
       chainId?: string;
+      pairAddress?: string;
       priceUsd?: string;
       liquidity?: { usd?: number | string };
     }>;
   };
+
+  const minLiquidityUsd = getMinLiquidityUsd();
+  const allowedPairs = getAllowedPairAddresses();
 
   const solanaPairs = (data.pairs || [])
     .filter((pair) => pair.chainId === "solana")
     .map((pair) => {
       const liquidity = Number(pair.liquidity?.usd || 0);
       return {
+        pairAddress: pair.pairAddress || "",
         priceUsd: pair.priceUsd || "",
         liquidity: Number.isFinite(liquidity) ? liquidity : 0,
       };
     })
-    .filter((pair) => /^\d+(\.\d+)?$/.test(pair.priceUsd) && Number(pair.priceUsd) > 0);
+    .filter((pair) => /^\d+(\.\d+)?$/.test(pair.priceUsd) && Number(pair.priceUsd) > 0)
+    .filter((pair) => pair.liquidity >= minLiquidityUsd)
+    .filter((pair) =>
+      allowedPairs.size === 0 || allowedPairs.has(pair.pairAddress.toLowerCase())
+    );
 
   if (solanaPairs.length === 0) {
-    throw new Error("No valid Solana price pairs found on DexScreener");
+    if (allowedPairs.size > 0) {
+      throw new Error("No allowlisted Solana price pairs found on DexScreener");
+    }
+    throw new Error(
+      `No valid Solana price pairs found on DexScreener above min liquidity ${minLiquidityUsd} USD`
+    );
   }
 
   solanaPairs.sort((a, b) => b.liquidity - a.liquidity);
-  return solanaPairs[0].priceUsd;
+  return {
+    priceUsd: solanaPairs[0].priceUsd,
+    pairAddress: solanaPairs[0].pairAddress || undefined,
+  };
 }
 
-export async function getTokenUsdPrice(mint: string): Promise<{ priceUsd: string; source: string }> {
+export async function getTokenUsdPrice(mint: string): Promise<{
+  priceUsd: string;
+  source: string;
+  pairAddress?: string;
+}> {
   const override = process.env.TOKEN_USD_PRICE_OVERRIDE?.trim();
   if (override && /^\d+(\.\d+)?$/.test(override) && Number(override) > 0) {
     return { priceUsd: override, source: "env_override" };
@@ -110,18 +153,30 @@ export async function getTokenUsdPrice(mint: string): Promise<{ priceUsd: string
   const cacheMs = getPriceCacheMs();
   const cached = globalPriceCache.tokenPriceQuote;
   if (cached && cached.mint === mint && now - cached.fetchedAtMs < cacheMs) {
-    return { priceUsd: cached.priceUsd, source: cached.source };
+    return {
+      priceUsd: cached.priceUsd,
+      source: cached.source,
+      pairAddress: cached.pairAddress,
+    };
   }
 
-  const priceUsd = await fetchDexScreenerPriceUsd(mint);
+  const fetched = await fetchDexScreenerPriceUsd(mint);
+  const source = fetched.pairAddress
+    ? `dexscreener:${fetched.pairAddress}`
+    : "dexscreener";
   globalPriceCache.tokenPriceQuote = {
     mint,
-    priceUsd,
-    source: "dexscreener",
+    priceUsd: fetched.priceUsd,
+    source,
+    pairAddress: fetched.pairAddress,
     fetchedAtMs: now,
   };
 
-  return { priceUsd, source: "dexscreener" };
+  return {
+    priceUsd: fetched.priceUsd,
+    source,
+    pairAddress: fetched.pairAddress,
+  };
 }
 
 export function splitTokenAmountsByBurn(

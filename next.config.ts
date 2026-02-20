@@ -3,6 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   serverExternalPackages: ["dockerode"],
+  experimental: {
+    cpus: 1,
+    workerThreads: false,
+  },
   turbopack: {},
   webpack: (config) => {
     config.externals = config.externals || {};

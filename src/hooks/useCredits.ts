@@ -3,8 +3,27 @@
 import { useState, useEffect, useCallback } from "react";
 import type { CreditTransaction } from "@/types/credits";
 
+const VERIFY_RETRYABLE_STATUS = new Set([503]);
+const VERIFY_MAX_ATTEMPTS = 6;
+const VERIFY_RETRY_DELAY_MS = 2000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+export interface SubscriptionInfo {
+  status: "none" | "active" | "expired";
+  expiresAt: string | null;
+}
+
 export function useCredits() {
   const [balance, setBalance] = useState(0);
+  const [subscription, setSubscription] = useState<SubscriptionInfo>({
+    status: "none",
+    expiresAt: null,
+  });
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +40,12 @@ export function useCredits() {
       const data = await res.json();
       setBalance(data.balance);
       setTransactions(data.transactions);
+      if (data.subscriptionStatus) {
+        setSubscription({
+          status: data.subscriptionStatus,
+          expiresAt: data.subscriptionExpiresAt || null,
+        });
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "An unexpected error occurred");
     } finally {
@@ -32,11 +57,11 @@ export function useCredits() {
     fetchBalance();
   }, [fetchBalance]);
 
-  const initiatePurchase = async (packageId: string) => {
+  const initiateSubscription = async () => {
     const res = await fetch("/api/credits/purchase", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ packageId }),
+      body: JSON.stringify({ planId: "monthly" }),
     });
     if (!res.ok) {
       const err = await res.json();
@@ -45,28 +70,59 @@ export function useCredits() {
     return res.json();
   };
 
-  const verifyPurchase = async (txSignature: string, memo: string) => {
-    const res = await fetch("/api/credits/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ txSignature, memo }),
-    });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error);
+  const verifyPurchase = async (
+    txSignature: string,
+    memo: string,
+    transactionId: string
+  ) => {
+    let lastError = "Verification failed";
+
+    for (let attempt = 1; attempt <= VERIFY_MAX_ATTEMPTS; attempt += 1) {
+      const res = await fetch("/api/credits/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ txSignature, memo, transactionId }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setBalance(data.newBalance);
+        if (data.subscriptionStatus) {
+          setSubscription({
+            status: data.subscriptionStatus,
+            expiresAt: data.subscriptionExpiresAt || null,
+          });
+        }
+        await fetchBalance();
+        return data;
+      }
+
+      const err = await res.json().catch(() => ({ error: "Verification failed" }));
+      lastError = err.error || "Verification failed";
+
+      if (!VERIFY_RETRYABLE_STATUS.has(res.status) || attempt === VERIFY_MAX_ATTEMPTS) {
+        throw new Error(lastError);
+      }
+
+      await sleep(VERIFY_RETRY_DELAY_MS);
     }
-    const data = await res.json();
-    setBalance(data.newBalance);
-    await fetchBalance(); // refresh transactions
-    return data;
+
+    throw new Error(lastError);
   };
+
+  const isSubscribed =
+    subscription.status === "active" &&
+    subscription.expiresAt !== null &&
+    new Date(subscription.expiresAt) > new Date();
 
   return {
     balance,
+    subscription,
+    isSubscribed,
     transactions,
     loading,
     error,
-    initiatePurchase,
+    initiateSubscription,
     verifyPurchase,
     refresh: fetchBalance,
   };

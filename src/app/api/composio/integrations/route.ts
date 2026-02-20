@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
-import { composio, resolveComposioUserId } from "@/lib/composio/client";
+import {
+  getComposioClient,
+  resolveComposioUserId,
+} from "@/lib/composio/client";
 import {
   SUPPORTED_COMPOSIO_TOOLKITS,
   getComposioAuthConfigOverride,
@@ -42,6 +45,7 @@ function pickPreferredAccount(accounts: ConnectedAccountSummary[]): ConnectedAcc
 export async function GET() {
   try {
     const auth = await requireAuth();
+    const composio = await getComposioClient();
 
     if (!composio) {
       return NextResponse.json(

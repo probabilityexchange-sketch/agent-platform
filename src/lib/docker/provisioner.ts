@@ -14,6 +14,127 @@ export interface ProvisionResult {
   password: string | null;
 }
 
+interface DockerErrorLike {
+  statusCode?: number;
+  reason?: string;
+  message?: string;
+  json?: { message?: string };
+}
+
+export class ProvisioningError extends Error {
+  code: string;
+
+  constructor(code: string, message: string) {
+    super(message);
+    this.name = "ProvisioningError";
+    this.code = code;
+  }
+}
+
+function extractDockerErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const dockerError = error as DockerErrorLike;
+    if (typeof dockerError.reason === "string" && dockerError.reason.length > 0) {
+      return dockerError.reason;
+    }
+    if (typeof dockerError.json?.message === "string" && dockerError.json.message.length > 0) {
+      return dockerError.json.message;
+    }
+    if (typeof dockerError.message === "string" && dockerError.message.length > 0) {
+      return dockerError.message;
+    }
+  }
+
+  return "Unknown Docker error";
+}
+
+function isDockerNotFound(error: unknown): boolean {
+  if (typeof error === "object" && error !== null) {
+    const dockerError = error as DockerErrorLike;
+    return dockerError.statusCode === 404;
+  }
+  return false;
+}
+
+async function ensureNetworkExists(networkName: string): Promise<void> {
+  try {
+    await docker.getNetwork(networkName).inspect();
+  } catch (error) {
+    if (isDockerNotFound(error)) {
+      throw new ProvisioningError(
+        "DOCKER_NETWORK_NOT_FOUND",
+        `Docker network '${networkName}' does not exist`
+      );
+    }
+
+    throw new ProvisioningError(
+      "DOCKER_NETWORK_CHECK_FAILED",
+      `Unable to inspect Docker network '${networkName}': ${extractDockerErrorMessage(error)}`
+    );
+  }
+}
+
+async function pullImage(image: string): Promise<void> {
+  let stream: NodeJS.ReadableStream;
+  try {
+    stream = await docker.pull(image);
+  } catch (error) {
+    throw new ProvisioningError(
+      "DOCKER_IMAGE_PULL_FAILED",
+      `Unable to pull image '${image}': ${extractDockerErrorMessage(error)}`
+    );
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const dockerWithModem = docker as unknown as {
+      modem?: {
+        followProgress?: (
+          pullStream: NodeJS.ReadableStream,
+          onFinished: (error: Error | null) => void
+        ) => void;
+      };
+    };
+
+    if (!dockerWithModem.modem?.followProgress) {
+      reject(new Error("Docker client modem is unavailable for pull progress"));
+      return;
+    }
+
+    dockerWithModem.modem.followProgress(stream, (error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  }).catch((error: unknown) => {
+    throw new ProvisioningError(
+      "DOCKER_IMAGE_PULL_FAILED",
+      `Image pull did not complete for '${image}': ${extractDockerErrorMessage(error)}`
+    );
+  });
+}
+
+async function ensureImageAvailable(image: string): Promise<void> {
+  try {
+    await docker.getImage(image).inspect();
+    return;
+  } catch (error) {
+    if (!isDockerNotFound(error)) {
+      throw new ProvisioningError(
+        "DOCKER_IMAGE_CHECK_FAILED",
+        `Unable to inspect image '${image}': ${extractDockerErrorMessage(error)}`
+      );
+    }
+  }
+
+  await pullImage(image);
+}
+
 function buildStorageKey(userId: string, agentSlug: string): string {
   const hash = createHash("sha256")
     .update(`${userId}:${agentSlug}`)
@@ -29,14 +150,20 @@ export async function provisionContainer(
 ): Promise<ProvisionResult> {
   const agentConfigFactory = getAgentConfig(agentSlug);
   if (!agentConfigFactory) {
-    throw new Error(`Unknown agent: ${agentSlug}`);
+    throw new ProvisioningError(
+      "AGENT_CONFIG_NOT_FOUND",
+      `No runtime agent configuration found for slug '${agentSlug}'`
+    );
   }
 
   const agent = await prisma.agentConfig.findUnique({
     where: { slug: agentSlug },
   });
   if (!agent || !agent.active) {
-    throw new Error(`Agent not available: ${agentSlug}`);
+    throw new ProvisioningError(
+      "AGENT_NOT_AVAILABLE",
+      `Agent '${agentSlug}' is not active`
+    );
   }
 
   const domain = process.env.NEXT_PUBLIC_DOMAIN || "localhost";
@@ -53,6 +180,9 @@ export async function provisionContainer(
   const fullSubdomain = `${subdomain}.${domain}`;
   const containerName = `ap-${subdomain}`;
 
+  await ensureNetworkExists(DOCKER_NETWORK);
+  await ensureImageAvailable(config.image);
+
   // Build volume binds
   const binds: string[] = Object.entries(config.volumes).map(
     ([volumeName, containerPath]) => `${volumeName}:${containerPath}`
@@ -63,36 +193,44 @@ export async function provisionContainer(
     ([key, value]) => `${key}=${value}`
   );
 
-  const container = await docker.createContainer({
-    Image: config.image,
-    name: containerName,
-    Env: envArray,
-    ExposedPorts: {
-      [`${config.internalPort}/tcp`]: {},
-    },
-    HostConfig: {
-      Binds: binds,
-      Memory: config.memoryLimit,
-      NanoCpus: config.cpuLimit,
-      PidsLimit: config.pidLimit,
-      CapDrop: ["ALL"],
-      CapAdd: ["NET_BIND_SERVICE"],
-      SecurityOpt: ["no-new-privileges"],
-      Privileged: false,
-      NetworkMode: DOCKER_NETWORK,
-    },
-    Labels: {
-      "traefik.enable": "true",
-      [`traefik.http.routers.${containerName}.rule`]: `Host(\`${fullSubdomain}\`)`,
-      [`traefik.http.routers.${containerName}.entrypoints`]: "websecure",
-      [`traefik.http.routers.${containerName}.tls.certresolver`]: "letsencrypt",
-      [`traefik.http.services.${containerName}.loadbalancer.server.port`]:
-        String(config.internalPort),
-      "agent-platform.managed": "true",
-      "agent-platform.user-id": userId,
-      "agent-platform.agent-slug": agentSlug,
-    },
-  });
+  let container;
+  try {
+    container = await docker.createContainer({
+      Image: config.image,
+      name: containerName,
+      Env: envArray,
+      ExposedPorts: {
+        [`${config.internalPort}/tcp`]: {},
+      },
+      HostConfig: {
+        Binds: binds,
+        Memory: config.memoryLimit,
+        NanoCpus: config.cpuLimit,
+        PidsLimit: config.pidLimit,
+        CapDrop: ["ALL"],
+        CapAdd: ["NET_BIND_SERVICE"],
+        SecurityOpt: ["no-new-privileges"],
+        Privileged: false,
+        NetworkMode: DOCKER_NETWORK,
+      },
+      Labels: {
+        "traefik.enable": "true",
+        [`traefik.http.routers.${containerName}.rule`]: `Host(\`${fullSubdomain}\`)`,
+        [`traefik.http.routers.${containerName}.entrypoints`]: "websecure",
+        [`traefik.http.routers.${containerName}.tls.certresolver`]: "letsencrypt",
+        [`traefik.http.services.${containerName}.loadbalancer.server.port`]:
+          String(config.internalPort),
+        "agent-platform.managed": "true",
+        "agent-platform.user-id": userId,
+        "agent-platform.agent-slug": agentSlug,
+      },
+    });
+  } catch (error) {
+    throw new ProvisioningError(
+      "DOCKER_CONTAINER_CREATE_FAILED",
+      `Unable to create container '${containerName}': ${extractDockerErrorMessage(error)}`
+    );
+  }
 
   try {
     await container.start();
@@ -106,6 +244,9 @@ export async function provisionContainer(
   } catch (error) {
     // Cleanup if start fails
     await container.remove({ force: true }).catch(() => { });
-    throw error;
+    throw new ProvisioningError(
+      "DOCKER_CONTAINER_START_FAILED",
+      `Container '${containerName}' failed to start: ${extractDockerErrorMessage(error)}`
+    );
   }
 }

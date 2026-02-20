@@ -19,6 +19,7 @@ export interface PurchaseInitResponse {
   grossTokenAmount?: string;
   memo: string;
   decimals: number;
+  intentExpiresAt?: string;
   quote?: {
     packageUsd: string;
     tokenUsdPrice: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { RandiLogo } from "@/components/branding/RandiLogo";
@@ -16,12 +16,24 @@ export default function LoginPage() {
     retrySessionSync,
   } = useAuth();
   const router = useRouter();
+  const [showRetry, setShowRetry] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated && sessionReady) {
       router.push("/dashboard");
     }
   }, [isAuthenticated, sessionReady, router]);
+
+  // Auto-show retry after 10s of "Finalizing"
+  useEffect(() => {
+    if (isAuthenticated && !sessionReady) {
+      const timer = window.setTimeout(() => setShowRetry(true), 10000);
+      return () => window.clearTimeout(timer);
+    }
+    setShowRetry(false);
+  }, [isAuthenticated, sessionReady]);
+
+  const isFinalizing = isAuthenticated && !sessionReady;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/50">
@@ -40,26 +52,47 @@ export default function LoginPage() {
         <div className="bg-card border border-border rounded-xl p-8 flex flex-col items-center gap-4">
           <button
             onClick={() => signIn()}
-            disabled={loading || (isAuthenticated && !sessionReady)}
-            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+            disabled={loading || isFinalizing}
+            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 px-6 rounded-lg transition-colors disabled:opacity-60"
           >
             {loading
               ? "Loading..."
-              : isAuthenticated && !sessionReady
+              : isFinalizing
                 ? "Finalizing sign in..."
                 : "Sign In"}
           </button>
-          {sessionError && isAuthenticated && !sessionReady ? (
+
+          {isFinalizing && !sessionError && (
+            <div className="w-full rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2 justify-center">
+                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"></span>
+              </div>
+              <p className="mt-2">Setting up your session...</p>
+              {showRetry && (
+                <button
+                  onClick={retrySessionSync}
+                  className="mt-2 inline-flex rounded-md bg-primary/20 px-3 py-1 text-primary hover:bg-primary/30 transition-colors"
+                >
+                  Taking too long? Retry
+                </button>
+              )}
+            </div>
+          )}
+
+          {sessionError && isFinalizing && (
             <div className="w-full rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-200">
               <p>{sessionError}</p>
               <button
                 onClick={retrySessionSync}
                 className="mt-2 inline-flex rounded-md bg-red-500/20 px-2 py-1 text-red-100 hover:bg-red-500/30"
               >
-                Retry Finalizing
+                Retry
               </button>
             </div>
-          ) : null}
+          )}
+
           <p className="text-xs text-muted-foreground">
             Sign in with Solana wallet or Email
           </p>
@@ -68,3 +101,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

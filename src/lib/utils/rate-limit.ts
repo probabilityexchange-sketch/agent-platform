@@ -33,6 +33,10 @@ function envInt(name: string, fallback: number): number {
 export const RATE_LIMITS = {
   auth: { maxRequests: 5, windowMs: 60 * 1000 },
   purchase: { maxRequests: 3, windowMs: 60 * 1000 },
+  purchaseVerify: {
+    maxRequests: envInt("RATE_LIMIT_PURCHASE_VERIFY_MAX_REQUESTS", 12),
+    windowMs: envInt("RATE_LIMIT_PURCHASE_VERIFY_WINDOW_MS", 60 * 1000),
+  },
   provision: {
     maxRequests: envInt("RATE_LIMIT_PROVISION_MAX_REQUESTS", 6),
     windowMs: envInt("RATE_LIMIT_PROVISION_WINDOW_MS", 60 * 1000),

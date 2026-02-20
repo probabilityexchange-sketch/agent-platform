@@ -5,7 +5,7 @@ function clearAuthCookie(response: NextResponse): NextResponse {
   response.cookies.set("auth-token", "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
     maxAge: 0,
     path: "/",
   });
@@ -19,8 +19,10 @@ export async function middleware(request: NextRequest) {
   const protectedPath =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/agents") ||
+    pathname.startsWith("/chat") ||
     pathname.startsWith("/containers") ||
-    pathname.startsWith("/credits");
+    pathname.startsWith("/credits") ||
+    pathname.startsWith("/integrations");
 
   if (protectedPath) {
     if (!token) {
@@ -49,8 +51,10 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/agents/:path*",
+    "/chat/:path*",
     "/containers/:path*",
     "/credits/:path*",
+    "/integrations/:path*",
     "/login",
   ],
 };

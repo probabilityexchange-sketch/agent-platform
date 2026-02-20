@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
-import { composio, resolveComposioUserId } from "@/lib/composio/client";
+import {
+  getComposioClient,
+  resolveComposioUserId,
+} from "@/lib/composio/client";
 import { isComposioToolkitSlug } from "@/lib/composio/integrations";
 
 const schema = z.object({
@@ -31,6 +34,7 @@ function statusRank(status: string): number {
 export async function POST(request: NextRequest) {
   try {
     const auth = await requireAuth();
+    const composio = await getComposioClient();
 
     if (!composio) {
       return NextResponse.json(

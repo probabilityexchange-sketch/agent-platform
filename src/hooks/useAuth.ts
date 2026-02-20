@@ -2,14 +2,23 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
-import { useConnectedStandardWallets } from "@privy-io/react-auth/solana";
 
 const DEFAULT_RETRY_DELAY_MS = 3000;
 const PRIVY_RATE_LIMIT_RETRY_MS = 15000;
+const FINALIZE_TIMEOUT_MS = 12000;
+const MAX_SYNC_ATTEMPTS = 3;
 
 let sharedSessionSynced = false;
 let sharedSyncPromise: Promise<void> | null = null;
 let sharedNextRetryAt = 0;
+let sharedSyncAttempts = 0;
+
+function resetSharedState() {
+  sharedSessionSynced = false;
+  sharedSyncPromise = null;
+  sharedNextRetryAt = 0;
+  sharedSyncAttempts = 0;
+}
 
 class SessionSyncError extends Error {
   code: string | null;
@@ -45,21 +54,31 @@ function normalizeSyncError(error: unknown): SessionSyncError {
 }
 
 export function useAuth() {
-  const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
-  const { wallets } = useConnectedStandardWallets();
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const privy = usePrivy();
+  const { ready, authenticated, user, login, logout, getAccessToken } = privy;
+
   const [syncRetryTick, setSyncRetryTick] = useState(0);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const retryTimerRef = useRef<number | null>(null);
+  const finalizeTimerRef = useRef<number | null>(null);
 
-  const primaryWallet = useMemo(() => wallets[0], [wallets]);
+  // Use linked accounts to find the primary Solana wallet instead of the problematic hook
+  const primaryWallet = useMemo(() => {
+    if (!user) return null;
+    if (user.wallet && (user.wallet as { chainType?: string }).chainType === "solana") {
+      return user.wallet as { address: string };
+    }
+    return user.linkedAccounts?.find(
+      (acc) => acc.type === "wallet" && (acc as { chainType?: string }).chainType === "solana"
+    ) as { address: string } | undefined;
+  }, [user]);
 
   const syncSession = useCallback(async () => {
-    const linkedSolana = user?.linkedAccounts?.find(
-      (account) => account.type === "wallet" && (account as { chainType?: string }).chainType === "solana"
-    ) as { address?: string } | undefined;
-
-    const walletAddress = linkedSolana?.address || primaryWallet?.address;
-
     const accessToken = await getAccessToken();
     if (!accessToken) {
       throw new Error("Missing Privy access token");
@@ -72,9 +91,9 @@ export function useAuth() {
         Authorization: `Bearer ${accessToken}`,
       },
       credentials: "include",
-      // Let the server resolve a linked Solana wallet from Privy identity.
-      // Sending a specific wallet can fail when adapter-selected and linked wallets differ.
-      body: JSON.stringify(walletAddress ? { wallet: walletAddress } : {}),
+      body: JSON.stringify({
+        wallet: primaryWallet?.address || user?.wallet?.address,
+      }),
     });
 
     if (!response.ok) {
@@ -94,16 +113,81 @@ export function useAuth() {
         retryAfterMs ?? defaultRetry
       );
     }
-  }, [user, primaryWallet, getAccessToken]);
+  }, [getAccessToken, primaryWallet?.address, user?.wallet?.address]);
 
   const hasServerSession = useCallback(async () => {
-    const response = await fetch("/api/auth/me", {
-      method: "GET",
-      credentials: "include",
-      cache: "no-store",
-    });
-    return response.ok;
+    try {
+      const response = await fetch("/api/auth/me", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
   }, []);
+
+  const ensureServerSession = useCallback(async () => {
+    // Check if we already have a valid cookie-based session
+    const existingSession = await hasServerSession();
+    if (existingSession) {
+      sharedSessionSynced = true;
+      sharedNextRetryAt = 0;
+      sharedSyncAttempts = 0;
+      return;
+    }
+
+    // Guard against infinite retries
+    sharedSyncAttempts += 1;
+    if (sharedSyncAttempts > MAX_SYNC_ATTEMPTS) {
+      throw new SessionSyncError(
+        "Unable to establish session after multiple attempts. Please sign out and sign in again.",
+        "max_attempts_exceeded",
+        null
+      );
+    }
+
+    await syncSession();
+
+    // Verify the cookie was set
+    const sessionAfterSync = await hasServerSession();
+    if (!sessionAfterSync) {
+      throw new SessionSyncError(
+        "Session could not be established. Please try signing in again.",
+        "session_not_established",
+        DEFAULT_RETRY_DELAY_MS
+      );
+    }
+
+    sharedSessionSynced = true;
+    sharedNextRetryAt = 0;
+    sharedSyncAttempts = 0;
+  }, [hasServerSession, syncSession]);
+
+  // Finalization timeout — auto-surface retry after FINALIZE_TIMEOUT_MS
+  useEffect(() => {
+    if (!ready || !authenticated || sharedSessionSynced) {
+      if (finalizeTimerRef.current) {
+        window.clearTimeout(finalizeTimerRef.current);
+        finalizeTimerRef.current = null;
+      }
+      return;
+    }
+
+    finalizeTimerRef.current = window.setTimeout(() => {
+      if (!sharedSessionSynced) {
+        setSessionError("Sign-in is taking longer than expected. Please retry.");
+      }
+    }, FINALIZE_TIMEOUT_MS);
+
+    return () => {
+      if (finalizeTimerRef.current) {
+        window.clearTimeout(finalizeTimerRef.current);
+        finalizeTimerRef.current = null;
+      }
+    };
+  }, [ready, authenticated, syncRetryTick]);
 
   useEffect(() => {
     if (!ready || !authenticated || sharedSessionSynced) {
@@ -130,18 +214,10 @@ export function useAuth() {
     }
 
     if (!sharedSyncPromise) {
-      sharedSyncPromise = (async () => {
-        const existingSession = await hasServerSession();
-        if (!existingSession) {
-          await syncSession();
-        }
-      })()
-        .then(() => {
-          sharedSessionSynced = true;
-          sharedNextRetryAt = 0;
-        })
+      sharedSyncPromise = ensureServerSession()
         .catch((error) => {
           const normalized = normalizeSyncError(error);
+          sharedSessionSynced = false;
           sharedNextRetryAt = Date.now() + (normalized.retryAfterMs ?? DEFAULT_RETRY_DELAY_MS);
           throw normalized;
         })
@@ -160,9 +236,13 @@ export function useAuth() {
         if (cancelled) return;
         const normalized = normalizeSyncError(error);
         setSessionError(normalized.message);
-        retryTimerRef.current = window.setTimeout(() => {
-          setSyncRetryTick((value) => value + 1);
-        }, Math.max(250, sharedNextRetryAt - Date.now()));
+
+        // Only schedule automatic retry if we haven't exceeded max attempts
+        if (sharedSyncAttempts < MAX_SYNC_ATTEMPTS) {
+          retryTimerRef.current = window.setTimeout(() => {
+            setSyncRetryTick((value) => value + 1);
+          }, Math.max(250, sharedNextRetryAt - Date.now()));
+        }
         console.error("Failed to sync session", normalized);
       });
 
@@ -173,47 +253,64 @@ export function useAuth() {
         retryTimerRef.current = null;
       }
     };
-  }, [ready, authenticated, syncSession, hasServerSession, syncRetryTick]);
+  }, [ready, authenticated, ensureServerSession, syncRetryTick]);
 
   useEffect(() => {
     if (!authenticated) {
-      sharedSessionSynced = false;
-      sharedSyncPromise = null;
-      sharedNextRetryAt = 0;
+      resetSharedState();
     }
   }, [authenticated]);
 
   const retrySessionSync = useCallback(() => {
     sharedNextRetryAt = 0;
+    sharedSyncAttempts = 0;
     setSessionError(null);
     setSyncRetryTick((value) => value + 1);
   }, []);
 
   const sessionReady = !authenticated || sharedSessionSynced;
 
+  const signIn = useCallback(async () => {
+    if (authenticated) {
+      // Only re-trigger sync if we don't already have a valid session
+      if (!sharedSessionSynced) {
+        sharedNextRetryAt = 0;
+        sharedSyncAttempts = 0;
+        setSessionError(null);
+        setSyncRetryTick((value) => value + 1);
+      }
+      return;
+    }
+    await login();
+  }, [authenticated, login]);
+
   return {
     user: user
       ? {
-          id: user.id,
-          walletAddress:
-            user.wallet?.address ||
-            primaryWallet?.address ||
-            (user.linkedAccounts?.find(
-              (account) =>
-                account.type === "wallet" &&
-                (account as { chainType?: string }).chainType === "solana"
-            ) as { address?: string } | undefined)?.address,
-        }
+        id: user.id,
+        walletAddress:
+          user.wallet?.address ||
+          primaryWallet?.address ||
+          (user.linkedAccounts?.find(
+            (account) =>
+              account.type === "wallet" &&
+              (account as { chainType?: string }).chainType === "solana"
+          ) as { address?: string } | undefined)?.address,
+      }
       : null,
     loading: !ready,
     isAuthenticated: authenticated,
     sessionReady,
     sessionError,
     retrySessionSync,
-    signIn: () => login(),
+    signIn,
     signOut: async () => {
+      // Clear shared state BEFORE Privy logout to prevent race
+      resetSharedState();
+      setSessionError(null);
+      await fetch("/api/auth/logout", { method: "POST" }).catch(() => { });
       await logout();
-      await fetch("/api/auth/logout", { method: "POST" });
     },
   };
 }
+

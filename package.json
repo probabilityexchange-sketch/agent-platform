@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npx prisma generate && next build",
+    "build": "npx prisma generate && next build --webpack --experimental-build-mode=compile",
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "npx prisma migrate dev",

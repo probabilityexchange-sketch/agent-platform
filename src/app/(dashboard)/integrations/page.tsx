@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 interface IntegrationItem {
   slug: string;
@@ -32,6 +33,7 @@ function statusTone(status: string): string {
 }
 
 function IntegrationsPageContent() {
+  const { isAuthenticated, sessionReady, sessionError, retrySessionSync } = useAuth();
   const searchParams = useSearchParams();
   const [data, setData] = useState<IntegrationsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,11 +41,33 @@ function IntegrationsPageContent() {
   const [busyToolkit, setBusyToolkit] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (!isAuthenticated) {
+      setLoading(false);
+      setData(null);
+      setError("Unauthorized");
+      return;
+    }
+
+    if (!sessionReady) {
+      setLoading(true);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/composio/integrations", { cache: "no-store" });
-      const payload = (await response.json()) as IntegrationsResponse & { error?: string };
+      let response = await fetch("/api/composio/integrations", { cache: "no-store" });
+      let payload = (await response.json()) as IntegrationsResponse & { error?: string };
+
+      // If the server cookie expired while Privy is still authenticated, force a session
+      // resync once, then retry the integrations request.
+      if (response.status === 401) {
+        retrySessionSync();
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        response = await fetch("/api/composio/integrations", { cache: "no-store" });
+        payload = (await response.json()) as IntegrationsResponse & { error?: string };
+      }
+
       if (!response.ok) {
         throw new Error(payload.error || "Failed to load integrations");
       }
@@ -54,11 +78,23 @@ function IntegrationsPageContent() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAuthenticated, sessionReady, retrySessionSync]);
 
   useEffect(() => {
-    load().catch(() => {});
-  }, [load]);
+    if (!isAuthenticated) {
+      setLoading(false);
+      setData(null);
+      setError("Unauthorized");
+      return;
+    }
+
+    if (!sessionReady) {
+      setLoading(true);
+      return;
+    }
+
+    load().catch(() => { });
+  }, [isAuthenticated, sessionReady, load]);
 
   const callbackStatus = searchParams.get("status");
   const callbackToolkit = searchParams.get("toolkit");
@@ -154,6 +190,12 @@ function IntegrationsPageContent() {
       )}
 
       {error && <div className="mb-4 text-sm text-rose-400">{error}</div>}
+      {!sessionReady && isAuthenticated && (
+        <div className="mb-4 text-sm text-amber-400">
+          Finalizing server session...
+          {sessionError ? ` ${sessionError}` : ""}
+        </div>
+      )}
 
       {data?.sharedEntityMode && (
         <div className="mb-4 text-sm text-amber-400">
