@@ -4,6 +4,7 @@ import { generatePassword } from "@/lib/utils/crypto";
 import { generateSubdomain } from "@/lib/utils/subdomain";
 import { prisma } from "@/lib/db/prisma";
 import { createHash } from "crypto";
+import { getComputeBridge } from "@/lib/compute/bridge-client";
 
 const DOCKER_NETWORK = process.env.DOCKER_NETWORK || "traefik-net";
 
@@ -148,6 +149,11 @@ export async function provisionContainer(
   agentSlug: string,
   username: string
 ): Promise<ProvisionResult> {
+  const bridge = getComputeBridge();
+  if (bridge) {
+    return bridge.provision(userId, agentSlug, username);
+  }
+
   const agentConfigFactory = getAgentConfig(agentSlug);
   if (!agentConfigFactory) {
     throw new ProvisioningError(
