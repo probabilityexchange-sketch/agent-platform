@@ -19,7 +19,7 @@ interface BurnData {
 }
 
 export default function TransparencyPage() {
-    const { priceUsd, formatRandi, loading: priceLoading } = useTokenPrice();
+    const { priceUsd, marketCap, formatRandi, formatUsdCompact, loading: priceLoading } = useTokenPrice();
     const [data, setData] = useState<BurnData | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -117,7 +117,7 @@ export default function TransparencyPage() {
                             {priceLoading ? "..." : `$${priceUsd?.toFixed(8)}`}
                         </h3>
                         <p className="text-sm text-primary font-bold mt-1">
-                            {priceLoading ? "..." : `MC: ${formatUsdCompact(price.marketCap)}`}
+                            {priceLoading ? "..." : `MC: ${formatUsdCompact(marketCap)}`}
                         </p>
                     </a>
                 </div>

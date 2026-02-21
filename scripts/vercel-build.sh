@@ -40,8 +40,8 @@ else
     echo "CRITICAL: Detected empty password in DB_PUSH_URL!" >&2
     if [[ -n "${POSTGRES_PASSWORD:-}" ]]; then
       echo "  Attempting to inject POSTGRES_PASSWORD..." >&2
-      # Inject password between colon and @
-      DB_PUSH_URL="${DB_PUSH_URL/://:@/://:${POSTGRES_PASSWORD}@}"
+      # Inject password between colon and @ (matches the :@ pattern)
+      DB_PUSH_URL="${DB_PUSH_URL/:@/:${POSTGRES_PASSWORD}@}"
       echo "  Injection successful (URL hint: ${DB_PUSH_URL%%@*}@...)" >&2
     else
       echo "  ERROR: POSTGRES_PASSWORD is also missing. Auth will likely fail." >&2
