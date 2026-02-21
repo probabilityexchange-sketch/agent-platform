@@ -8,20 +8,22 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  walletAddress String   @unique
-  username      String?  @unique
-  creditBalance         Int       @default(0)
-  subscriptionStatus   String    @default("none")
+  id                    String      @id @default(cuid())
+  email                 String?     @unique
+  walletAddress         String?     @unique
+  username              String?     @unique
+  tier                  String      @default("FREE") // FREE, PRO
+  creditBalance         Int         @default(0)
+  subscriptionStatus    String      @default("none") // none, active, expired
   subscriptionExpiresAt DateTime?
-  nonce                String?
-  nonceExpiresAt       DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  nonce                 String?
+  nonceExpiresAt        DateTime?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
 
   sessions           Session[]
   containers         Container[]
-  creditTransactions  CreditTransaction[]
+  creditTransactions CreditTransaction[]
   chatSessions       ChatSession[]
 }
 
