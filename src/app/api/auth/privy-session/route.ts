@@ -145,7 +145,13 @@ export async function POST(request: NextRequest) {
   console.log("Session Establishment Diagnostic:", {
     hasProjectId: process.env.DATABASE_URL?.includes("uoltahlxvmuyznfthgxv"),
     env: process.env.VERCEL_ENV || "unknown",
-    urlSource: "check_server_logs",
+    availableVars: [
+      "DATABASE_URL",
+      "DIRECT_URL",
+      "POSTGRES_PRISMA_URL",
+      "POSTGRES_URL",
+      "POSTGRES_URL_NON_POOLING",
+    ].filter(v => !!process.env[v]),
   });
 
   try {

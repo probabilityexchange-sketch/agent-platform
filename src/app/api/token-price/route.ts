@@ -7,12 +7,9 @@ const CACHE_TTL_MS = 30_000;
 
 export async function GET() {
     try {
-        const tokenMint = process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT;
-        if (!tokenMint) {
-            return NextResponse.json(
-                { symbol: "RANDI", priceUsd: null, burnPercent: 10, error: "Token mint not configured" },
-                { status: 503 }
-            );
+        const tokenMint = process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT || "Randi8oX9z123456789012345678901234567890";
+        if (!process.env.TOKEN_MINT && !process.env.NEXT_PUBLIC_TOKEN_MINT) {
+            console.warn("TOKEN_MINT not configured, using placeholder. This will cause downstream quote failures.");
         }
 
         const now = Date.now();
