@@ -1,6 +1,9 @@
 const express = require('express');
 const Docker = require('dockerode');
 const crypto = require('crypto');
+const https = require('https');
+const http = require('http');
+const { Writable } = require('stream');
 const app = express();
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
@@ -71,10 +74,137 @@ const auth = (req, res, next) => {
     next();
 };
 
+// --- STORAGE HELPERS ---
+
+/**
+ * Downloads a URL to a buffer.
+ */
+function downloadToBuffer(url) {
+    return new Promise((resolve, reject) => {
+        const client = url.startsWith('https') ? https : http;
+        client.get(url, (res) => {
+            const chunks = [];
+            res.on('data', (chunk) => chunks.push(chunk));
+            res.on('end', () => resolve(Buffer.concat(chunks)));
+            res.on('error', reject);
+        }).on('error', reject);
+    });
+}
+
+/**
+ * Restores a .tar.gz snapshot into a Docker volume before the container starts.
+ * Uses a temporary busybox container to extract the archive.
+ */
+async function restoreSnapshotToVolume(volumeName, snapshotUrl) {
+    console.log(`[Storage] Restoring snapshot into volume ${volumeName}...`);
+    try {
+        const tarBuffer = await downloadToBuffer(snapshotUrl);
+
+        // Run a temporary busybox container to extract the archive into the volume
+        const helperContainer = await docker.createContainer({
+            Image: 'busybox',
+            Cmd: ['tar', 'xzf', '/snapshot.tar.gz', '-C', '/data'],
+            HostConfig: {
+                Binds: [`${volumeName}:/data`],
+                AutoRemove: true,
+            },
+            AttachStdin: true,
+            StdinOnce: true,
+            OpenStdin: true,
+        });
+
+        const stream = await helperContainer.attach({ stream: true, stdin: true, stdout: true, stderr: true });
+        await helperContainer.start();
+
+        // Write the tar buffer to stdin and close
+        stream.write(tarBuffer);
+        stream.end();
+
+        await helperContainer.wait();
+        console.log(`[Storage] Snapshot restored to volume ${volumeName}.`);
+    } catch (err) {
+        console.error(`[Storage] Failed to restore snapshot:`, err.message);
+        // Non-fatal: proceed without snapshot
+    }
+}
+
+/**
+ * Tarballs a Docker volume and uploads via a Supabase signed URL.
+ * Notifies the platform via PUT /api/storage/snapshot on success.
+ */
+async function snapshotVolumeAndUpload(volumeName, userId, agentSlug, storageKey) {
+    const platformUrl = process.env.PLATFORM_URL;
+    const bridgeApiKey = process.env.BRIDGE_API_KEY;
+    if (!platformUrl) {
+        console.log('[Storage] PLATFORM_URL not set, skipping snapshot.');
+        return;
+    }
+
+    try {
+        // 1. Get a signed upload URL from the platform
+        const uploadUrlRes = await fetch(`${platformUrl}/api/storage/snapshot`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-bridge-api-key': bridgeApiKey },
+            // Use internal PUT route which accepts bridge api key
+            body: JSON.stringify({ storageKey, userId, agentSlug, action: 'upload-url', sizeBytes: 0 }),
+        });
+        if (!uploadUrlRes.ok) {
+            console.error('[Storage] Failed to get upload URL from platform.');
+            return;
+        }
+        const { signedUrl } = await uploadUrlRes.json();
+
+        // 2. Tarball the volume using a helper container
+        const helperContainer = await docker.createContainer({
+            Image: 'busybox',
+            Cmd: ['tar', 'czf', '-', '-C', '/data', '.'],
+            HostConfig: { Binds: [`${volumeName}:/data:ro`] },
+            AttachStdout: true,
+        });
+
+        const tarStream = await helperContainer.attach({ stream: true, stdout: true });
+        await helperContainer.start();
+
+        const chunks = [];
+        await new Promise((resolve, reject) => {
+            tarStream.on('data', (chunk) => chunks.push(chunk));
+            tarStream.on('end', resolve);
+            tarStream.on('error', reject);
+        });
+        await helperContainer.wait();
+        await helperContainer.remove({ force: true }).catch(() => { });
+
+        const tarBuffer = Buffer.concat(chunks);
+
+        // 3. Upload to Supabase Storage via signed URL
+        const uploadRes = await fetch(signedUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/gzip', 'Content-Length': tarBuffer.length },
+            body: tarBuffer,
+        });
+
+        if (!uploadRes.ok) {
+            console.error('[Storage] Supabase upload failed:', await uploadRes.text());
+            return;
+        }
+
+        // 4. Notify platform to record the snapshot metadata
+        await fetch(`${platformUrl}/api/storage/snapshot`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'x-bridge-api-key': bridgeApiKey },
+            body: JSON.stringify({ storageKey, userId, agentSlug, sizeBytes: tarBuffer.length }),
+        });
+
+        console.log(`[Storage] Snapshot uploaded for volume ${volumeName} (${tarBuffer.length} bytes).`);
+    } catch (err) {
+        console.error('[Storage] Snapshot upload failed:', err.message);
+    }
+}
+
 // --- ROUTES ---
 
 app.post('/provision', auth, async (req, res) => {
-    const { userId, agentSlug, username, tier = 'FREE' } = req.body;
+    const { userId, agentSlug, username, tier = 'FREE', snapshotUrl } = req.body;
     const configFactory = agentRegistry[agentSlug];
 
     if (!configFactory) {
@@ -104,7 +234,13 @@ app.post('/provision', auth, async (req, res) => {
             docker.modem.followProgress(stream, (err, resp) => err ? reject(err) : resolve(resp));
         });
 
-        // 2. Create Container
+        // 2. Restore snapshot (if available) into the named volume before container start
+        const volumeName = Object.keys(config.volumes)[0]; // e.g. ap-storage-{storageKey}
+        if (snapshotUrl && volumeName) {
+            await restoreSnapshotToVolume(volumeName, snapshotUrl);
+        }
+
+        // 3. Create Container
         console.log(`Creating container ${containerName} for user ${userId} [Tier: ${tierValue}]...`);
         const container = await docker.createContainer({
             Image: config.image,
@@ -160,8 +296,21 @@ app.post('/containers/:id/stop', auth, async (req, res) => {
 });
 
 app.delete('/containers/:id', auth, async (req, res) => {
+    const { userId, agentSlug, storageKey } = req.query; // optional snapshot params
     try {
-        await docker.getContainer(req.params.id).remove({ force: true });
+        const container = docker.getContainer(req.params.id);
+        // Snapshot the volume before removal if metadata is provided
+        if (userId && agentSlug && storageKey) {
+            // Determine volume name from container labels
+            const info = await container.inspect().catch(() => null);
+            const binds = info?.HostConfig?.Binds || [];
+            const volumeBind = binds.find((b) => b.includes('ap-storage'));
+            const volumeName = volumeBind ? volumeBind.split(':')[0] : null;
+            if (volumeName) {
+                await snapshotVolumeAndUpload(volumeName, userId, agentSlug, storageKey);
+            }
+        }
+        await container.remove({ force: true });
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -170,6 +319,25 @@ app.get('/containers/:id/inspect', auth, async (req, res) => {
     try {
         const data = await docker.getContainer(req.params.id).inspect();
         res.json(data);
+    } catch (err) { res.status(err.statusCode || 500).json({ error: err.message }); }
+});
+
+// --- RESOURCE MONITORING ---
+app.get('/containers/:id/stats', auth, async (req, res) => {
+    try {
+        const raw = await docker.getContainer(req.params.id).stats({ stream: false });
+        const cpuDelta = raw.cpu_stats.cpu_usage.total_usage - raw.precpu_stats.cpu_usage.total_usage;
+        const systemDelta = raw.cpu_stats.system_cpu_usage - raw.precpu_stats.system_cpu_usage;
+        const cpuCount = raw.cpu_stats.online_cpus || raw.cpu_stats.cpu_usage.percpu_usage?.length || 1;
+        const cpuPercent = systemDelta > 0 ? (cpuDelta / systemDelta) * cpuCount * 100 : 0;
+        const memoryUsage = raw.memory_stats.usage - (raw.memory_stats.stats?.cache || 0);
+        const memoryLimit = raw.memory_stats.limit;
+
+        res.json({
+            cpuPercent: parseFloat(cpuPercent.toFixed(2)),
+            memoryMb: parseFloat((memoryUsage / 1024 / 1024).toFixed(1)),
+            memoryLimitMb: parseFloat((memoryLimit / 1024 / 1024).toFixed(1)),
+        });
     } catch (err) { res.status(err.statusCode || 500).json({ error: err.message }); }
 });
 

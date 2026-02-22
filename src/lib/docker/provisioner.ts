@@ -148,11 +148,12 @@ export async function provisionContainer(
   userId: string,
   agentSlug: string,
   username: string,
-  tier: string = "FREE"
+  tier: string = "FREE",
+  snapshotUrl?: string
 ): Promise<ProvisionResult> {
   const bridge = getComputeBridge();
   if (bridge) {
-    return bridge.provision(userId, agentSlug, username, tier);
+    return bridge.provision(userId, agentSlug, username, tier, snapshotUrl);
   }
 
   const agentConfigFactory = getAgentConfig(agentSlug);

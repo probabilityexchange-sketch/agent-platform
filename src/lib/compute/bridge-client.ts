@@ -16,7 +16,8 @@ export class ComputeBridgeClient {
         userId: string,
         agentSlug: string,
         username: string,
-        tier: string = "FREE"
+        tier: string = "FREE",
+        snapshotUrl?: string
     ): Promise<ProvisionResult> {
         const res = await fetch(`${this.config.baseUrl}/provision`, {
             method: "POST",
@@ -24,7 +25,7 @@ export class ComputeBridgeClient {
                 "Content-Type": "application/json",
                 "X-Bridge-API-Key": this.config.apiKey,
             },
-            body: JSON.stringify({ userId, agentSlug, username, tier }),
+            body: JSON.stringify({ userId, agentSlug, username, tier, snapshotUrl }),
         });
 
         if (!res.ok) {
@@ -102,6 +103,26 @@ export class ComputeBridgeClient {
         if (!res.ok) {
             const err = await res.json();
             throw new Error(err.error || "Bridge failed to inspect container");
+        }
+
+        return res.json();
+    }
+
+    async getStats(dockerId: string): Promise<{
+        cpuPercent: number;
+        memoryMb: number;
+        memoryLimitMb: number;
+    }> {
+        const res = await fetch(`${this.config.baseUrl}/containers/${dockerId}/stats`, {
+            method: "GET",
+            headers: {
+                "X-Bridge-API-Key": this.config.apiKey,
+            },
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || "Bridge failed to get stats");
         }
 
         return res.json();

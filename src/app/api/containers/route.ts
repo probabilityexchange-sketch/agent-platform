@@ -7,6 +7,11 @@ import { provisionContainer, ProvisioningError } from "@/lib/docker/provisioner"
 import { cleanupExpiredContainers } from "@/lib/docker/cleanup";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
 import { ensureUserHasUsername } from "@/lib/utils/username";
+import {
+  buildStorageKey,
+  hasSnapshot,
+  getSnapshotDownloadUrl,
+} from "@/lib/storage/storage-service";
 
 const provisionSchema = z.object({
   agentId: z.string().min(1),
@@ -182,7 +187,7 @@ export async function POST(request: NextRequest) {
 
     createdContainerId = provisionData.containerId;
 
-    // 2. Provision Docker container
+    // 2. Provision Docker container (restore from snapshot if one exists)
     let result;
     try {
       const user = await prisma.user.findUnique({
@@ -190,11 +195,20 @@ export async function POST(request: NextRequest) {
         select: { tier: true },
       });
 
+      // Check for an existing persistent storage snapshot to restore
+      const storageKey = buildStorageKey(auth.userId, provisionData.agentSlug);
+      let snapshotUrl: string | undefined;
+      if (await hasSnapshot(storageKey)) {
+        snapshotUrl = (await getSnapshotDownloadUrl(storageKey)) ?? undefined;
+        console.log(`[Storage] Found snapshot for ${provisionData.agentSlug}, will restore.`);
+      }
+
       result = await provisionContainer(
         auth.userId,
         provisionData.agentSlug,
         provisionData.username,
-        user?.tier || "FREE"
+        user?.tier || "FREE",
+        snapshotUrl
       );
     } catch (dockerError) {
       console.error("Docker provisioning failed:", dockerError);
