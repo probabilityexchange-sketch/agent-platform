@@ -219,9 +219,14 @@ export function MessageBubble({
     const [copied, setCopied] = useState(false);
     const markdownComponents = useMarkdownComponents(isStreaming);
 
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const messageDate =
         message.createdAt instanceof Date ? message.createdAt : new Date(message.createdAt);
-    const timestamp = Number.isNaN(messageDate.getTime())
+    const timestamp = !mounted || Number.isNaN(messageDate.getTime())
         ? null
         : messageDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 

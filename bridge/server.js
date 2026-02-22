@@ -335,7 +335,7 @@ app.post('/spawn-ao', auth, async (req, res) => {
         const aoPath = process.env.AO_PATH || '~/agent-orchestrator';
 
         // Use pnpm to run the CLI if not globally linked, otherwise use 'ao'
-        const command = `cd ${aoPath} && ao spawn ${project} "${task.replace(/"/g, '\\"')}" --agent ${agent}`;
+        const command = `cd ${aoPath} && AIDER_MODEL="openrouter/meta-llama/llama-3.3-70b-instruct:free" ao spawn ${project} "${task.replace(/"/g, '\\"')}" --agent aider`;
 
         console.log(`[AO] Executing: ${command}`);
 

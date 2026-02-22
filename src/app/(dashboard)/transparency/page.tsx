@@ -112,12 +112,12 @@ export default function TransparencyPage() {
                                 <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z" />
                             </svg>
                         </div>
-                        <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1 group-hover:text-primary transition-colors">RANDI Price & MC 📈</p>
+                        <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1 group-hover:text-primary transition-colors">RANDI Market Cap 📈</p>
                         <h3 className="text-2xl font-mono font-bold">
-                            {priceLoading ? "..." : `$${priceUsd?.toFixed(8)}`}
+                            {priceLoading ? "..." : formatUsdCompact(marketCap)}
                         </h3>
                         <p className="text-sm text-primary font-bold mt-1">
-                            {priceLoading ? "..." : `MC: ${formatUsdCompact(marketCap)}`}
+                            {priceLoading ? "..." : `Price: $${priceUsd?.toFixed(8)}`}
                         </p>
                     </a>
                 </div>

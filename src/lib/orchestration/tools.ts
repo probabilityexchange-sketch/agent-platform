@@ -156,6 +156,7 @@ export async function executeOrchestrationToolCall(
 
             return `Successfully spawned an autonomous developer for project '${project}'. 
 Task: ${task}
+Agent: Aider (using OpenRouter Free Tier)
 You can monitor the progress on the dashboard: ${result.dashboardUrl}`;
         } catch (error) {
             const msg = error instanceof Error ? error.message : "Failed to communicate with compute bridge";

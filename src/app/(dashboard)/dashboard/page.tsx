@@ -16,7 +16,7 @@ interface ChatSession {
 export default function DashboardPage() {
   const { user } = useAuth();
   const { isSubscribed, subscription } = useCredits();
-  const { priceUsd } = useTokenPrice();
+  const { priceUsd, marketCap, formatUsdCompact } = useTokenPrice();
   const [recentSessions, setRecentSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState("");
@@ -117,21 +117,24 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* RANDI Price */}
+        {/* RANDI Market Cap */}
         <div className="glass-card rounded-2xl p-6">
-          <p className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">RANDI Token</p>
-          <div className="flex items-baseline gap-2 mt-2">
+          <p className="text-sm text-muted-foreground uppercase tracking-wider font-semibold text-primary">RANDI Market Cap</p>
+          <div className="flex flex-col mt-2">
             <span className="text-2xl font-bold font-mono">
-              {priceUsd ? `$${priceUsd.toFixed(8)}` : "—"}
+              {marketCap !== null ? formatUsdCompact(marketCap) : "—"}
+            </span>
+            <span className="text-xs text-muted-foreground mt-1">
+              Current Price: {priceUsd ? `$${priceUsd.toFixed(8)}` : "—"}
             </span>
           </div>
           <a
-            href="https://dexscreener.com/solana/9i5scvvg8pkqksmkstshtx2chsmnmwmruha6hncoboqs"
+            href="https://dexscreener.com/solana/GmnoShpt5vyGwZLyPYsBah2vxPUAfvw6fKSLbBa2XpFy"
             target="_blank"
             rel="noreferrer"
-            className="mt-4 block w-full text-center py-2 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-lg text-sm font-semibold transition-all"
+            className="mt-4 block w-full text-center py-2 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-lg text-sm font-semibold transition-all shadow-sm"
           >
-            View on DexScreener
+            View DEX Chart
           </a>
         </div>
       </div>
