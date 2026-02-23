@@ -64,7 +64,7 @@ export function StorageCard({
                     {hasStorage ? (
                         <>
                             <span className="text-sm text-muted-foreground">
-                                {formatStorageSize(storage.sizeBytes!)}
+                                {formatStorageSize(Number(storage.sizeBytes))}
                             </span>
                             <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                         </>
@@ -86,7 +86,7 @@ export function StorageCard({
                             <>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-muted-foreground">Size</span>
-                                    <span>{formatStorageSize(storage.sizeBytes!)}</span>
+                                    <span>{formatStorageSize(Number(storage.sizeBytes))}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-muted-foreground">Last Sync</span>
