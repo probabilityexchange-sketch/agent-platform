@@ -4,30 +4,38 @@ import { connection } from "@/lib/solana/connection";
 import { PublicKey } from "@solana/web3.js";
 
 // Cache: refresh every 30s
-let cachedPrice: { usd: string; timestamp: number } | null = null;
+let cachedPrice: { usd: string; timestamp: number; supply: number } | null = null;
 const CACHE_TTL_MS = 30_000;
+
+/** Round up to nearest 1K */
+function roundUpTo1K(value: number): number {
+    return Math.ceil(value / 1000) * 1000;
+}
 
 export async function GET() {
     try {
         const tokenMint = process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT || "Randi8oX9z123456789012345678901234567890";
 
         // Fetch actual token supply from Solana blockchain
-        let tokenSupply = 1000000000; // fallback
+        let tokenSupply = 0;
         try {
             const mintPubkey = new PublicKey(tokenMint);
             const supply = await connection.getTokenSupply(mintPubkey);
             tokenSupply = Number(supply.value.amount);
+            console.log("Fetched token supply:", tokenSupply);
         } catch (supplyError) {
-            console.warn("Failed to fetch token supply from Solana, using fallback:", supplyError);
-            tokenSupply = Number(process.env.TOKEN_SUPPLY || "1000000000");
+            console.warn("Failed to fetch token supply from Solana:", supplyError);
         }
 
         const now = Date.now();
-        if (cachedPrice && now - cachedPrice.timestamp < CACHE_TTL_MS) {
+
+        // Use cached if available and supply was fetched
+        if (cachedPrice && now - cachedPrice.timestamp < CACHE_TTL_MS && tokenSupply > 0) {
+            const marketCap = Number(cachedPrice.usd) * tokenSupply;
             return NextResponse.json({
                 symbol: "RANDI",
                 priceUsd: Number(cachedPrice.usd),
-                marketCap: Number(cachedPrice.usd) * tokenSupply,
+                marketCap: roundUpTo1K(marketCap),
                 burnPercent: 10,
                 cachedAt: cachedPrice.timestamp,
             });
@@ -36,12 +44,24 @@ export async function GET() {
         const result = await getTokenUsdPrice(tokenMint);
         const priceNum = Number(result.priceUsd);
 
-        cachedPrice = { usd: result.priceUsd, timestamp: now };
+        // Only cache and return market cap if we have valid supply
+        if (tokenSupply > 0) {
+            cachedPrice = { usd: result.priceUsd, timestamp: now, supply: tokenSupply };
+            const marketCap = priceNum * tokenSupply;
+            return NextResponse.json({
+                symbol: "RANDI",
+                priceUsd: priceNum,
+                marketCap: roundUpTo1K(marketCap),
+                burnPercent: 10,
+                cachedAt: now,
+            });
+        }
 
+        // Can't calculate market cap without supply
         return NextResponse.json({
             symbol: "RANDI",
             priceUsd: priceNum,
-            marketCap: priceNum * tokenSupply,
+            marketCap: null,
             burnPercent: 10,
             cachedAt: now,
         });

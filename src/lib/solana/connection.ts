@@ -1,9 +1,9 @@
-import { Connection, clusterApiUrl } from "@solana/web3.js";
+import { Connection, clusterApiUrl, Cluster } from "@solana/web3.js";
 
 const RPC_URL =
   process.env.SOLANA_RPC_URL ||
   process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
-  clusterApiUrl("devnet");
+  clusterApiUrl("mainnet" as Cluster);
 
 const globalForSolana = globalThis as unknown as {
   solanaConnection: Connection | undefined;
