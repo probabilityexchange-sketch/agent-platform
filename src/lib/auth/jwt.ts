@@ -8,16 +8,7 @@ const getJwtSecret = () => {
     return new TextEncoder().encode(secret);
   }
 
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("JWT_SECRET must be set to at least 32 characters");
-  }
-
-  // Development-only fallback to keep local environments functional.
-  const devFallback = secret || "dev-only-jwt-secret-change-me";
-  console.warn(
-    "JWT_SECRET is missing or too short; using an insecure development fallback"
-  );
-  return new TextEncoder().encode(devFallback);
+  throw new Error("JWT_SECRET must be set to at least 32 characters");
 };
 
 const JWT_ISSUER = "agent-platform";

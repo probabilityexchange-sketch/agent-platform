@@ -142,16 +142,12 @@ if [[ "$SKIP_BUILD" -eq 0 ]]; then
   source "$ENV_FILE"
   set +a
 
-  : "${JWT_SECRET:?Missing JWT_SECRET in .env}"
-  : "${OPENROUTER_API_KEY:?Missing OPENROUTER_API_KEY in .env}"
   : "${NEXT_PUBLIC_PRIVY_APP_ID:?Missing NEXT_PUBLIC_PRIVY_APP_ID in .env}"
   : "${NEXT_PUBLIC_X_URL:?Missing NEXT_PUBLIC_X_URL in .env}"
   : "${NEXT_PUBLIC_COMPOSIO_TOOLS_URL:?Missing NEXT_PUBLIC_COMPOSIO_TOOLS_URL in .env}"
 
   log "Building image: $IMAGE_TAG"
   docker build \
-    --build-arg "JWT_SECRET=$JWT_SECRET" \
-    --build-arg "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" \
     --build-arg "NEXT_PUBLIC_PRIVY_APP_ID=$NEXT_PUBLIC_PRIVY_APP_ID" \
     --build-arg "NEXT_PUBLIC_X_URL=$NEXT_PUBLIC_X_URL" \
     --build-arg "NEXT_PUBLIC_COMPOSIO_TOOLS_URL=$NEXT_PUBLIC_COMPOSIO_TOOLS_URL" \

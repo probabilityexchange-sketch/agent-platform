@@ -8,10 +8,6 @@ function getJwtSecret(): Uint8Array | null {
     return new TextEncoder().encode(secret);
   }
 
-  if (process.env.NODE_ENV !== "production") {
-    return new TextEncoder().encode(secret || "dev-only-jwt-secret-change-me");
-  }
-
   return null;
 }
 

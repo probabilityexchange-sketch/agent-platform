@@ -156,20 +156,15 @@ set -a
 source "$ENV_FILE"
 set +a
 
-: "${JWT_SECRET:?Missing JWT_SECRET in .env}"
-: "${OPENROUTER_API_KEY:?Missing OPENROUTER_API_KEY in .env}"
-: "${NEXT_PUBLIC_PRIVY_APP_ID:?Missing NEXT_PUBLIC_PRIVY_APP_ID in .env}"
+  : "${NEXT_PUBLIC_PRIVY_APP_ID:?Missing NEXT_PUBLIC_PRIVY_APP_ID in .env}"
 
 log "Building image"
 docker build \
-  --build-arg "JWT_SECRET=$JWT_SECRET" \
-  --build-arg "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" \
   --build-arg "NEXT_PUBLIC_PRIVY_APP_ID=$NEXT_PUBLIC_PRIVY_APP_ID" \
   --build-arg "NEXT_PUBLIC_X_URL=${NEXT_PUBLIC_X_URL:-https://x.com/RandiAgent}" \
   --build-arg "NEXT_PUBLIC_COMPOSIO_TOOLS_URL=${NEXT_PUBLIC_COMPOSIO_TOOLS_URL:-https://composio.dev/tools}" \
   -t "$IMAGE_TAG" \
   "$REPO_DIR"
-
 log "Restarting app"
 docker compose -f "$COMPOSE_FILE" up -d app
 docker logs agent-platform-web --tail 60 || true

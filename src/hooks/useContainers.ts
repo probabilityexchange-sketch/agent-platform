@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { ContainerInfo } from "@/types/container";
+import { fetchApi } from "@/lib/utils/api";
 
 export function useContainers() {
   const [containers, setContainers] = useState<ContainerInfo[]>([]);
@@ -11,7 +12,7 @@ export function useContainers() {
   const fetchContainers = useCallback(async () => {
     try {
       setError(null);
-      const res = await fetch("/api/containers");
+      const res = await fetchApi("/api/containers");
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(data.error || "Failed to fetch containers");
@@ -31,7 +32,7 @@ export function useContainers() {
   }, [fetchContainers]);
 
   const launchContainer = async (agentId: string, hours: number) => {
-    const res = await fetch("/api/containers", {
+    const res = await fetchApi("/api/containers", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ agentId, hours }),
@@ -46,7 +47,7 @@ export function useContainers() {
   };
 
   const stopContainer = async (containerId: string) => {
-    const res = await fetch(`/api/containers/${containerId}`, {
+    const res = await fetchApi(`/api/containers/${containerId}`, {
       method: "DELETE",
     });
     if (!res.ok) {
@@ -57,7 +58,7 @@ export function useContainers() {
   };
 
   const extendContainer = async (containerId: string, hours: number) => {
-    const res = await fetch(`/api/containers/${containerId}/extend`, {
+    const res = await fetchApi(`/api/containers/${containerId}/extend`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ hours }),

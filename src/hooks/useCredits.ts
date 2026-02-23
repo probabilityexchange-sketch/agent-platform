@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { CreditTransaction } from "@/types/credits";
+import { fetchApi } from "@/lib/utils/api";
 
 const VERIFY_RETRYABLE_STATUS = new Set([503]);
 const VERIFY_MAX_ATTEMPTS = 6;
@@ -31,7 +32,7 @@ export function useCredits() {
   const fetchBalance = useCallback(async () => {
     try {
       setError(null);
-      const res = await fetch("/api/credits/balance");
+      const res = await fetchApi("/api/credits/balance");
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(data.error || "Failed to fetch balance");
@@ -58,7 +59,7 @@ export function useCredits() {
   }, [fetchBalance]);
 
   const initiateSubscription = async () => {
-    const res = await fetch("/api/credits/purchase", {
+    const res = await fetchApi("/api/credits/purchase", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ planId: "monthly" }),
@@ -71,7 +72,7 @@ export function useCredits() {
   };
 
   const purchasePackage = async (packageId: string) => {
-    const res = await fetch("/api/credits/purchase", {
+    const res = await fetchApi("/api/credits/purchase", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ packageId }),
@@ -91,7 +92,7 @@ export function useCredits() {
     let lastError = "Verification failed";
 
     for (let attempt = 1; attempt <= VERIFY_MAX_ATTEMPTS; attempt += 1) {
-      const res = await fetch("/api/credits/verify", {
+      const res = await fetchApi("/api/credits/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ txSignature, memo, transactionId }),

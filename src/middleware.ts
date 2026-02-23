@@ -13,8 +13,20 @@ function clearAuthCookie(response: NextResponse): NextResponse {
 }
 
 export async function middleware(request: NextRequest) {
+  const { pathname, method } = request.nextUrl;
+
+  // Simple CSRF protection for mutating API requests
+  if (pathname.startsWith("/api/") && ["POST", "DELETE", "PUT", "PATCH"].includes(method)) {
+    const requestedWith = request.headers.get("x-requested-with");
+    if (requestedWith?.toLowerCase() !== "xmlhttprequest") {
+      return NextResponse.json(
+        { error: "Forbidden: Missing or invalid X-Requested-With header" },
+        { status: 403 }
+      );
+    }
+  }
+
   const token = request.cookies.get("auth-token")?.value;
-  const { pathname } = request.nextUrl;
 
   const protectedPath =
     pathname.startsWith("/dashboard") ||

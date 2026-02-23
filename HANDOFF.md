@@ -102,20 +102,20 @@ The system has a **human-in-the-loop approval gate** — dangerous tool calls re
 ## 5. Environment Variables (`.env.local`)
 
 ```env
-COMPOSIO_API_KEY="ak_fnC4N8cIKQiVQQtOfJ9V"
-JWT_SECRET="V25+gwte4s09YcgYDBOjCscXMqPYBIxSNWlNVKugxKc="
+COMPOSIO_API_KEY="your-composio-api-key"
+JWT_SECRET="your-32-char-jwt-secret"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
-NEXT_PUBLIC_PRIVY_APP_ID="cmlmjskmp00zo0dl7qkdoef31"
-OPENROUTER_API_KEY="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"
-PRIVY_APP_SECRET="privy_app_secret_4GWB2kTrGLnvHF5RX7en29CjBsd5YRfx4v3JPbnh82V1qhwKerW7VnoGnkcFM7CTnUiFQCh13BjAL65M4cvn1eU8"
+NEXT_PUBLIC_PRIVY_APP_ID="your-privy-app-id"
+OPENROUTER_API_KEY="your-openrouter-api-key"
+PRIVY_APP_SECRET="your-privy-app-secret"
 COMPUTE_BRIDGE_URL="http://18.222.178.24:3001"
-COMPUTE_BRIDGE_API_KEY="cFurhrBCurwsPDE/1g89cxKIai4Oxm9V2aJrJKeULXk="
+COMPUTE_BRIDGE_API_KEY="your-bridge-api-key"
 # Supabase URLs commented out — using local SQLite
 ```
 
 ### EC2 Environment
 ```
-BRIDGE_API_KEY="cFurhrBCurwsPDE/1g89cxKIai4Oxm9V2aJrJKeULXk="
+BRIDGE_API_KEY="your-bridge-api-key"
 ```
 
 ---

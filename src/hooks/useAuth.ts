@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
+import { fetchApi } from "@/lib/utils/api";
 
 const DEFAULT_RETRY_DELAY_MS = 3000;
 const PRIVY_RATE_LIMIT_RETRY_MS = 15000;
@@ -84,7 +85,7 @@ export function useAuth() {
       throw new Error("Missing Privy access token");
     }
 
-    const response = await fetch("/api/auth/privy-session", {
+    const response = await fetchApi("/api/auth/privy-session", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -117,7 +118,7 @@ export function useAuth() {
 
   const hasServerSession = useCallback(async () => {
     try {
-      const response = await fetch("/api/auth/me", {
+      const response = await fetchApi("/api/auth/me", {
         method: "GET",
         credentials: "include",
         cache: "no-store",
@@ -305,7 +306,7 @@ export function useAuth() {
       // Clear shared state BEFORE Privy logout to prevent race
       resetSharedState();
       setSessionError(null);
-      await fetch("/api/auth/logout", { method: "POST" }).catch(() => { });
+      await fetchApi("/api/auth/logout", { method: "POST" }).catch(() => { });
       await logout();
     },
   };
