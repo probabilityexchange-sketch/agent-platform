@@ -16,8 +16,8 @@ This roadmap outlines the strategic phases for evolving the Randi Agent Platform
 - [x] **Secure Docker Bridge**: Implement a secure API gateway between Vercel and AWS EC2. (Deployed in **us-east-2 Ohio** for minimum latency).
 - [x] **Ephemeral Sandboxing**: Automated lifecycle management for user containers (Auto-start/Auto-stop).
 - [x] **Autonomous Dev Integration**: Deep integration with Composio Agent Orchestrator for repository-level coding tasks on EC2.
-- [ ] **Persistent Storage**: S3/Supabase Storage integration for agent-generated files. (Local volume foundation in place).
-- [ ] **Fleet Monitoring**: Real-time dashboard for tracking CPU/RAM/Traffic across all bridge nodes.
+- [x] **Persistent Storage**: S3/Supabase Storage integration for agent-generated files. (Supabase snapshot upload/restore implemented, UI controls added).
+- [x] **Fleet Monitoring**: Real-time dashboard for tracking CPU/RAM/Traffic across all bridge nodes.
 
 ## 💰 Phase 3: Financial & Tokenomics Layer
 **Objective**: Integrate the $RANDI token deeply into the platform's DNA.

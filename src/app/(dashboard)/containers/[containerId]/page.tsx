@@ -4,6 +4,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { StatusBadge } from "@/components/containers/StatusBadge";
 import { LogViewer } from "@/components/containers/LogViewer";
+import { StorageCard } from "@/components/storage/StorageCard";
+import { useStorage } from "@/hooks/useStorage";
 import type { ContainerInfo } from "@/types/container";
 
 export default function ContainerDetailPage() {
@@ -15,24 +17,37 @@ export default function ContainerDetailPage() {
   const [extending, setExtending] = useState(false);
   const [stopping, setStopping] = useState(false);
 
+  const { storage, loading: storageLoading, snapshotting, fetchStorage, createSnapshot } = useStorage();
+
   const fetchContainer = useCallback(async () => {
     try {
       const res = await fetch(`/api/containers/${containerId}`);
       if (res.ok) {
-        setContainer(await res.json());
+        const data = await res.json();
+        setContainer(data);
+        // Fetch storage info when container is loaded
+        if (data.agentId) {
+          await fetchStorage(data.agentId);
+        }
       }
     } catch {
       // ignore
     } finally {
       setLoading(false);
     }
-  }, [containerId]);
+  }, [containerId, fetchStorage]);
 
   useEffect(() => {
     void fetchContainer();
     const interval = setInterval(fetchContainer, 10000);
     return () => clearInterval(interval);
   }, [fetchContainer]);
+
+  const handleSnapshot = async () => {
+    if (container) {
+      await createSnapshot(container.id, container.agentId);
+    }
+  };
 
   const handleStop = async () => {
     setStopping(true);
@@ -149,6 +164,17 @@ export default function ContainerDetailPage() {
             </button>
           </div>
         )}
+      </div>
+
+      {/* Storage Section */}
+      <div className="mb-6">
+        <StorageCard
+          agentSlug={container.agentId}
+          storage={storage}
+          loading={storageLoading}
+          onSnapshot={container.status === "RUNNING" ? handleSnapshot : undefined}
+          snapshotting={snapshotting}
+        />
       </div>
 
       {container.status === "RUNNING" && (

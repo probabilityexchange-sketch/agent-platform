@@ -101,7 +101,7 @@ export async function executeOrchestrationToolCall(
                 tools: specialistTools.length > 0 ? specialistTools : undefined,
             });
 
-            const message = response.choices[0]?.message;
+            const message = response.choices?.[0]?.message;
             if (!message) return "No response from specialist.";
 
             // If the specialist wants to call tools, we'll execute them and get the final answer
@@ -119,7 +119,7 @@ export async function executeOrchestrationToolCall(
                     messages: [...messages, message, ...toolResults],
                 });
 
-                return finalResponse.choices[0]?.message?.content || "Specialist completed task but returned no text.";
+                return finalResponse.choices?.[0]?.message?.content || "Specialist completed task but returned no text.";
             }
 
             return message.content || "Specialist returned an empty response.";

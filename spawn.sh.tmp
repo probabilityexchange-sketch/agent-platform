@@ -1,0 +1,20 @@
+#!/bin/bash
+PROJECT=$1
+TASK=$2
+AO_BIN=/usr/local/bin/ao
+CD_PATH=/home/ubuntu/agent-orchestrator
+
+cd $CD_PATH
+# Run spawn and capture output
+OUT=$($AO_BIN spawn $PROJECT 2>&1)
+# Extract Session ID
+SESSION_ID=$(echo "$OUT" | grep 'SESSION=' | cut -d= -f2)
+
+if [ -z "$SESSION_ID" ]; then
+    echo "Error: Could not spawn session. Output: $OUT"
+    exit 1
+fi
+
+echo "Spawned Session: $SESSION_ID"
+# Send the task
+$AO_BIN send "$SESSION_ID" "$TASK"

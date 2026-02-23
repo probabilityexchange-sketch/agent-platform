@@ -379,5 +379,89 @@ app.get('/containers/:id/stats', auth, async (req, res) => {
     } catch (err) { res.status(err.statusCode || 500).json({ error: err.message }); }
 });
 
+// --- FLEET STATS COLLECTION ---
+const NODE_ID = process.env.NODE_ID || 'ohio-bridge-1';
+const NODE_REGION = process.env.NODE_REGION || 'us-east-2';
+const PLATFORM_URL = process.env.PLATFORM_URL;
+const BRIDGE_API_KEY = process.env.BRIDGE_API_KEY;
+
+/**
+ * Collects aggregate stats from all running containers and reports to platform.
+ */
+async function collectAndReportFleetStats() {
+    if (!PLATFORM_URL || !BRIDGE_API_KEY) {
+        return; // Skip if not configured
+    }
+
+    try {
+        const containers = await docker.listContainers({
+            filters: { label: ['agent-platform.managed=true'], status: ['running'] }
+        });
+
+        let totalCpuPercent = 0;
+        let totalMemoryUsed = 0;
+        let totalMemoryLimit = 0;
+        let totalNetworkRx = 0;
+        let totalNetworkTx = 0;
+
+        for (const containerInfo of containers) {
+            try {
+                const container = docker.getContainer(containerInfo.Id);
+                const raw = await container.stats({ stream: false });
+
+                // CPU calculation
+                const cpuDelta = raw.cpu_stats.cpu_usage.total_usage - raw.precpu_stats.cpu_usage.total_usage;
+                const systemDelta = raw.cpu_stats.system_cpu_usage - raw.precpu_stats.system_cpu_usage;
+                const cpuCount = raw.cpu_stats.online_cpus || raw.cpu_stats.cpu_usage.percpu_usage?.length || 1;
+                const cpuPercent = systemDelta > 0 ? (cpuDelta / systemDelta) * cpuCount * 100 : 0;
+                totalCpuPercent += cpuPercent;
+
+                // Memory calculation
+                const memoryUsage = raw.memory_stats.usage - (raw.memory_stats.stats?.cache || 0);
+                totalMemoryUsed += memoryUsage;
+                totalMemoryLimit += raw.memory_stats.limit;
+
+                // Network calculation
+                if (raw.networks) {
+                    for (const net of Object.values(raw.networks)) {
+                        totalNetworkRx += net.rx_bytes || 0;
+                        totalNetworkTx += net.tx_bytes || 0;
+                    }
+                }
+            } catch (e) {
+                // Skip containers that fail stats collection
+            }
+        }
+
+        // Report to platform
+        await fetch(`${PLATFORM_URL}/api/fleet/stats`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-bridge-api-key': BRIDGE_API_KEY
+            },
+            body: JSON.stringify({
+                nodeId: NODE_ID,
+                nodeRegion: NODE_REGION,
+                totalContainers: containers.length,
+                totalCpuPercent: parseFloat(totalCpuPercent.toFixed(2)),
+                totalMemoryUsed,
+                totalMemoryLimit,
+                totalNetworkRx,
+                totalNetworkTx
+            })
+        });
+
+        console.log(`[FleetStats] Reported: ${containers.length} containers, CPU: ${totalCpuPercent.toFixed(1)}%, RAM: ${(totalMemoryUsed / 1024 / 1024).toFixed(0)}MB`);
+    } catch (err) {
+        console.error('[FleetStats] Failed to report:', err.message);
+    }
+}
+
+// Report fleet stats every 30 seconds
+setInterval(collectAndReportFleetStats, 30000);
+// Also report on startup
+setTimeout(collectAndReportFleetStats, 5000);
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Compute Bridge listening on port ${PORT}`));

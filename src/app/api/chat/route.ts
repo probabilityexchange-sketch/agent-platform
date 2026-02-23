@@ -33,7 +33,7 @@ const schema = z
     message: "agentId or sessionId is required",
   });
 
-const MAX_HISTORY_MESSAGES = 20;
+const MAX_HISTORY_MESSAGES = 40;
 const MAX_TOOL_LOOP_STEPS = 4;
 const TOOL_USAGE_SYSTEM_INSTRUCTION =
   "You have access to tools. For requests involving external services (GitHub, Slack, Notion, Gmail, Google Sheets, Google Calendar, Supabase, Vercel, Hacker News), call the best matching tool first before replying. If the user explicitly names a service (for example Gmail), only use tools from that service unless they ask for something else. Do not claim lack of access when tools are available. Never simulate or invent tool results.";
@@ -250,9 +250,29 @@ function extractTextContent(content: unknown): string {
     .trim();
 }
 
-function toChatMessageParam(role: string, content: string): ChatMessageParam | null {
+function toChatMessageParam(storedMessage: StoredChatMessage): ChatMessageParam | null {
+  const { role, content, toolCalls } = storedMessage;
   if (role === "user") return { role: "user", content };
-  if (role === "assistant") return { role: "assistant", content };
+  if (role === "assistant") {
+    const param: any = { role: "assistant", content };
+    if (toolCalls) {
+      try {
+        const parsed = JSON.parse(toolCalls);
+        if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === "object") {
+          // It's a proper OpenAI tool_calls array
+          param.tool_calls = parsed;
+        }
+      } catch (e) { }
+    }
+    return param;
+  }
+  if (role === "tool") {
+    return {
+      role: "tool",
+      content,
+      tool_call_id: toolCalls || "", // We store the tool_call_id in the toolCalls column for these rows
+    } as any;
+  }
   if (role === "system") return { role: "system", content };
   return null;
 }
@@ -295,7 +315,12 @@ interface RunToolChatOptions {
 
 async function runToolEnabledChat(
   options: RunToolChatOptions
-): Promise<{ responseText: string; toolCalls: ToolExecutionLog[]; pausedForApproval: boolean }> {
+): Promise<{
+  responseText: string;
+  toolCalls: ToolExecutionLog[];
+  pausedForApproval: boolean;
+  fullTurnMessages: Array<{ role: string; content: string; toolCalls: string | null }>;
+}> {
   const { model, baseMessages, tools, userId, forceFirstToolCall, sessionId, writer, encoder } = options;
 
   if (tools.length === 0) {
@@ -303,11 +328,13 @@ async function runToolEnabledChat(
       responseText: await runTextOnlyChat(model, baseMessages),
       toolCalls: [],
       pausedForApproval: false,
+      fullTurnMessages: [],
     };
   }
 
   const toolCalls: ToolExecutionLog[] = [];
   const messages: ChatMessageParam[] = [...baseMessages];
+  const fullTurnMessages: Array<{ role: string; content: string; toolCalls: string | null }> = [];
 
   try {
     for (let iteration = 0; iteration < MAX_TOOL_LOOP_STEPS; iteration += 1) {
@@ -325,13 +352,19 @@ async function runToolEnabledChat(
       const assistantText = extractTextContent(assistantMessage.content);
 
       if (assistantToolCalls.length === 0) {
-        return { responseText: assistantText, toolCalls, pausedForApproval: false };
+        return { responseText: assistantText, toolCalls, pausedForApproval: false, fullTurnMessages };
       }
 
       messages.push({
         role: "assistant",
         content: assistantMessage.content ?? "",
         tool_calls: assistantToolCalls,
+      });
+
+      fullTurnMessages.push({
+        role: "assistant",
+        content: assistantMessage.content ?? "",
+        toolCalls: JSON.stringify(assistantToolCalls),
       });
 
       for (const toolCall of assistantToolCalls) {
@@ -369,7 +402,7 @@ async function runToolEnabledChat(
           };
 
           await writer.write(encoder.encode(`\n__APPROVAL_REQUEST__${JSON.stringify(event)}__END__`));
-          return { responseText: "", toolCalls, pausedForApproval: true };
+          return { responseText: "", toolCalls, pausedForApproval: true, fullTurnMessages };
         }
         // ── END APPROVAL GATE ─────────────────────────────────────────────────
 
@@ -401,8 +434,21 @@ async function runToolEnabledChat(
           tool_call_id: toolCall.id,
           content: rawResult,
         });
+
+        fullTurnMessages.push({
+          role: "tool",
+          content: rawResult,
+          toolCalls: toolCall.id, // Reusing column to store ID
+        });
       }
     }
+
+    return {
+      responseText: "I've reached the maximum number of tool steps for this request.",
+      toolCalls,
+      pausedForApproval: false,
+      fullTurnMessages
+    };
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
       console.warn("Tool-enabled chat failed, falling back to text-only chat.", error);
@@ -426,6 +472,7 @@ async function runToolEnabledChat(
       responseText: fallbackText,
       toolCalls,
       pausedForApproval: false,
+      fullTurnMessages: [],
     };
   }
 
@@ -434,6 +481,7 @@ async function runToolEnabledChat(
       "I could not complete that request through tools. Please verify your Composio connections and try again.",
     toolCalls,
     pausedForApproval: false,
+    fullTurnMessages: [],
   };
 }
 
@@ -517,9 +565,7 @@ export async function POST(req: NextRequest) {
 
       historyMessages = storedMessages
         .reverse()
-        .map((storedMessage) =>
-          toChatMessageParam(storedMessage.role, storedMessage.content)
-        )
+        .map((storedMessage) => toChatMessageParam(storedMessage))
         .filter((storedMessage): storedMessage is ChatMessageParam => storedMessage !== null);
     }
 
@@ -548,7 +594,7 @@ export async function POST(req: NextRequest) {
       try {
         const parsedConfig = JSON.parse(agent.tools);
         const requestedInternalTools = Array.isArray(parsedConfig.tools) ? parsedConfig.tools : [];
-        if (requestedInternalTools.includes("delegate_to_specialist")) {
+        if (requestedInternalTools.includes("delegate_to_specialist") || requestedInternalTools.includes("spawn_autonomous_developer")) {
           combinedTools = [...combinedTools, ...ORCHESTRATION_TOOLS];
         }
       } catch (err) {
@@ -673,7 +719,7 @@ export async function POST(req: NextRequest) {
         }
         // ── END RESUME PATH ───────────────────────────────────────────────────
 
-        const { responseText, toolCalls, pausedForApproval } = await runToolEnabledChat({
+        const { responseText, toolCalls, pausedForApproval, fullTurnMessages } = await runToolEnabledChat({
           model,
           baseMessages: messages,
           tools: combinedTools,
@@ -745,6 +791,12 @@ export async function POST(req: NextRequest) {
         await prisma.chatMessage.createMany({
           data: [
             { sessionId: currentSessionId, role: "user", content: message },
+            ...fullTurnMessages.map(msg => ({
+              sessionId: currentSessionId!,
+              role: msg.role,
+              content: msg.content,
+              toolCalls: msg.toolCalls,
+            })),
             {
               sessionId: currentSessionId,
               role: "assistant",

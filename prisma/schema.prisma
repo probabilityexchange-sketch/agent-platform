@@ -178,3 +178,20 @@ model ToolApproval {
 
   @@index([sessionId, status])
 }
+
+model FleetStats {
+  id            String   @id @default(cuid())
+  nodeId        String                       // Bridge node identifier (e.g., "ohio-bridge-1")
+  nodeRegion    String                       // e.g., "us-east-2"
+  totalContainers Int     @default(0)        // Number of running containers
+  totalCpuPercent Float   @default(0)        // Aggregate CPU usage %
+  totalMemoryUsed BigInt  @default(0)        // Aggregate memory used in bytes
+  totalMemoryLimit BigInt @default(0)        // Aggregate memory limit in bytes
+  totalNetworkRx BigInt   @default(0)        // Total network received bytes
+  totalNetworkTx BigInt   @default(0)        // Total network transmitted bytes
+  reportedAt    DateTime @default(now())     // When this stat was reported
+  createdAt     DateTime @default(now())
+
+  @@index([nodeId])
+  @@index([reportedAt])
+}

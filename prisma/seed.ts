@@ -90,7 +90,7 @@ async function main() {
     update: {
       tools: JSON.stringify({
         toolkits: [],
-        tools: ["delegate_to_specialist"],
+        tools: ["delegate_to_specialist", "spawn_autonomous_developer"],
       }),
     },
     create: {

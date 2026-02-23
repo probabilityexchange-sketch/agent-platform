@@ -183,10 +183,19 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch (error) {
-    console.error("Critical error building server session:", error);
+  } catch (error: any) {
+    console.error("Critical error building server session:", {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      wallet
+    });
     return NextResponse.json(
-      { error: "Internal server error during session establishment", code: "session_creation_failed" },
+      {
+        error: "Internal server error during session establishment",
+        code: "session_creation_failed",
+        detail: error.message
+      },
       { status: 500 }
     );
   }
