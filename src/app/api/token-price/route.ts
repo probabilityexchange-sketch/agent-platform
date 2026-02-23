@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { getTokenUsdPrice } from "@/lib/payments/token-pricing";
+import { connection } from "@/lib/solana/connection";
+import { PublicKey } from "@solana/web3.js";
+import { getTokenSupply } from "@solana/spl-token";
 
 // Cache: refresh every 30s
 let cachedPrice: { usd: string; timestamp: number } | null = null;
@@ -8,7 +11,17 @@ const CACHE_TTL_MS = 30_000;
 export async function GET() {
     try {
         const tokenMint = process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT || "Randi8oX9z123456789012345678901234567890";
-        const tokenSupply = Number(process.env.TOKEN_SUPPLY || "1000000000");
+
+        // Fetch actual token supply from Solana blockchain
+        let tokenSupply = 1000000000; // fallback
+        try {
+            const mintPubkey = new PublicKey(tokenMint);
+            const supply = await getTokenSupply(connection, mintPubkey);
+            tokenSupply = Number(supply.amount);
+        } catch (supplyError) {
+            console.warn("Failed to fetch token supply from Solana, using fallback:", supplyError);
+            tokenSupply = Number(process.env.TOKEN_SUPPLY || "1000000000");
+        }
 
         const now = Date.now();
         if (cachedPrice && now - cachedPrice.timestamp < CACHE_TTL_MS) {
