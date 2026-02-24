@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
-import { activateSubscription } from "@/lib/credits/engine";
 import {
   verifyNativeSolTransaction,
   verifyTransaction,
