@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
                 isQualified,
                 threshold: bronzeThreshold.toString(),
                 thresholdFormatted: formatTokenAmount(bronzeThreshold, RANDI_TOKEN_DECIMALS),
-                updated: tokenBalance !== user.stakedAmount,
+                updated: stakedAmountWhole !== user.stakedAmount,
             });
         } catch (error) {
             console.error("Solana verification error:", error);
