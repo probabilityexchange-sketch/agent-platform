@@ -46,7 +46,7 @@ export function AgentCard({ agent, onLaunch, userTier = "FREE" }: AgentCardProps
         <div className="flex flex-col items-end gap-2">
           {getTierBadge()}
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-            {agent.creditsPerHour} credits/hr
+            {agent.tokensPerHour} tokens/hr
           </span>
         </div>
       </div>
@@ -55,8 +55,8 @@ export function AgentCard({ agent, onLaunch, userTier = "FREE" }: AgentCardProps
           onClick={() => onLaunch(agent)}
           disabled={isLocked}
           className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${isLocked
-              ? "bg-muted text-muted-foreground cursor-not-allowed"
-              : "bg-primary hover:bg-accent text-primary-foreground"
+            ? "bg-muted text-muted-foreground cursor-not-allowed"
+            : "bg-primary hover:bg-accent text-primary-foreground"
             }`}
         >
           {isLocked ? "Upgrade to Pro" : "Launch"}

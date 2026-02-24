@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { AuthError, requireAuth, handleAuthError } from "@/lib/auth/middleware";
-import { getTokenPacks } from "@/lib/credits/engine";
+import { getTokenPacks } from "@/lib/tokenomics";
 import { prisma } from "@/lib/db/prisma";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
 import {

@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
 
     const { agentId, hours } = parsed.data;
 
-    // 1. Transaction: Check balance, reserve credits, and create "PROVISIONING" record
+    // 1. Transaction: Check balance, reserve tokens, and create "PROVISIONING" record
     const provisionData = await prisma.$transaction(async (tx) => {
       const agent = await tx.agentConfig.findUnique({ where: { id: agentId } });
       if (!agent || !agent.active) throw new Error("AGENT_NOT_FOUND");

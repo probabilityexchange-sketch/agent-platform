@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Randi - Launch AI Agents Instantly",
-  description: "Connect your Solana wallet, buy credits, and spin up hosted AI agent containers instantly. No setup required. Pay with SPL tokens.",
+  description: "Connect your Solana wallet, deposit tokens, and spin up hosted AI agent containers instantly. No setup required. Pay with $RANDI.",
   keywords: ["AI agents", "Solana", "blockchain", "containerization", "hosted agents", "SPL tokens"],
   authors: [{ name: "Randi" }],
   creator: "Randi",
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "/",
     title: "Randi - Launch AI Agents Instantly",
-    description: "Connect your Solana wallet, buy credits, and spin up hosted AI agent containers instantly.",
+    description: "Connect your Solana wallet, deposit tokens, and spin up hosted AI agent containers instantly.",
     siteName: "Randi",
     images: [
       {
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Randi - Launch AI Agents Instantly",
-    description: "Connect your Solana wallet, buy credits, and spin up hosted AI agent containers instantly.",
+    description: "Connect your Solana wallet, deposit tokens, and spin up hosted AI agent containers instantly.",
     images: ["/og-image.png"],
   },
   robots: {

@@ -15,7 +15,7 @@ const navItems = [
   { href: "/integrations", label: "Integrations", icon: "link" },
   { href: "/roadmap", label: "Roadmap", icon: "map" },
   { href: "/transparency", label: "Transparency", icon: "shield" },
-  { href: "/credits", label: "Subscribe", icon: "coins" },
+  { href: "/credits", label: "Tokens", icon: "coins" },
 ];
 
 const icons: Record<string, string> = {
