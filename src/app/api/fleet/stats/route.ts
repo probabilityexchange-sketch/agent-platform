@@ -26,27 +26,20 @@ export async function GET(req: NextRequest) {
             where.reportedAt = { gte: new Date(since) };
         }
 
-        // Get the latest stats from each node
-        const latestStats = await prisma.$queryRaw<Array<{
-            nodeId: string;
-            nodeRegion: string;
-            totalContainers: bigint;
-            totalCpuPercent: number;
-            totalMemoryUsed: bigint;
-            totalMemoryLimit: bigint;
-            totalNetworkRx: bigint;
-            totalNetworkTx: bigint;
-            reportedAt: Date;
-        }>>`
-      SELECT fs.*
-      FROM FleetStats fs
-      INNER JOIN (
-        SELECT nodeId, MAX(reportedAt) as maxReported
-        FROM FleetStats
-        ${nodeId ? prisma.$queryRawUnsafe(`WHERE nodeId = '${nodeId}'`) : prisma.$queryRawUnsafe('')}
-        GROUP BY nodeId
-      ) latest ON fs.nodeId = latest.nodeId AND fs.reportedAt = latest.maxReported
-    `;
+        // Get recent stats ordered by reportedAt desc, then deduplicate by nodeId
+        const allStats = await prisma.fleetStats.findMany({
+            where,
+            orderBy: { reportedAt: "desc" },
+            take: 100, // Get enough to cover all nodes
+        });
+
+        // Deduplicate: keep only the latest entry per nodeId
+        const seenNodes = new Set<string>();
+        const latestStats = allStats.filter((stat) => {
+            if (seenNodes.has(stat.nodeId)) return false;
+            seenNodes.add(stat.nodeId);
+            return true;
+        });
 
         // Calculate aggregate totals
         const aggregate = {
@@ -60,8 +53,8 @@ export async function GET(req: NextRequest) {
         };
 
         for (const stat of latestStats) {
-            aggregate.totalContainers += Number(stat.totalContainers);
-            aggregate.avgCpuPercent += Number(stat.totalCpuPercent);
+            aggregate.totalContainers += stat.totalContainers;
+            aggregate.avgCpuPercent += stat.totalCpuPercent;
             aggregate.totalMemoryUsed += stat.totalMemoryUsed;
             aggregate.totalMemoryLimit += stat.totalMemoryLimit;
             aggregate.totalNetworkRx += stat.totalNetworkRx;
@@ -74,12 +67,15 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             nodes: latestStats.map((s) => ({
-                ...s,
-                totalContainers: Number(s.totalContainers),
+                nodeId: s.nodeId,
+                nodeRegion: s.nodeRegion,
+                totalContainers: s.totalContainers,
+                totalCpuPercent: s.totalCpuPercent,
                 totalMemoryUsed: s.totalMemoryUsed.toString(),
                 totalMemoryLimit: s.totalMemoryLimit.toString(),
                 totalNetworkRx: s.totalNetworkRx.toString(),
                 totalNetworkTx: s.totalNetworkTx.toString(),
+                reportedAt: s.reportedAt.toISOString(),
             })),
             aggregate: {
                 ...aggregate,
@@ -156,8 +152,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, id: stat.id });
     } catch (err) {
         console.error("Failed to record fleet stats:", err);
+        const message = err instanceof Error ? err.message : "Unknown error";
         return NextResponse.json(
-            { error: "Failed to record fleet stats" },
+            { error: "Failed to record fleet stats", detail: message },
             { status: 500 }
         );
     }

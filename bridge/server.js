@@ -335,7 +335,7 @@ app.post('/spawn-ao', auth, async (req, res) => {
         const aoPath = process.env.AO_PATH || '~/agent-orchestrator';
 
         // Use pnpm to run the CLI if not globally linked, otherwise use 'ao'
-        const command = `cd ${aoPath} && AIDER_MODEL="openrouter/meta-llama/llama-3.3-70b-instruct:free" ao spawn ${project} "${task.replace(/"/g, '\\"')}" --agent aider`;
+        const command = `cd ${aoPath} && AIDER_MODEL="openrouter/meta-llama/llama-3.3-70b-instruct:free" ao spawn ${project} "${task.replace(/"/g, '\\"')}" --agent ${agent}`;
 
         console.log(`[AO] Executing: ${command}`);
 
@@ -383,7 +383,6 @@ app.get('/containers/:id/stats', auth, async (req, res) => {
 const NODE_ID = process.env.NODE_ID || 'ohio-bridge-1';
 const NODE_REGION = process.env.NODE_REGION || 'us-east-2';
 const PLATFORM_URL = process.env.PLATFORM_URL;
-const BRIDGE_API_KEY = process.env.BRIDGE_API_KEY;
 
 /**
  * Collects aggregate stats from all running containers and reports to platform.
@@ -454,7 +453,7 @@ async function collectAndReportFleetStats() {
 
         console.log(`[FleetStats] Reported: ${containers.length} containers, CPU: ${totalCpuPercent.toFixed(1)}%, RAM: ${(totalMemoryUsed / 1024 / 1024).toFixed(0)}MB`);
     } catch (err) {
-        console.error('[FleetStats] Failed to report:', err.message);
+        console.error('[FleetStats] Failed to report:', err.message, err.cause ? `(Cause: ${err.cause.message})` : '');
     }
 }
 
