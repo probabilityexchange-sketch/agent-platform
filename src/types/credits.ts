@@ -1,10 +1,10 @@
 export type TransactionType = "PURCHASE" | "USAGE" | "REFUND";
 export type TransactionStatus = "PENDING" | "CONFIRMED" | "FAILED" | "EXPIRED";
 
-export interface CreditPackage {
+export interface TokenPackage {
   id: string;
   name: string;
-  credits: number;
+  tokens: number;
   usdAmount: string;
 }
 

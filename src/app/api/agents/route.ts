@@ -9,7 +9,7 @@ export async function GET() {
       slug: true,
       name: true,
       description: true,
-      creditsPerHour: true,
+      tokensPerHour: true,
       requiredTier: true,
       active: true,
     },

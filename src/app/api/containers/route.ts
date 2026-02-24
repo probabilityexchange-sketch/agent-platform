@@ -97,7 +97,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   let createdContainerId: string | null = null;
-  let creditsReserved = 0;
+  let tokensReserved = 0;
   let userId: string | null = null;
 
   try {
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
 
       await tx.user.update({
         where: { id: auth.userId },
-        data: { tokenBalance: { decrement: creditsNeeded } },
+        data: { tokenBalance: { decrement: tokensNeeded } },
       });
 
       await tx.tokenTransaction.create({
