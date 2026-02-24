@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getSubscriptionPlan, getCreditPackages } from "@/lib/credits/engine";
+import { getTokenPacks } from "@/lib/tokenomics";
 
 export async function GET() {
   return NextResponse.json({
-    plan: getSubscriptionPlan(),
-    packages: getCreditPackages(),
+    plan: { id: "free", name: "Free Tier", price: 0 },
+    packages: getTokenPacks(),
   });
 }

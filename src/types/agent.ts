@@ -5,7 +5,7 @@ export interface Agent {
   description: string;
   image: string;
   internalPort: number;
-  creditsPerHour: number;
+  tokensPerHour: number;
   requiredTier: string;
   memoryLimit: bigint;
   cpuLimit: bigint;
@@ -18,7 +18,7 @@ export interface AgentCatalogItem {
   slug: string;
   name: string;
   description: string;
-  creditsPerHour: number;
+  tokensPerHour: number;
   requiredTier: string;
   active: boolean;
 }

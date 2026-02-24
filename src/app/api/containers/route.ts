@@ -153,13 +153,13 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const creditsNeeded = hours * agent.tokensPerHour;
+      const tokensNeeded = hours * agent.tokensPerHour;
 
-      if (user.tokenBalance < creditsNeeded) throw new Error("INSUFFICIENT_CREDITS");
+      if (user.tokenBalance < tokensNeeded) throw new Error("INSUFFICIENT_TOKENS");
       const resolvedUsername =
         user.username ?? (await ensureUserHasUsername(tx, user.id, user.walletAddress ?? ""));
 
-      creditsReserved = creditsNeeded;
+      tokensReserved = tokensNeeded;
 
       await tx.user.update({
         where: { id: auth.userId },
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
           userId: auth.userId,
           type: "USAGE",
           status: "CONFIRMED",
-          amount: -creditsNeeded,
+          amount: -tokensNeeded,
           description: `Provisioning ${agent.name} for ${hours}h`,
         },
       });
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
           agentId: agent.id,
           subdomain: `temp-${nanoid(10)}`, // temporary, will be updated by provisioner
           status: "PROVISIONING",
-          tokensUsed: creditsNeeded,
+          tokensUsed: tokensNeeded,
           expiresAt,
         },
       });
@@ -255,14 +255,14 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: unknown) {
-    // Handle rollbacks if we failed after reserving credits
-    if (userId && creditsReserved > 0 && createdContainerId) {
+    // Handle rollbacks if we failed after reserving tokens
+    if (userId && tokensReserved > 0 && createdContainerId) {
       try {
         await prisma.$transaction(async (tx) => {
-          // Refund credits
+          // Refund tokens
           await tx.user.update({
             where: { id: userId! },
-            data: { tokenBalance: { increment: creditsReserved } },
+            data: { tokenBalance: { increment: tokensReserved } },
           });
 
           // Record refund
@@ -271,7 +271,7 @@ export async function POST(request: NextRequest) {
               userId: userId!,
               type: "REFUND",
               status: "CONFIRMED",
-              amount: creditsReserved,
+              amount: tokensReserved,
               containerId: createdContainerId!,
               description: `Refund for failed provisioning`,
             },
@@ -296,7 +296,7 @@ export async function POST(request: NextRequest) {
 
       const message = error.message;
       if (message === "AGENT_NOT_FOUND") return NextResponse.json({ error: "Agent not found" }, { status: 404 });
-      if (message === "INSUFFICIENT_CREDITS") return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
+      if (message === "INSUFFICIENT_TOKENS") return NextResponse.json({ error: "Insufficient tokens" }, { status: 402 });
       if (message === "TIER_REQUIRED_PRO") return NextResponse.json({
         error: "Pro subscription required",
         detail: "This agent requires a Pro subscription. Please upgrade to access this agent.",

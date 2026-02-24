@@ -8,16 +8,42 @@
 import {
     STAKING_TIERS as TIERS,
     StakingLevel,
-    getStakingLevel as getLevel
+    getStakingLevel as getLevel,
+    TOKEN_MINT,
+    TOKEN_DECIMALS,
+    formatRandi
 } from "./tokenomics";
 
 export type { StakingLevel };
+export { TIERS as STAKING_TIERS };
+export const RANDI_TOKEN_MINT = TOKEN_MINT;
+export const RANDI_TOKEN_DECIMALS = TOKEN_DECIMALS;
 
 /**
  * Get the staking tier based on staked amount (whole tokens)
  */
-export function getStakingLevel(stakedAmount: number): StakingLevel {
-    return getLevel(stakedAmount);
+export function getStakingLevel(stakedAmount: number | bigint): StakingLevel {
+    const amount = typeof stakedAmount === "bigint"
+        ? Number(stakedAmount / BigInt(10 ** TOKEN_DECIMALS))
+        : stakedAmount;
+    return getLevel(amount);
+}
+
+/**
+ * Format token amount for display
+ */
+export function formatTokenAmount(amount: number | bigint, decimals: number = 9): string {
+    const tokens = typeof amount === "bigint"
+        ? Number(amount / BigInt(10 ** decimals))
+        : amount;
+    return tokens.toLocaleString();
+}
+
+/**
+ * Compatibility helper for chat route
+ */
+export function isPremiumModel(model: string): boolean {
+    return getModelRequiredStakingLevel(model) !== null;
 }
 
 /**

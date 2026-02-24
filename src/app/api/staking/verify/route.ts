@@ -78,7 +78,8 @@ export async function POST(req: NextRequest) {
             }
 
             // Determine if this qualifies for staking (above BRONZE threshold)
-            const isQualified = tokenBalance >= STAKING_TIERS.BRONZE;
+            const bronzeThreshold = BigInt(STAKING_TIERS.BRONZE.threshold) * BigInt(10 ** RANDI_TOKEN_DECIMALS);
+            const isQualified = tokenBalance >= bronzeThreshold;
             const newStakingLevel = getStakingLevel(tokenBalance);
 
             // Update the user's staking info
@@ -101,8 +102,8 @@ export async function POST(req: NextRequest) {
                 previousStakingLevel: user.stakingLevel,
                 currentStakingLevel: newStakingLevel,
                 isQualified,
-                threshold: STAKING_TIERS.BRONZE.toString(),
-                thresholdFormatted: formatTokenAmount(STAKING_TIERS.BRONZE, RANDI_TOKEN_DECIMALS),
+                threshold: bronzeThreshold.toString(),
+                thresholdFormatted: formatTokenAmount(bronzeThreshold, RANDI_TOKEN_DECIMALS),
                 updated: tokenBalance !== user.stakedAmount,
             });
         } catch (error) {

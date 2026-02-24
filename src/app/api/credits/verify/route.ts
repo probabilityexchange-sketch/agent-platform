@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       ) {
         return NextResponse.json({
           success: true,
-          creditsAdded: 0,
+          tokensAdded: 0,
           newBalance: await getUserBalance(auth.userId),
           idempotent: true,
         });
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
       if (intent.txSignature === txSignature) {
         return NextResponse.json({
           success: true,
-          creditsAdded: 0,
+          tokensAdded: 0,
           newBalance: await getUserBalance(auth.userId),
           idempotent: true,
         });
@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
     }
 
     let newBalance = 0;
-    let creditsAdded = 0;
+    let tokensAdded = 0;
     let idempotent = false;
 
     try {
@@ -251,7 +251,7 @@ export async function POST(request: NextRequest) {
               select: { tokenBalance: true },
             });
             newBalance = user?.tokenBalance || 0;
-            creditsAdded = 0;
+            tokensAdded = 0;
             return;
           }
           throw new Error("Purchase intent is no longer pending");
@@ -272,7 +272,7 @@ export async function POST(request: NextRequest) {
             select: { tokenBalance: true, subscriptionStatus: true, subscriptionExpiresAt: true },
           });
           newBalance = user.tokenBalance;
-          creditsAdded = 0;
+          tokensAdded = 0;
         } else {
           const user = await tx.user.update({
             where: { id: auth.userId },
@@ -280,7 +280,7 @@ export async function POST(request: NextRequest) {
             select: { tokenBalance: true },
           });
           newBalance = user.tokenBalance;
-          creditsAdded = intent.amount;
+          tokensAdded = intent.amount;
         }
       });
     } catch (error) {
@@ -309,7 +309,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      creditsAdded,
+      tokensAdded,
       newBalance,
       idempotent,
       subscriptionStatus: user?.subscriptionStatus || "none",
