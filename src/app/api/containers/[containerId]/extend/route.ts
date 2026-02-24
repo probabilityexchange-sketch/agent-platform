@@ -37,10 +37,10 @@ export async function POST(
 
     return NextResponse.json({
       newExpiresAt: result.newExpiresAt.toISOString(),
-      creditsCharged: result.creditsCharged,
+      tokensCharged: result.tokensCharged,
     });
   } catch (error) {
-    if (error instanceof Error && error.message === "Insufficient credits") {
+    if (error instanceof Error && error.message === "Insufficient tokens") {
       return NextResponse.json({ error: error.message }, { status: 402 });
     }
     return handleAuthError(error);
