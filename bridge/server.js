@@ -3,6 +3,7 @@ const Docker = require('dockerode');
 const crypto = require('crypto');
 const https = require('https');
 const http = require('http');
+const fs = require('fs');
 const { Writable } = require('stream');
 const app = express();
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
@@ -330,23 +331,24 @@ app.post('/spawn-ao', auth, async (req, res) => {
         return res.status(400).json({ error: 'Project name is required' });
     }
 
+    // Sanitize project name: alphanumerics and dashes only
+    if (!/^[a-z0-9-]+$/i.test(project)) {
+        return res.status(400).json({ error: 'Invalid project name. Only alphanumerics and dashes allowed.' });
+    }
+
     try {
-        const { exec } = require('child_process');
+        const { spawn } = require('child_process');
         const aoPath = process.env.AO_PATH || '~/agent-orchestrator';
 
-        // Use pnpm to run the CLI if not globally linked, otherwise use 'ao'
-        const command = `cd ${aoPath} && AIDER_MODEL="openrouter/meta-llama/llama-3.3-70b-instruct:free" ao spawn ${project} "${task.replace(/"/g, '\\"')}" --agent ${agent}`;
+        console.log(`[AO] Spawning ao for project: ${project}`);
 
-        console.log(`[AO] Executing: ${command}`);
-
-        exec(command, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`[AO] Execution error: ${error}`);
-                // Don't fail the request if it's just a warning or non-zero exit that's expected
-            }
-            console.log(`[AO] stdout: ${stdout}`);
-            if (stderr) console.error(`[AO] stderr: ${stderr}`);
+        const child = spawn('bash', ['-c', `cd ${aoPath} && AIDER_MODEL="openrouter/meta-llama/llama-3.3-70b-instruct:free" ao spawn ${project}`], {
+            detached: true,
+            stdio: 'ignore',
+            shell: false
         });
+
+        child.unref();
 
         // We return immediately because 'ao spawn' starts a session that continues in the background
         res.json({
@@ -463,4 +465,20 @@ setInterval(collectAndReportFleetStats, 30000);
 setTimeout(collectAndReportFleetStats, 5000);
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Compute Bridge listening on port ${PORT}`));
+const SSL_KEY_PATH = process.env.SSL_KEY_PATH;
+const SSL_CERT_PATH = process.env.SSL_CERT_PATH;
+
+if (SSL_KEY_PATH && SSL_CERT_PATH) {
+    const options = {
+        key: fs.readFileSync(SSL_KEY_PATH),
+        cert: fs.readFileSync(SSL_CERT_PATH)
+    };
+    https.createServer(options, app).listen(PORT, () => {
+        console.log(`Compute Bridge listening on HTTPS port ${PORT}`);
+    });
+} else {
+    app.listen(PORT, () => {
+        console.log(`Compute Bridge listening on HTTP port ${PORT}`);
+        console.warn("WARNING: Running on plain HTTP. Use a reverse proxy or provide SSL_KEY_PATH/SSL_CERT_PATH for production.");
+    });
+}
