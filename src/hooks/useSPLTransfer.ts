@@ -56,6 +56,7 @@ async function confirmWithFallback(
   blockhash: string,
   lastValidBlockHeight: number
 ): Promise<void> {
+  console.log(`[Solana] Confirming transaction: ${signature}`);
   try {
     const confirmation = await connection.confirmTransaction(
       { signature, blockhash, lastValidBlockHeight },
@@ -64,20 +65,33 @@ async function confirmWithFallback(
     if (confirmation.value.err) {
       throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
     }
+    console.log("[Solana] Transaction confirmed via signature loopback.");
     return;
   } catch (error) {
     if (!isBlockheightExpiryError(error)) {
+      console.error("[Solana] Confirmation error:", error);
       throw error;
     }
+    console.warn("[Solana] Blockheight expired or timeout hit, switching to manual signature polling...");
   }
 
   // Blockhash-based confirmation can race with wallet send timing; fall back to signature polling.
-  for (let i = 0; i < 8; i += 1) {
+  // Increase polling to 30 attempts (~45-60 seconds) for Mainnet stability
+  for (let i = 0; i < 30; i += 1) {
+    process.stdout?.write("."); // Doesn't work in browser, but good practice
     if (await hasConfirmedSignature(connection, signature)) {
+      console.log("[Solana] Transaction confirmed via signature polling.");
       return;
     }
-    await sleep(1500);
+    await sleep(2000);
   }
+
+  // Final check before giving up
+  if (await hasConfirmedSignature(connection, signature)) {
+    return;
+  }
+
+  throw new Error("Transaction confirmation timeout. Please check your wallet history - it may have succeeded but the network is slow.");
 }
 
 async function resolveRpcUrl(): Promise<string> {
