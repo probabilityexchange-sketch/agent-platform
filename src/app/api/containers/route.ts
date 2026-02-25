@@ -166,12 +166,19 @@ export async function POST(request: NextRequest) {
         data: { tokenBalance: { decrement: tokensNeeded } },
       });
 
+      const decimals = Number(process.env.TOKEN_DECIMALS || process.env.NEXT_PUBLIC_TOKEN_DECIMALS || "6");
+      const tokenAmountBaseUnits = BigInt(tokensNeeded) * BigInt(10 ** decimals);
+      const burnBps = 7000; // 70% burn
+      const memo = `ap:usage:${Date.now()}:${auth.userId.slice(-6)}:b${burnBps}`;
+
       await tx.tokenTransaction.create({
         data: {
           userId: auth.userId,
           type: "USAGE",
           status: "CONFIRMED",
           amount: -tokensNeeded,
+          tokenAmount: tokenAmountBaseUnits,
+          memo,
           description: `Provisioning ${agent.name} for ${hours}h`,
         },
       });
