@@ -216,7 +216,7 @@ export function useSPLTransfer() {
             throw new Error("Missing token mint for SPL transfer");
           }
 
-          const mint = new PublicKey(params.mint);
+          const mint = new PublicKey(params.mint.trim());
           const mintAccountInfo = await connection.getAccountInfo(mint, "confirmed");
           if (!mintAccountInfo) {
             throw new Error(`Token mint not found on selected Solana network (${rpcUrl})`);
@@ -336,6 +336,7 @@ export function useSPLTransfer() {
           throw new Error("Standard wallet signing failed: No wallet available");
         }
 
+        // manual polling logic (no WebSockets)
         await confirmWithFallback(connection, signature, blockhash, lastValidBlockHeight);
 
         return signature;
