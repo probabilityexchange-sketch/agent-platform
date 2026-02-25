@@ -16,7 +16,6 @@ export const connection =
   globalForSolana.solanaConnection ??
   new Connection(RPC_URL, {
     commitment: "confirmed",
-    wsEndpoint: "wss://this-is-disabled.invalid",
   });
 
 if (process.env.NODE_ENV !== "production") {

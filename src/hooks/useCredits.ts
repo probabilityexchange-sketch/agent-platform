@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import type { TokenTransaction } from "@/types/credits";
 import { fetchApi } from "@/lib/utils/api";
 
-const VERIFY_RETRYABLE_STATUS = new Set([503]);
-const VERIFY_MAX_ATTEMPTS = 6;
-const VERIFY_RETRY_DELAY_MS = 2000;
+const VERIFY_RETRYABLE_STATUS = new Set([503, 404]); // Allow retry on 404 for indexed lag
+const VERIFY_MAX_ATTEMPTS = 15;
+const VERIFY_RETRY_DELAY_MS = 3000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {

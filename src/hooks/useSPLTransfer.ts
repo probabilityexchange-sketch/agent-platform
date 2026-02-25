@@ -53,42 +53,19 @@ async function hasConfirmedSignature(connection: Connection, signature: string):
 async function confirmWithFallback(
   connection: Connection,
   signature: string,
-  blockhash: string,
-  lastValidBlockHeight: number
+  _blockhash: string,
+  _lastValidBlockHeight: number
 ): Promise<void> {
   console.log(`[Solana] Confirming transaction: ${signature}`);
-  try {
-    const confirmation = await connection.confirmTransaction(
-      { signature, blockhash, lastValidBlockHeight },
-      "confirmed"
-    );
-    if (confirmation.value.err) {
-      throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
-    }
-    console.log("[Solana] Transaction confirmed via signature loopback.");
-    return;
-  } catch (error) {
-    if (!isBlockheightExpiryError(error)) {
-      console.error("[Solana] Confirmation error:", error);
-      throw error;
-    }
-    console.warn("[Solana] Blockheight expired or timeout hit, switching to manual signature polling...");
-  }
 
-  // Blockhash-based confirmation can race with wallet send timing; fall back to signature polling.
-  // Increase polling to 30 attempts (~45-60 seconds) for Mainnet stability
-  for (let i = 0; i < 30; i += 1) {
-    process.stdout?.write("."); // Doesn't work in browser, but good practice
+  // High-reliability signature polling (no WebSocket dependency)
+  // 45 attempts * 2s = 90 seconds
+  for (let i = 0; i < 45; i += 1) {
     if (await hasConfirmedSignature(connection, signature)) {
       console.log("[Solana] Transaction confirmed via signature polling.");
       return;
     }
     await sleep(2000);
-  }
-
-  // Final check before giving up
-  if (await hasConfirmedSignature(connection, signature)) {
-    return;
   }
 
   throw new Error("Transaction confirmation timeout. Please check your wallet history - it may have succeeded but the network is slow.");
@@ -161,7 +138,6 @@ export function useSPLTransfer() {
         const rpcUrl = await resolveRpcUrl();
         const connection = new Connection(rpcUrl, {
           commitment: "confirmed",
-          wsEndpoint: "wss://this-is-disabled.invalid",
         });
 
         let fromWallet: PublicKey;
