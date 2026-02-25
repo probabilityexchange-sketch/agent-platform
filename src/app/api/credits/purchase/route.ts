@@ -70,28 +70,25 @@ export async function POST(request: NextRequest) {
     const tokenMint = process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT || "FYAz1bPKJUFRwT4pzhUzdN3UqCN5ppXRL2pfto4zpump";
     const treasuryWallet = process.env.TREASURY_WALLET || "2Hnkz9D72u7xcoA18tMdFLSRanAkj4eWcGB7iFH296N7";
 
-    // For deposit, we might still want to burn a bit (e.g. 10% entry burn?) 
-    // but the user's vision says 70% burn on USAGE. 
-    // For deposit, let's keep it simple: 100% to treasury (no entry burn).
-    const split = {
-      treasuryTokenAmount: tokenAmountBaseUnits,
-      burnTokenAmount: BigInt(0),
-      burnBps: 0
-    };
+    const isSubscription = (pkg as any).type === "subscription";
+    const burnBps = isSubscription ? 7000 : 0;
+    const split = splitTokenAmountsByBurn(tokenAmountBaseUnits, burnBps);
 
-    const memo = `ap:deposit:${Date.now()}:${auth.userId.slice(-6)}`;
+    const typePrefix = isSubscription ? "subscribe" : "deposit";
+    const memo = `ap:${typePrefix}:${Date.now()}:${auth.userId.slice(-6)}${burnBps > 0 ? `:b${burnBps}` : ""}`;
     const intentExpiresAt = new Date(Date.now() + resolvePurchaseIntentTtlMs());
 
-    // 3. Create pending transaction
     const tx = await prisma.tokenTransaction.create({
       data: {
         userId: auth.userId,
-        type: "PURCHASE",
+        type: isSubscription ? "SUBSCRIBE" : "PURCHASE",
         status: "PENDING",
-        amount: pkg.tokenAmount, // Base tokens (bonus added on confirmed)
+        amount: pkg.tokenAmount,
         tokenAmount: tokenAmountBaseUnits,
         memo,
-        description: `Deposit ${pkg.tokenAmount.toLocaleString()} $RANDI (${pkg.name} Pack)`,
+        description: isSubscription
+          ? `Subscribe to Randi Pro (${pkg.tokenAmount.toLocaleString()} $RANDI)`
+          : `Deposit ${pkg.tokenAmount.toLocaleString()} $RANDI (${pkg.name} Pack)`,
       },
     });
 

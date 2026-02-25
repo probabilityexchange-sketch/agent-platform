@@ -78,7 +78,7 @@ const demoSteps = [
     },
     {
         title: "4. Subscribe with RANDI",
-        description: "$20/month in RANDI tokens — 10% burned permanently, 90% to treasury.",
+        description: "$20/month in RANDI tokens — 70% burned permanently, 30% to treasury.",
         content: (
             <div className="bg-card border border-border rounded-xl p-5 space-y-3">
                 <div className="flex items-baseline justify-between">
@@ -91,12 +91,12 @@ const demoSteps = [
                         <span className="font-mono">~1.84M</span>
                     </div>
                     <div className="flex justify-between">
-                        <span>To Treasury (90%)</span>
-                        <span className="font-mono">~1.65M</span>
+                        <span>To Treasury (30%)</span>
+                        <span className="font-mono">~552K</span>
                     </div>
                     <div className="flex justify-between text-orange-400">
-                        <span>Burned 🔥 (10%)</span>
-                        <span className="font-mono">~184K</span>
+                        <span>Burned 🔥 (70%)</span>
+                        <span className="font-mono">~1.28M</span>
                     </div>
                 </div>
                 <div className="text-[11px] text-muted-foreground space-y-1">
@@ -158,8 +158,8 @@ export default function DemoPage() {
                             key={step.title}
                             onClick={() => setActiveStep(i)}
                             className={`flex-1 min-w-[120px] py-2 px-3 text-xs font-medium rounded-lg transition-all whitespace-nowrap ${i === activeStep
-                                    ? "bg-primary text-white"
-                                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                                ? "bg-primary text-white"
+                                : "bg-muted/50 text-muted-foreground hover:bg-muted"
                                 }`}
                         >
                             Step {i + 1}

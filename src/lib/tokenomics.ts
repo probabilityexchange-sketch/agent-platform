@@ -240,6 +240,15 @@ export function getTokenPacks(): TokenPack[] {
             estimatedStandardCalls: Math.floor(2_500_000 / AGENT_PRICING.STANDARD), // 500
             estimatedPremiumCalls: Math.floor(2_500_000 / AGENT_PRICING.PREMIUM),   // 100
         },
+        {
+            id: "pro_monthly",
+            name: "Randi Pro (Monthly)",
+            tokenAmount: 1_840_000,    // ~$20 at current price
+            bonusPercent: 0,
+            estimatedStandardCalls: 999999, // Unlimited indicator
+            estimatedPremiumCalls: 999999,
+            type: "subscription"  // Add a type to distinguish from deposits
+        } as any,
     ];
 }
 

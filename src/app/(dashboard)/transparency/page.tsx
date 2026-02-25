@@ -181,7 +181,7 @@ export default function TransparencyPage() {
 
             <div className="mt-8 p-6 bg-muted/20 rounded-xl border border-dashed border-border text-center">
                 <p className="text-sm text-muted-foreground">
-                    All subscription payments are split instantly: <span className="text-orange-400 font-bold">10%</span> is sent to the burn address and <span className="text-primary font-bold">90%</span> to the protocol treasury.
+                    All subscription payments are split instantly: <span className="text-orange-400 font-bold">70%</span> is sent to the burn address and <span className="text-primary font-bold">30%</span> to the protocol treasury.
                     This creates a deflationary pressure on $RANDI as the platform grows.
                 </p>
             </div>
