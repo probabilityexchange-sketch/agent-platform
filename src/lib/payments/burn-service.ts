@@ -149,8 +149,8 @@ export class BurnService {
 }
 
 export async function runBurnService() {
-    const treasury = process.env.TREASURY_WALLET;
-    const mint = process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT;
+    const treasury = process.env.TREASURY_WALLET || "2Hnkz9D72u7xcoA18tMdFLSRanAkj4eWcGB7iFH296N7";
+    const mint = process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT || "FYAz1bPKJUFRwT4pzhUzdN3UqCN5ppXRL2pfto4zpump";
     const burnBps = BURN_BPS;
 
     if (!treasury || !mint) {
