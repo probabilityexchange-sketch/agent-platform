@@ -10,7 +10,14 @@ jobs:
     steps:
       - name: Trigger scanner
         run: |
-          curl -s -o /dev/null -w "%{http_code}" \
+          echo "Calling: ${{ secrets.APP_URL }}/api/cron/scan"
+          HTTP_CODE=$(curl -s -o response.txt -w "%{http_code}" \
             -X POST \
             -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
-            "${{ secrets.APP_URL }}/api/cron/scan"
+            "${{ secrets.APP_URL }}/api/cron/scan")
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response:"
+          cat response.txt
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            exit 1
+          fi
