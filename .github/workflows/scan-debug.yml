@@ -1,0 +1,13 @@
+name: Scanner Debug
+on:
+  workflow_dispatch: {}
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check scanner state
+        run: |
+          curl -s \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/scan-debug" | python3 -m json.tool
