@@ -53,8 +53,8 @@ async function main() {
 
   console.log("Token mint:", mint.toBase58());
 
-  const treasuryWallet = new PublicKey("BFnVSDKbTfe7tRPB8QqmxcXZjzkSxwBMH34HdnbStbQ3");
-  
+  const treasuryWallet = new PublicKey("2Hnkz9D72u7xcoA18tMdFLSRanAkj4eWcGB7iFH296N7");
+
   console.log("\nCreating token account for treasury...");
   const treasuryATA = await getOrCreateAssociatedTokenAccount(
     connection,

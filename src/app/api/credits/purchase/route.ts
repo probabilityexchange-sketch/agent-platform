@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     const paymentAsset = "spl"; // Force SPL for $RANDI
     const tokenMint = process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT || "FYAz1bPKJUFRwT4pzhUzdN3UqCN5ppXRL2pfto4zpump";
-    const treasuryWallet = process.env.TREASURY_WALLET || "BFnVSDKbTfe7tRPB8QqmxcXZjzkSxwBMH34HdnbStbQ3";
+    const treasuryWallet = process.env.TREASURY_WALLET || "2Hnkz9D72u7xcoA18tMdFLSRanAkj4eWcGB7iFH296N7";
 
     // For deposit, we might still want to burn a bit (e.g. 10% entry burn?) 
     // but the user's vision says 70% burn on USAGE. 
