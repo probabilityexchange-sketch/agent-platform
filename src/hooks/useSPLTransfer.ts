@@ -159,7 +159,10 @@ export function useSPLTransfer() {
         const standardWallet = wallets[0];
 
         const rpcUrl = await resolveRpcUrl();
-        const connection = new Connection(rpcUrl, "confirmed");
+        const connection = new Connection(rpcUrl, {
+          commitment: "confirmed",
+          wsEndpoint: "", // Disable WebSockets for Vercel compatibility
+        });
 
         let fromWallet: PublicKey;
         if (standardWallet) {

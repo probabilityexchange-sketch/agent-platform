@@ -12,7 +12,11 @@ const globalForSolana = globalThis as unknown as {
 };
 
 export const connection =
-  globalForSolana.solanaConnection ?? new Connection(RPC_URL, "confirmed");
+  globalForSolana.solanaConnection ??
+  new Connection(RPC_URL, {
+    commitment: "confirmed",
+    wsEndpoint: "", // Disable WebSockets for Vercel compatibility
+  });
 
 if (process.env.NODE_ENV !== "production") {
   globalForSolana.solanaConnection = connection;
