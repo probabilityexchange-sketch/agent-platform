@@ -67,7 +67,7 @@ services:
       - internal
 
   app:
-    image: ghcr.io/probabilityexchange-sketch/agent-platform:latest
+    image: ghcr.io/randi-agent/randi-agent:latest
     container_name: agent-platform-web
     restart: unless-stopped
     depends_on:

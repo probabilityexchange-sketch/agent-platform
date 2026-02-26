@@ -162,6 +162,11 @@ export async function POST(request: NextRequest) {
     });
 
     const username = await ensureUserHasUsername(prisma, user.id, wallet);
+
+    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+      console.warn("CRITICAL: JWT_SECRET is not set or too short. Session creation will fail signature verification in middleware.");
+    }
+
     const token = await signToken(user.id, wallet);
 
     const response = NextResponse.json({
@@ -182,11 +187,9 @@ export async function POST(request: NextRequest) {
       path: "/",
     };
 
-    // Only set domain in production to avoid issues with localhost
-    if (process.env.NODE_ENV === "production" && !request.nextUrl.hostname.includes("localhost")) {
-      cookieOptions.domain = ".randi.chat";
-    }
-
+    // We no longer lock the domain to ".randi.chat" to allow the app 
+    // to work across various Vercel deployments and custom domains 
+    // without triggering the "double sign-in" bug caused by cookie domain mismatches.
     response.cookies.set("auth-token", token, cookieOptions);
 
     return response;

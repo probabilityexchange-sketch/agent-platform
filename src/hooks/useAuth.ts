@@ -159,12 +159,13 @@ export function useAuth() {
     // redirect back to /login (the "double sign-in" bug).
     await syncSession();
 
-    // Verify the cookie landed — retry up to 3 times with 300ms gaps
-    // to account for browser cookie propagation delay.
+    // Verify the cookie landed — retry up to 5 times with 500ms gaps
+    // to account for browser cookie propagation delay, especially in cold starts
+    // or across subdomain boundaries in some browsers.
     let cookieConfirmed = false;
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < 5; attempt++) {
       if (attempt > 0) {
-        await new Promise<void>((resolve) => window.setTimeout(resolve, 300));
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 500));
       }
       cookieConfirmed = await hasServerSession();
       if (cookieConfirmed) break;
@@ -180,6 +181,9 @@ export function useAuth() {
         DEFAULT_RETRY_DELAY_MS
       );
     }
+
+    // Small extra settle time to ensure browser state is stable
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 200));
 
     sharedSessionSynced = true;
     sharedNextRetryAt = 0;

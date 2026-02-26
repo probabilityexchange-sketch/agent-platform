@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: User Guide
-    url: https://github.com/probabilityexchange-sketch/agent-platform/blob/main/docs/USER_GUIDE.md
+    url: https://github.com/Randi-Agent/randi-agent/blob/main/docs/USER_GUIDE.md
     about: Read end-user setup, integrations, credits, and troubleshooting steps.
   - name: Support and Ticketing Guide
-    url: https://github.com/probabilityexchange-sketch/agent-platform/blob/main/docs/SUPPORT_AND_TICKETING.md
+    url: https://github.com/Randi-Agent/randi-agent/blob/main/docs/SUPPORT_AND_TICKETING.md
     about: Review required diagnostics before opening a ticket.
   - name: Security Report (Private)
-    url: https://github.com/probabilityexchange-sketch/agent-platform/security/advisories/new
+    url: https://github.com/Randi-Agent/randi-agent/security/advisories/new
     about: Report vulnerabilities privately.

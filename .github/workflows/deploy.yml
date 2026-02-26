@@ -10,7 +10,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/agent-platform
+  IMAGE_NAME: ${{ github.repository_owner }}/randi-agent
 
 jobs:
   build-and-deploy:

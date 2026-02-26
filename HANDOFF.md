@@ -1,7 +1,7 @@
 # Agent Platform — Handoff Document
 **Date**: 2026-02-22
 **Project**: `~/projects/agent-platform` (WSL Ubuntu)
-**Repository**: probabilityexchange-sketch/agent-platform
+**Repository**: Randi-Agent/agent-platform
 
 ---
 

@@ -25,7 +25,7 @@ Notes:
 
 ## Image and Service Targets
 
-- Image: `ghcr.io/probabilityexchange-sketch/agent-platform`
+- Image: `ghcr.io/Randi-Agent/agent-platform`
 - Tags: `latest` and `sha-*`
 - App container: `agent-platform-web`
 - Compose file: `docker-compose.prod.yml`
