@@ -79,6 +79,7 @@ export const ORCHESTRATION_TOOLS: ChatTool[] = [
                 required: ["url"],
             },
         },
+    },
     {
         type: "function",
         function: {
