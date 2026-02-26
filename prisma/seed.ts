@@ -11,6 +11,13 @@ async function main() {
   const codeTools = JSON.stringify({
     toolkits: ["github"],
     tools: [],
+    skills: ["react-expert", "supabase-expert", "vercel-expert", "ai-agent-generation"],
+  });
+
+  const tokenLauncherTools = JSON.stringify({
+    toolkits: [],
+    tools: [],
+    skills: ["clawnch"],
   });
 
   const productivityTools = JSON.stringify({
@@ -112,7 +119,37 @@ async function main() {
     },
   });
 
-  console.log("Seeded agents:", { researchAgent, codeAgent, productivityAgent, leadAgent });
+  // 5. Token Launcher Agent (Clawnch)
+  const tokenLauncherAgent = await prisma.agentConfig.upsert({
+    where: { slug: "token-launcher" },
+    update: {
+      tools: tokenLauncherTools,
+    },
+    create: {
+      slug: "token-launcher",
+      name: "Token Launcher",
+      description: "Launch ERC-20 tokens on Base via Clawnch, find collaborators through Molten agent matching, and manage your token's social presence.",
+      image: "randi/token-launcher",
+      internalPort: 80,
+      tokensPerHour: 0,
+      memoryLimit: BigInt(0),
+      cpuLimit: BigInt(0),
+      systemPrompt: "You are an expert token launch specialist powered by Clawnch, the leading token deployment protocol on Base.\n\nYou help users:\n1. **Launch tokens on Base** — Guide them through naming, symbol, description, logo, and wallet setup. Validate their launch parameters before posting.\n2. **Find collaborators via Molten** — Register on the Molten agent-to-agent matching network and find marketing partners, liquidity providers, community managers, and dev services.\n3. **Manage token presence** — Help craft launch announcements, social posts, and community messaging.\n\n## How Token Launches Work\nTokens are launched by posting a `!clawnch` formatted message to a supported platform (Moltbook, moltx.io, or 4claw.org). The scanner picks it up within 60 seconds and deploys the ERC-20 on Base automatically.\n\n## Your Workflow\n1. Ask the user for: token name, symbol, description, logo image URL, and their Base wallet address\n2. Use `clawnch_validate_launch` to validate the parameters\n3. Use `clawnch_check_rate_limit` to confirm the wallet hasn't launched in the last 24 hours\n4. Generate the formatted `!clawnch` post content for the user to copy and post\n5. Optionally register on Molten and create intents for marketing/liquidity if the user wants collaborators\n\nAlways validate before generating the launch post. Be encouraging but honest about the speculative nature of token launches.",
+      tools: tokenLauncherTools,
+      defaultModel: "meta-llama/llama-3.3-70b-instruct:free",
+      active: true,
+    },
+  });
+
+  // Update lead agent to know about token-launcher specialist
+  await prisma.agentConfig.update({
+    where: { slug: "randi-lead" },
+    data: {
+      systemPrompt: "You are Randi, the lead agent platform director. Your job is to facilitate user requests. You have access to specialized agents: 'research-assistant' (for web searching and internet data), 'code-assistant' (for programming tasks), 'productivity-agent' (for emails, calendar, slack, and docs), and 'token-launcher' (for launching tokens on Base via Clawnch, Molten agent matching, and token social presence). When a user request clearly falls into one of these domains, use the 'delegate_to_specialist' tool to get help.\n\nCrucially, for complex repository-level coding tasks, bug fixes, or new feature implementations, you have access to a specialized 'spawn_autonomous_developer' tool. This launches a background coding agent via the Agent Orchestrator that can work autonomously on deep code changes. Use this when the user asks for a 'fix', 'build', or 'implementation' that requires more than just a quick code snippet.\n\nBe professional, helpful, and concise.",
+    },
+  });
+
+  console.log("Seeded agents:", { researchAgent, codeAgent, productivityAgent, leadAgent, tokenLauncherAgent });
 }
 
 main()

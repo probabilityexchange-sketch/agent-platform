@@ -19,6 +19,16 @@ import {
   isPremiumModel,
   type StakingLevel
 } from "@/lib/token-gating";
+import {
+  parseAgentSkills,
+  buildSkillsContext,
+  getActionSkills,
+} from "@/lib/skills/loader";
+import {
+  CLAWNCH_TOOLS,
+  executeClawnchTool,
+  isClawnchTool,
+} from "@/lib/skills/clawnch-tools";
 
 const optionalNonEmptyString = z.preprocess((value) => {
   if (typeof value !== "string") return value;
@@ -427,6 +437,9 @@ async function runToolEnabledChat(
         if (isOrchestrationTool(toolCall.function.name)) {
           const args = JSON.parse(toolCall.function.arguments);
           rawResult = await executeOrchestrationToolCall(userId, toolCall.function.name, args, sessionId);
+        } else if (isClawnchTool(toolCall.function.name)) {
+          const args = JSON.parse(toolCall.function.arguments);
+          rawResult = await executeClawnchTool(toolCall.function.name, args);
         } else {
           rawResult = await executeOpenAIToolCall(userId, toolCall);
         }
@@ -628,6 +641,14 @@ export async function POST(req: NextRequest) {
       ? toolsForRequest.filter((tool) => !tool.function.name.startsWith("GITHUB_"))
       : toolsForRequest;
 
+     // ── SKILLS SYSTEM ─────────────────────────────────────────────────────────
+    // Parse the agent's configured skills from its tools JSON config.
+    // Knowledge skills are injected into the system prompt context.
+    // Action skills (e.g. clawnch) are registered as callable tools.
+    const agentSkills = parseAgentSkills(agent.tools);
+    const skillsContext = buildSkillsContext(agentSkills);
+    const actionSkillNames = getActionSkills(agentSkills);
+
     // Merge Orchestration Tools if agent config asks for them
     let combinedTools = finalToolsForRequest;
     if (agent.tools) {
@@ -642,8 +663,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Merge Clawnch action tools if the agent has the clawnch skill
+    if (actionSkillNames.includes("clawnch")) {
+      combinedTools = [...combinedTools, ...CLAWNCH_TOOLS];
+    }
+
+    // Build the enriched system prompt with knowledge skill context appended
+    const enrichedSystemPrompt = agent.systemPrompt + skillsContext;
+
     const messages: ChatMessageParam[] = [
-      { role: "system", content: agent.systemPrompt },
+      { role: "system", content: enrichedSystemPrompt },
       ...(finalToolsForRequest.length > 0
         ? ([{ role: "system", content: TOOL_USAGE_SYSTEM_INSTRUCTION }] as ChatMessageParam[])
         : []),
