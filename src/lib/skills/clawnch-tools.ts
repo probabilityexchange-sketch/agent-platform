@@ -14,7 +14,8 @@
  * Full docs: https://clawn.ch/skill.md
  */
 
-import type { ChatTool } from "@/lib/composio/client";
+import type OpenAI from "openai";
+type ChatTool = OpenAI.Chat.Completions.ChatCompletionTool;
 
 export const CLAWNCH_BASE_URL = "https://clawn.ch";
 
