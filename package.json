@@ -37,7 +37,7 @@
     "openai": "^4.82.0",
     "prisma": "^5.22.0",
     "react": "19.0.0",
-    "react-dom": "19.0.0",
+    "react-dom": "19.2.4",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^16.1.0",
     "remark-gfm": "^4.0.1",
