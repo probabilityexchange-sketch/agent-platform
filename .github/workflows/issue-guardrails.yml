@@ -18,9 +18,14 @@ jobs:
         with:
           script: |
             const issue = context.payload.issue;
+            if (!issue) {
+              console.log("No issue found in payload (likely triggered by a PR or push). Skipping.");
+              return;
+            }
+
             const issueNumber = issue.number;
             const body = (issue.body || "").trim();
-            const labels = issue.labels.map((l) => l.name);
+            const labels = (issue.labels || []).map((l) => l.name);
 
             const REQUIRED_LABELS = [
               { name: "needs-info", color: "D93F0B", description: "Needs reporter follow-up before triage can continue" },
@@ -37,6 +42,7 @@ jobs:
                 });
               } catch (error) {
                 if (error.status === 404) {
+                  console.log(`Creating missing label: ${name}`);
                   await github.rest.issues.createLabel({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
@@ -45,7 +51,7 @@ jobs:
                     description,
                   });
                 } else {
-                  throw error;
+                  console.warn(`Could not manage label ${name}:`, error.message);
                 }
               }
             }
