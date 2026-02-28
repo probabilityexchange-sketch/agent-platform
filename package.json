@@ -19,7 +19,7 @@
   "dependencies": {
     "@composio/core": "^0.1.0",
     "@prisma/client": "^5.22.0",
-    "@privy-io/react-auth": "^2.0.0",
+    "@privy-io/react-auth": "^3.15.0",
     "@solana-program/memo": "latest",
     "@solana-program/system": "latest",
     "@solana-program/token": "latest",
