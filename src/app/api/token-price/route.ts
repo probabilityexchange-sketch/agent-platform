@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenPacks } from "@/lib/tokenomics";
+import { getTokenPacks, TOKEN_MINT, BURN_BPS } from "@/lib/tokenomics";
 import { getTokenUsdPrice } from "@/lib/payments/token-pricing";
 import { connection } from "@/lib/solana/connection";
 import { PublicKey } from "@solana/web3.js";
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const tokenMint = process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT || "FYAz1bPKJUFRwT4pzhUzdN3UqCN5ppXRL2pfto4zpump";
+        const tokenMint = TOKEN_MINT;
 
         // Fetch actual token supply from Solana blockchain
         let tokenSupply = 0;
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
                 symbol: "RANDI",
                 priceUsd: Number(cachedPrice.usd),
                 marketCap: roundUpTo1K(marketCap),
-                burnPercent: 70,
+                burnPercent: BURN_BPS / 100,
                 cachedAt: cachedPrice.timestamp,
             });
         }
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
                 symbol: "RANDI",
                 priceUsd: priceNum,
                 marketCap: roundUpTo1K(marketCap),
-                burnPercent: 70,
+                burnPercent: BURN_BPS / 100,
                 cachedAt: now,
             });
         }
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
             symbol: "RANDI",
             priceUsd: priceNum,
             marketCap: null,
-            burnPercent: 70,
+            burnPercent: BURN_BPS / 100,
             cachedAt: now,
         });
     } catch (error) {
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
                 symbol: "RANDI",
                 priceUsd: null,
                 marketCap: null,
-                burnPercent: 70,
+                burnPercent: BURN_BPS / 100,
                 error: "Price unavailable",
             },
             { status: 503 }

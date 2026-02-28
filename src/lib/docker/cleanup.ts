@@ -65,4 +65,29 @@ export async function cleanupExpiredContainers() {
             console.error(`Failed to cleanup expired container ${container.id}:`, error);
         }
     }
+
+    // 3. Cleanup orphaned docker containers (managed by us but not in DB)
+    const allContainers = await docker.listContainers({
+        all: true,
+        filters: { label: ["agent-platform.managed=true"] },
+    });
+
+    for (const info of allContainers) {
+        const dbContainer = await prisma.container.findUnique({
+            where: { dockerId: info.Id },
+        });
+
+        if (!dbContainer) {
+            console.log(`[Orphan] Removing orphaned container ${info.Id.slice(0, 12)}...`);
+            const orphan = docker.getContainer(info.Id);
+            try {
+                await orphan.stop({ t: 5 });
+            } catch {
+                // might already be stopped
+            }
+            await orphan.remove({ force: true }).catch((e) => {
+                console.warn(`Failed to remove orphaned container ${info.Id.slice(0, 12)}:`, e);
+            });
+        }
+    }
 }

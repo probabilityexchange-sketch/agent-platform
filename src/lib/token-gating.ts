@@ -11,13 +11,14 @@ import {
     getStakingLevel as getLevel,
     TOKEN_MINT,
     TOKEN_DECIMALS,
-    formatRandi
 } from "./tokenomics";
 
 export type { StakingLevel };
 export { TIERS as STAKING_TIERS };
 export const RANDI_TOKEN_MINT = TOKEN_MINT;
 export const RANDI_TOKEN_DECIMALS = TOKEN_DECIMALS;
+
+const TIER_ORDER: StakingLevel[] = ["NONE", "BRONZE", "SILVER", "GOLD"];
 
 /**
  * Get the staking tier based on staked amount (whole tokens)
@@ -57,10 +58,9 @@ export function getTierThreshold(tier: StakingLevel): number {
  * Get the next tier above the current one
  */
 export function getNextTier(currentLevel: StakingLevel): StakingLevel | null {
-    const tierOrder: StakingLevel[] = ["NONE", "BRONZE", "SILVER", "GOLD"];
-    const currentIndex = tierOrder.indexOf(currentLevel);
-    if (currentIndex === -1 || currentIndex === tierOrder.length - 1) return null;
-    return tierOrder[currentIndex + 1];
+    const currentIndex = TIER_ORDER.indexOf(currentLevel);
+    if (currentIndex === -1 || currentIndex === TIER_ORDER.length - 1) return null;
+    return TIER_ORDER[currentIndex + 1];
 }
 
 /**
@@ -105,9 +105,8 @@ export function getAmountToNextTier(stakedAmount: number): number {
  * Check if a user can access a premium model based on their staking level
  */
 export function canAccessPremiumModel(stakingLevel: StakingLevel, requiredLevel: StakingLevel): boolean {
-    const tierOrder: StakingLevel[] = ["NONE", "BRONZE", "SILVER", "GOLD"];
-    const userTierIndex = tierOrder.indexOf(stakingLevel);
-    const requiredTierIndex = tierOrder.indexOf(requiredLevel);
+    const userTierIndex = TIER_ORDER.indexOf(stakingLevel);
+    const requiredTierIndex = TIER_ORDER.indexOf(requiredLevel);
 
     return userTierIndex >= requiredTierIndex;
 }

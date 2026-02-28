@@ -12,6 +12,16 @@ import {
     STAKING_TIERS,
 } from "@/lib/token-gating";
 
+interface ParsedTokenAccountData {
+    parsed?: {
+        info?: {
+            tokenAmount?: {
+                amount?: string;
+            };
+        };
+    };
+}
+
 // Verify staking by scanning Solana for token holdings
 export async function POST(req: NextRequest) {
     try {
@@ -73,9 +83,12 @@ export async function POST(req: NextRequest) {
                 // Parse account info based on program
                 const tokenAccount = await connection.getParsedAccountInfo(ata);
                 if (tokenAccount.value && "data" in tokenAccount.value) {
-                    const data = tokenAccount.value.data as any;
-                    if (data?.parsed?.info?.tokenAmount?.amount) {
-                        tokenBalance = BigInt(data.parsed.info.tokenAmount.amount);
+                    const data = tokenAccount.value.data;
+                    if (typeof data === "object" && data !== null && "parsed" in data) {
+                        const parsed = (data as ParsedTokenAccountData).parsed;
+                        if (parsed?.info?.tokenAmount?.amount) {
+                            tokenBalance = BigInt(parsed.info.tokenAmount.amount);
+                        }
                     }
                 }
             }
