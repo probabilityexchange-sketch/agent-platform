@@ -397,6 +397,8 @@ async function runToolEnabledChat(
       });
 
       for (const toolCall of assistantToolCalls) {
+        if (toolCall.type !== "function") continue;
+
         // ── APPROVAL GATE ─────────────────────────────────────────────────────
         if (requiresApproval(toolCall.function.name)) {
           // Save a snapshot of the current message chain so we can resume later

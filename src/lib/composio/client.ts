@@ -270,6 +270,9 @@ export async function executeOpenAIToolCall(
     return JSON.stringify({ error: "COMPOSIO_API_KEY is not configured." });
   }
   const resolvedUserId = resolveComposioUserId(userId);
+  if (toolCall.type !== "function") {
+    return JSON.stringify({ error: "Only function tool calls are supported." });
+  }
   const normalizedToolCall = normalizeToolCallArguments(toolCall);
 
   // ── DEDICATED RUNTIME ROUTING ──────────────────────────────────────────
@@ -318,6 +321,8 @@ export async function executeOpenAIToolCall(
 }
 
 function normalizeToolCallArguments(toolCall: OpenAIToolCall): OpenAIToolCall {
+  if (toolCall.type !== "function") return toolCall;
+
   const normalizedArguments = normalizeToolCallArgumentsJson(
     toolCall.function.arguments
   );
