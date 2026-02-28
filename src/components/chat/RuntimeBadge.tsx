@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button"; // Assuming standard UI components or I'll use raw tailwind
-import { Badge } from "@/components/ui/badge";   // Assuming standard UI components
 
 interface RuntimeStatus {
     id?: string;
