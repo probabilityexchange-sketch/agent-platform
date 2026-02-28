@@ -213,9 +213,10 @@ function filterToolsForRequestedServices(
 ): ChatTool[] {
   if (requestedPrefixes.length === 0) return tools;
 
-  return tools.filter((tool) =>
-    requestedPrefixes.some((prefix) => tool.function.name.startsWith(prefix))
-  );
+  return tools.filter((tool) => {
+    if (tool.type !== "function") return false;
+    return requestedPrefixes.some((prefix) => tool.function.name.startsWith(prefix));
+  });
 }
 
 function summarizeToolFailure(toolCalls: ToolExecutionLog[]): string | null {
@@ -743,7 +744,7 @@ export async function POST(req: NextRequest) {
               type: "function",
               function: { name: approval.toolName, arguments: approval.toolArgs },
             };
-            toolResultContent = await executeOpenAIToolCall(auth.userId, toolCall, activeRuntime?.url);
+            toolResultContent = await executeOpenAIToolCall(auth.userId, toolCall, activeRuntime?.url ?? undefined);
           } else {
             // Rejected — inject a denial result so the LLM can respond gracefully
             toolResultContent = JSON.stringify({
@@ -766,7 +767,7 @@ export async function POST(req: NextRequest) {
               userId: auth.userId,
               forceFirstToolCall: false,
               sessionId: existingSession.id,
-              runtimeUrl: activeRuntime?.url,
+              runtimeUrl: activeRuntime?.url ?? undefined,
               writer,
               encoder,
             });
@@ -827,7 +828,7 @@ export async function POST(req: NextRequest) {
           userId: auth.userId,
           forceFirstToolCall,
           sessionId: existingSession?.id ?? "__new__",
-          runtimeUrl: activeRuntime?.url,
+          runtimeUrl: activeRuntime?.url ?? undefined,
           writer,
           encoder,
         });

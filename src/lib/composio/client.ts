@@ -160,6 +160,7 @@ function dedupeTools(tools: OpenAITool[]): OpenAITool[] {
   const deduped: OpenAITool[] = [];
 
   for (const tool of tools) {
+    if (tool.type !== "function") continue;
     const key = tool.function.name;
     if (seen.has(key)) continue;
     seen.add(key);

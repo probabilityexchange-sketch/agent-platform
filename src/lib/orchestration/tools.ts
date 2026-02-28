@@ -284,5 +284,5 @@ You can monitor the progress on the dashboard: ${result.dashboardUrl}`;
 }
 
 export function isOrchestrationTool(toolName: string): boolean {
-    return ORCHESTRATION_TOOLS.some((t) => t.function.name === toolName);
+    return ORCHESTRATION_TOOLS.some((t) => t.type === "function" && t.function.name === toolName);
 }
