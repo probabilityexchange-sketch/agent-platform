@@ -9,6 +9,7 @@ import {
     getAmountToNextTier,
     formatTokenAmount,
     getTierThreshold,
+    STAKING_TIERS,
     type StakingLevel,
 } from "@/lib/token-gating";
 
@@ -51,12 +52,12 @@ export async function GET() {
                 amountNeededFormatted: `${amountToNext.toLocaleString()} $RANDI`,
             } : null,
             unstakedAt: user.unstakedAt?.toISOString() || null,
-            tiers: {
-                NONE: { amount: 0, label: "Free Tier" },
-                BRONZE: { amount: 1000, label: "Bronze (1K $RANDI)" },
-                SILVER: { amount: 10000, label: "Silver (10K $RANDI)" },
-                GOLD: { amount: 100000, label: "Gold (100K $RANDI)" },
-            },
+            tiers: Object.fromEntries(
+                (Object.keys(STAKING_TIERS) as StakingLevel[]).map((tier) => [
+                    tier,
+                    { amount: STAKING_TIERS[tier].threshold, label: STAKING_TIERS[tier].label },
+                ])
+            ),
         });
     } catch (error) {
         return handleAuthError(error);

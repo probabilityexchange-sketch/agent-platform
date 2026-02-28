@@ -14,6 +14,7 @@ let cachedConfig: PlatformConfig | null = null;
 export function useConfig() {
   const [config, setConfig] = useState<PlatformConfig | null>(cachedConfig);
   const [loading, setLoading] = useState(!cachedConfig);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (cachedConfig) return;
@@ -24,9 +25,12 @@ export function useConfig() {
         cachedConfig = data;
         setConfig(data);
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error("Failed to load platform config:", err);
+        setError(err instanceof Error ? err.message : "Failed to load config");
+      })
       .finally(() => setLoading(false));
   }, []);
 
-  return { config, loading };
+  return { config, loading, error };
 }

@@ -59,3 +59,9 @@ next-env.d.ts
 /prisma/*.db-journal
 /aws/
 /dist/
+
+# sensitive / generated files that must not be committed
+*.tmp
+*.log
+awscliv2.zip
+verified_deposits.txt
