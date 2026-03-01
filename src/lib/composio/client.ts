@@ -260,7 +260,11 @@ export async function getAgentToolsFromConfig(
   const finalTools = dedupeTools(collectedTools);
   console.log(`[Composio] Collected ${finalTools.length} tools for user ${resolvedUserId}`);
   if (finalTools.length > 0) {
-    const prefixes = new Set(finalTools.map(t => t.function.name.split('_')[0]));
+    const prefixes = new Set(
+      finalTools
+        .filter((t): t is any => t.type === 'function')
+        .map(t => t.function.name.split('_')[0])
+    );
     console.log(`[Composio] Tools found for prefixes: ${Array.from(prefixes).join(', ')}`);
   }
   return finalTools;
