@@ -38,12 +38,20 @@ export async function createChatCompletion(options: OpenAI.Chat.ChatCompletionCr
 
     console.log(`[AI] Requesting completion with model: ${sanitizedModel} (original: ${options.model})`);
 
+    const requestOptions: any = {
+        ...options,
+        model: sanitizedModel
+    };
+
+    // Strip empty tools to prevent hallucinations on model gateways
+    if (Array.isArray(requestOptions.tools) && requestOptions.tools.length === 0) {
+        delete requestOptions.tools;
+        delete requestOptions.tool_choice;
+    }
+
     for (let i = 0; i < 3; i++) {
         try {
-            return await openrouter.chat.completions.create({
-                ...options,
-                model: sanitizedModel
-            });
+            return await openrouter.chat.completions.create(requestOptions);
         } catch (error: any) {
             lastError = error;
             console.error(`[AI] Completion attempt ${i + 1} failed:`, error.message || error);

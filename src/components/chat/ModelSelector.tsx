@@ -21,7 +21,7 @@ export function ModelSelector({ selectedModel, onChange }: ModelSelectorProps) {
 
     useEffect(() => {
         setIsLoading(true);
-        fetch('/api/models')
+        fetch(`/api/models?t=${Date.now()}`)
             .then(res => res.json())
             .then(data => {
                 if (data.models) {
@@ -90,10 +90,10 @@ export function ModelSelector({ selectedModel, onChange }: ModelSelectorProps) {
                                         }}
                                         disabled={!isFree}
                                         className={`flex flex-col text-left px-3 py-2 rounded-lg transition-colors ${!isFree
-                                                ? 'opacity-40 cursor-not-allowed bg-card'
-                                                : isSelected
-                                                    ? 'bg-primary/10 border border-primary/20'
-                                                    : 'hover:bg-muted'
+                                            ? 'opacity-40 cursor-not-allowed bg-card'
+                                            : isSelected
+                                                ? 'bg-primary/10 border border-primary/20'
+                                                : 'hover:bg-muted'
                                             }`}
                                     >
                                         <div className="flex items-center justify-between w-full">

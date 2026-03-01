@@ -21,6 +21,20 @@ export default function ChatSessionPage() {
     const [sessionId, setSessionId] = useState<string | undefined>(sessionIdFromParams);
     const [selectedModel, setSelectedModel] = useState("meta-llama/llama-3.3-70b-instruct:free");
 
+    // Persist model selection
+    useEffect(() => {
+        const savedModel = localStorage.getItem("lastSelectedModel");
+        if (savedModel) {
+            setSelectedModel(savedModel);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (selectedModel) {
+            localStorage.setItem("lastSelectedModel", selectedModel);
+        }
+    }, [selectedModel]);
+
     useEffect(() => {
         if (sessionId) {
             // Fetch session messages

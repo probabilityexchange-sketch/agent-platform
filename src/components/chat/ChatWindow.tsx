@@ -182,7 +182,7 @@ export function ChatWindow({
             setIsTyping(false);
             setStreamingMessageId(null);
         }
-    }, [agentId, currentSessionId]);
+    }, [agentId, currentSessionId, model]);
 
     const handleDecision = useCallback((approvalId: string, decision: ApprovalDecision) => {
         // Find the user message associated with this flow to resume it

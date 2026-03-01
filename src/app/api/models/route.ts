@@ -27,13 +27,23 @@ export async function GET() {
         const data = await response.json();
         console.log(`[Models] Received data from ${kiloKey ? "Kilo" : "OpenRouter"}. Object type: ${data.object}, Items: ${data.data?.length}`);
 
-        // OpenAI format usually returns { object: "list", data: [{ id: "model-id", ... }] }
-        let models = Array.isArray(data.data) ? data.data : [];
-
-        // If it's a direct array (some custom gateways)
-        if (models.length === 0 && Array.isArray(data)) {
+        // Resilient parsing for different gateway response formats
+        let models: any[] = [];
+        if (data && Array.isArray(data.data)) {
+            models = data.data;
+        } else if (data && Array.isArray(data.models)) {
+            models = data.models;
+        } else if (data && Array.isArray(data)) {
             models = data;
+        } else if (data && typeof data === "object") {
+            // Some gateways return a single "data" property that isn't a list but contains one
+            const possibleLists = Object.values(data).filter(v => Array.isArray(v)) as any[][];
+            if (possibleLists.length > 0) {
+                models = possibleLists[0];
+            }
         }
+
+        console.log(`[Models] Parsed ${models.length} models for client`);
 
         // Sort: Free models first, then alphabetical
         const sortedModels = models.sort((a: any, b: any) => {

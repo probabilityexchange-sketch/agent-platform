@@ -688,9 +688,9 @@ export async function POST(req: NextRequest) {
     const skillsContext = buildSkillsContext(agentSkills);
     const actionSkillNames = getActionSkills(agentSkills);
 
-    // Merge Orchestration Tools if agent config asks for them
+    // Merge Orchestration Tools if agent config asks for them, BUT ONLY if this is a tool request.
     let combinedTools = finalToolsForRequest;
-    if (agent.tools) {
+    if (isToolRequest && agent.tools) {
       try {
         const parsedConfig = JSON.parse(agent.tools);
         const requestedInternalTools = Array.isArray(parsedConfig.tools) ? parsedConfig.tools : [];
@@ -706,8 +706,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Merge Clawnch action tools if the agent has the clawnch skill
-    if (actionSkillNames.includes("clawnch")) {
+    // Merge Clawnch action tools if the agent has the clawnch skill AND this is a tool request.
+    if (isToolRequest && actionSkillNames.includes("clawnch")) {
       combinedTools = [...combinedTools, ...CLAWNCH_TOOLS];
     }
 
