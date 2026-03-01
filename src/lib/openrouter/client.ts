@@ -1,15 +1,16 @@
 import OpenAI from "openai";
 
-const kiloKey = process.env.KILO_API_KEY;
-const openRouterKey = process.env.OPENROUTER_API_KEY;
+const kiloKey = process.env.KILO_API_KEY?.trim();
+const openRouterKey = process.env.OPENROUTER_API_KEY?.trim();
 const apiKey = kiloKey || openRouterKey || "sk-no-key-set";
 
-if (!apiKey && process.env.NODE_ENV === "production") {
-    console.warn("Neither KILO_API_KEY nor OPENROUTER_API_KEY is set");
+console.log(`[AI] Initializing gateway client using ${kiloKey ? "Kilo AI" : "OpenRouter"}`);
+if (apiKey !== "sk-no-key-set") {
+    console.log(`[AI] Using API Key starting with: ${apiKey.substring(0, 7)}...`);
+} else {
+    console.warn("[AI] No API key found in environment variables!");
 }
 
-// Rename this internal instance to 'gateway' but keep the export name
-// 'openrouter' for backward compatibility with existing imports.
 export const openrouter = new OpenAI({
     baseURL: kiloKey ? "https://api.kilo.ai/api/gateway" : "https://openrouter.ai/api/v1",
     apiKey: apiKey,
@@ -30,11 +31,25 @@ export function isUnmeteredModel(modelId: string): boolean {
 
 export async function createChatCompletion(options: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming) {
     let lastError: any;
+
+    // Sanitize model ID for Kilo: some gateways don't like the OpenRouter ':free' suffix
+    const isKilo = !!process.env.KILO_API_KEY;
+    const sanitizedModel = isKilo ? options.model.replace(":free", "") : options.model;
+
+    console.log(`[AI] Requesting completion with model: ${sanitizedModel} (original: ${options.model})`);
+
     for (let i = 0; i < 3; i++) {
         try {
-            return await openrouter.chat.completions.create(options);
+            return await openrouter.chat.completions.create({
+                ...options,
+                model: sanitizedModel
+            });
         } catch (error: any) {
             lastError = error;
+            console.error(`[AI] Completion attempt ${i + 1} failed:`, error.message || error);
+            if (error.response?.data) {
+                console.error(`[AI] Error details:`, JSON.stringify(error.response.data));
+            }
             // Retry on 503, 429, 502, 504
             const status = error.status || error.statusCode;
             if (status === 503 || status === 429 || status === 502 || status === 504) {
