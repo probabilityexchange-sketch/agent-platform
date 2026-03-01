@@ -591,7 +591,8 @@ export async function POST(req: NextRequest) {
       const kiloKey = process.env.KILO_API_KEY;
 
       if (!isSubscribed && !kiloKey) {
-        // Check if this is a premium model that can be accessed via staking
+        // If it's not unmetered, and user isn't subscribed, and no kiloKey is set (owner mode)
+        // Check if it's a premium model that can be accessed via staking
         if (isPremiumModel(model)) {
           const userStakingLevel = (user?.stakingLevel || "NONE") as StakingLevel;
           const accessCheck = validateModelAccess(model, userStakingLevel);
@@ -608,6 +609,7 @@ export async function POST(req: NextRequest) {
             );
           }
         } else {
+          // It's a premium model but not in the staking-accessible list
           return NextResponse.json(
             {
               error: "Premium models require a Randi Pro subscription.",
