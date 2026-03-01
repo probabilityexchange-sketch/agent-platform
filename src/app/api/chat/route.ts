@@ -53,8 +53,10 @@ const MAX_TOOL_LOOP_STEPS = 10;
 // FIX (LOW): Maximum wall-clock time for the entire tool-enabled chat turn.
 // Prevents runaway agent sessions from consuming resources indefinitely.
 const TOOL_LOOP_TIMEOUT_MS = 90_000; // 90 seconds
+import { KILO_COMPOSIO_CHEAT_SHEET } from "@/lib/skills/tool-cheat-sheet";
+
 const TOOL_USAGE_SYSTEM_INSTRUCTION =
-  "You have access to tools. For requests involving external services (GitHub, Slack, Notion, Gmail, Google Sheets, Google Calendar, Supabase, Vercel, Hacker News), call the best matching tool first before replying. If a tool returns an error, do not retry the exact same call with the same arguments—explain the issue to the user. Do not claim lack of access when tools are available. Never simulate or invent tool results.";
+  "You have access to tools. For requests involving external services (GitHub, Slack, Notion, Gmail, Google Sheets, Google Calendar, Supabase, Vercel, Hacker News), call the best matching tool first before replying. If a tool returns an error, do not retry the exact same call with the same arguments—explain the issue to the user. Do not claim lack of access when tools are available. Never simulate or invent tool results.\n\n" + KILO_COMPOSIO_CHEAT_SHEET;
 
 type ChatMessageParam = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 type ChatTool = OpenAI.Chat.Completions.ChatCompletionTool;

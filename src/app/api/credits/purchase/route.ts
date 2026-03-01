@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { AuthError, requireAuth, handleAuthError } from "@/lib/auth/middleware";
-import { getTokenPacks, BURN_BPS } from "@/lib/tokenomics";
+import { getCreditPacks, BURN_BPS } from "@/lib/tokenomics";
 import { prisma } from "@/lib/db/prisma";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
 import {
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     const { packageId } = parsed.data;
 
     // 1. Find the pack
-    const packs = getTokenPacks();
+    const packs = getCreditPacks();
     const pkg = packs.find(p => p.id === packageId);
 
     if (!pkg) {
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Resolve token amount
-    const tokenAmountToTransfer = pkg.tokenAmount; // whole tokens
+    const tokenAmountToTransfer = pkg.creditAmount; // whole tokens
     const decimals = Number(process.env.TOKEN_DECIMALS || process.env.NEXT_PUBLIC_TOKEN_DECIMALS || "6");
     const tokenAmountBaseUnits = BigInt(tokenAmountToTransfer) * BigInt(10 ** decimals);
 
@@ -88,12 +88,12 @@ export async function POST(request: NextRequest) {
         userId: auth.userId,
         type: isSubscription ? "SUBSCRIBE" : "PURCHASE",
         status: "PENDING",
-        amount: pkg.tokenAmount,
+        amount: pkg.creditAmount,
         tokenAmount: tokenAmountBaseUnits,
         memo,
         description: isSubscription
-          ? `Subscribe to Randi Pro (${pkg.tokenAmount.toLocaleString()} $RANDI)`
-          : `Deposit ${pkg.tokenAmount.toLocaleString()} $RANDI (${pkg.name} Pack)`,
+          ? `Subscribe to Randi Pro (${pkg.creditAmount.toLocaleString()} Credits)`
+          : `Deposit ${pkg.creditAmount.toLocaleString()} $RANDI (${pkg.name})`,
       },
     });
 
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
         itemUsd: "0",
         itemName: pkg.name,
         tokenUsdPrice: "0",
-        tokenAmountDisplay: pkg.tokenAmount.toLocaleString(),
+        tokenAmountDisplay: pkg.creditAmount.toLocaleString(),
         source: "fixed",
         burnBps: effectiveBurnBps,
       },

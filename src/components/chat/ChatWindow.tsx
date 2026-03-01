@@ -19,6 +19,7 @@ export interface Message {
 interface ChatWindowProps {
     agentId: string;
     sessionId?: string;
+    model: string;
     initialMessages?: Message[];
     onSessionCreated?: (sessionId: string) => void;
 }
@@ -26,6 +27,7 @@ interface ChatWindowProps {
 export function ChatWindow({
     agentId,
     sessionId,
+    model,
     initialMessages = [],
     onSessionCreated,
 }: ChatWindowProps) {
@@ -68,8 +70,10 @@ export function ChatWindow({
                 agentId?: string;
                 sessionId?: string;
                 resumeApprovalId?: string;
+                model?: string;
             } = {
                 message: content,
+                model: model,
             };
             if (currentSessionId) {
                 payload.sessionId = currentSessionId;

@@ -3,11 +3,11 @@ import {
   getCallCost,
   toLamports,
   StakingLevel,
-  getTokenPacks,
-  TokenPack
+  getCreditPacks,
+  CreditPack
 } from "@/lib/tokenomics";
 
-export { getTokenPacks };
+export { getCreditPacks };
 
 /**
  * Deduct tokens from user balance for an agent call.
@@ -87,7 +87,7 @@ export async function depositTokens(
   baseTokenAmount: bigint,
   memo: string
 ): Promise<void> {
-  const packs = getTokenPacks();
+  const packs = getCreditPacks();
   const pack = packs.find(p => p.id === packId);
 
   // Calculate bonus if pack found

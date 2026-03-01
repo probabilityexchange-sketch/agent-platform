@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenPacks } from "@/lib/tokenomics";
+import { getCreditPacks } from "@/lib/tokenomics";
 import { getTokenUsdPrice } from "@/lib/payments/token-pricing";
 import { connection } from "@/lib/solana/connection";
 import { PublicKey } from "@solana/web3.js";
@@ -30,8 +30,10 @@ export async function GET(request: NextRequest) {
         try {
             const mintPubkey = new PublicKey(tokenMint);
             const supply = await connection.getTokenSupply(mintPubkey);
-            tokenSupply = Number(supply.value.amount);
-            console.log("Fetched token supply:", tokenSupply);
+            // FIX (HIGH): Supply is returned in atomic units (6 decimals for $RANDI). 
+            // Divide by decimals to get human-readable supply for market cap.
+            tokenSupply = Number(supply.value.amount) / Math.pow(10, 6); // $RANDI uses 6 decimals
+            console.log("Fetched human-readable token supply:", tokenSupply);
         } catch (supplyError) {
             console.warn("Failed to fetch token supply from Solana:", supplyError);
         }
