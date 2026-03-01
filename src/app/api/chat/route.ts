@@ -49,12 +49,12 @@ const schema = z
   });
 
 const MAX_HISTORY_MESSAGES = 40;
-const MAX_TOOL_LOOP_STEPS = 4;
+const MAX_TOOL_LOOP_STEPS = 10;
 // FIX (LOW): Maximum wall-clock time for the entire tool-enabled chat turn.
 // Prevents runaway agent sessions from consuming resources indefinitely.
 const TOOL_LOOP_TIMEOUT_MS = 90_000; // 90 seconds
 const TOOL_USAGE_SYSTEM_INSTRUCTION =
-  "You have access to tools. For requests involving external services (GitHub, Slack, Notion, Gmail, Google Sheets, Google Calendar, Supabase, Vercel, Hacker News), call the best matching tool first before replying. If the user explicitly names a service (for example Gmail), only use tools from that service unless they ask for something else. Do not claim lack of access when tools are available. Never simulate or invent tool results.";
+  "You have access to tools. For requests involving external services (GitHub, Slack, Notion, Gmail, Google Sheets, Google Calendar, Supabase, Vercel, Hacker News), call the best matching tool first before replying. If a tool returns an error, do not retry the exact same call with the same arguments—explain the issue to the user. Do not claim lack of access when tools are available. Never simulate or invent tool results.";
 
 type ChatMessageParam = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 type ChatTool = OpenAI.Chat.Completions.ChatCompletionTool;
@@ -490,22 +490,15 @@ async function runToolEnabledChat(
     };
   } catch (error) {
     clearTimeout(loopTimeoutId);
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("Tool-enabled chat failed, falling back to text-only chat.", error);
-    } else {
-      console.warn("Tool-enabled chat failed, falling back to text-only chat.");
-    }
+    console.error("[chat] Tool-enabled chat failed:", error);
 
     let fallbackText =
       "I ran into a temporary model issue while processing that request. Please try again.";
     try {
+      console.log("[chat] Attempting text-only fallback...");
       fallbackText = await runTextOnlyChat(model, baseMessages);
     } catch (fallbackError) {
-      if (process.env.NODE_ENV !== "production") {
-        console.warn("Text-only fallback also failed.", fallbackError);
-      } else {
-        console.warn("Text-only fallback also failed.");
-      }
+      console.error("[chat] Text-only fallback also failed:", fallbackError);
     }
 
     return {
