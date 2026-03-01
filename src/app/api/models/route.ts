@@ -2,12 +2,17 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
     try {
-        const apiKey = process.env.KILO_API_KEY;
+        const kiloKey = process.env.KILO_API_KEY;
+        const openRouterKey = process.env.OPENROUTER_API_KEY;
+        const apiKey = kiloKey || openRouterKey;
+
         if (!apiKey) {
-            return NextResponse.json({ error: "Missing KILO_API_KEY" }, { status: 500 });
+            return NextResponse.json({ error: "Missing API Key" }, { status: 500 });
         }
 
-        const response = await fetch("https://api.kilo.ai/v1/models", {
+        const baseUrl = kiloKey ? "https://api.kilo.ai/v1/models" : "https://openrouter.ai/api/v1/models";
+
+        const response = await fetch(baseUrl, {
             headers: {
                 Authorization: `Bearer ${apiKey}`,
             },

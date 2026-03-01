@@ -56,7 +56,7 @@ const TOOL_LOOP_TIMEOUT_MS = 90_000; // 90 seconds
 import { KILO_COMPOSIO_CHEAT_SHEET } from "@/lib/skills/tool-cheat-sheet";
 
 const TOOL_USAGE_SYSTEM_INSTRUCTION =
-  "You have access to tools. For requests involving external services (GitHub, Slack, Notion, Gmail, Google Sheets, Google Calendar, Supabase, Vercel, Hacker News), call the best matching tool first before replying. If a tool returns an error, do not retry the exact same call with the same arguments—explain the issue to the user. Do not claim lack of access when tools are available. Never simulate or invent tool results.\n\n" + KILO_COMPOSIO_CHEAT_SHEET;
+  "You have access to tools. For requests involving external services (GitHub, Slack, Notion, Gmail, Google Sheets, Google Calendar, Supabase, Vercel, Hacker News), call the best matching tool first before replying. CRITICAL: If a tool returns an error, DO NOT retry the exact same call. If you encounter multiple errors, STOP calling tools immediately and explain the issue to the user. Do not claim lack of access when tools are available. Never simulate or invent tool results.\n\n" + KILO_COMPOSIO_CHEAT_SHEET;
 
 type ChatMessageParam = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 type ChatTool = OpenAI.Chat.Completions.ChatCompletionTool;
@@ -363,6 +363,8 @@ async function runToolEnabledChat(
   const loopAbortController = new AbortController();
   const loopTimeoutId = setTimeout(() => loopAbortController.abort(), TOOL_LOOP_TIMEOUT_MS);
 
+  let consecutiveErrors = 0;
+
   try {
     for (let iteration = 0; iteration < MAX_TOOL_LOOP_STEPS; iteration += 1) {
       if (loopAbortController.signal.aborted) {
@@ -480,6 +482,27 @@ async function runToolEnabledChat(
           content: rawResult,
           toolCalls: toolCall.id, // Reusing column to store ID
         });
+      }
+
+      const iterationHadErrors = toolCalls.slice(-assistantToolCalls.length).some(tc => !!tc.error);
+      if (iterationHadErrors) {
+        consecutiveErrors++;
+      } else {
+        consecutiveErrors = 0;
+      }
+
+      if (consecutiveErrors >= 3) {
+        messages.push({
+          role: "system",
+          content: "CRITICAL: You have encountered multiple consecutive tool errors. You must STOP calling tools now. Reply to the user explaining what failed and why.",
+        });
+        // We do not break immediately, we let the LLM generate one final text response 
+        // in the next iteration without calling tools (since we instructed it to stop).
+
+        // Prevent further looping if it ignores the instruction
+        if (consecutiveErrors >= 5) {
+          break;
+        }
       }
     }
 

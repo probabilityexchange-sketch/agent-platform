@@ -5,7 +5,6 @@ import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { ChatWindow, type Message } from "@/components/chat/ChatWindow";
 import { RuntimeBadge } from "@/components/chat/RuntimeBadge";
 import { ModelSelector } from "@/components/chat/ModelSelector";
-import { CyberHUD } from "@/components/chat/CyberHUD";
 
 export default function ChatSessionPage() {
     const params = useParams();
@@ -91,7 +90,7 @@ export default function ChatSessionPage() {
     }
 
     return (
-        <div className="flex flex-col h-[calc(100vh-3.5rem)] max-w-7xl mx-auto p-4 md:p-6">
+        <div className="flex flex-col h-[calc(100vh-3.5rem)] max-w-5xl mx-auto p-4 md:p-6">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
                 <div className="flex items-center gap-3">
                     <button
@@ -123,38 +122,29 @@ export default function ChatSessionPage() {
             </div>
 
 
-            <div className="flex-1 min-h-0 flex gap-4 overflow-hidden">
-                <div className="flex-1 min-w-0 h-full">
-                    <ChatWindow
-                        key={sessionId || `new-${currentAgentId || "agent"}`}
-                        agentId={currentAgentId || ""}
-                        sessionId={sessionId}
-                        model={selectedModel}
-                        initialMessages={initialMessages}
-                        onSessionCreated={(newSessionId) => {
-                            setSessionId(newSessionId);
-                            if (!sessionId) {
-                                if (typeof window !== "undefined") {
-                                    const suffix = currentAgentId
-                                        ? `?agentId=${encodeURIComponent(currentAgentId)}`
-                                        : "";
-                                    window.history.replaceState(
-                                        window.history.state,
-                                        "",
-                                        `/chat/${newSessionId}${suffix}`
-                                    );
-                                }
+            <div className="flex-1 min-h-0">
+                <ChatWindow
+                    key={sessionId || `new-${currentAgentId || "agent"}`}
+                    agentId={currentAgentId || ""}
+                    sessionId={sessionId}
+                    model={selectedModel}
+                    initialMessages={initialMessages}
+                    onSessionCreated={(newSessionId) => {
+                        setSessionId(newSessionId);
+                        if (!sessionId) {
+                            if (typeof window !== "undefined") {
+                                const suffix = currentAgentId
+                                    ? `?agentId=${encodeURIComponent(currentAgentId)}`
+                                    : "";
+                                window.history.replaceState(
+                                    window.history.state,
+                                    "",
+                                    `/chat/${newSessionId}${suffix}`
+                                );
                             }
-                        }}
-                    />
-                </div>
-                <div className="hidden lg:block w-80 shrink-0 h-full rounded-xl overflow-hidden shadow-2xl shadow-black/50 border border-white/5 bg-[#0a0a0f]">
-                    <CyberHUD
-                        agentName={agentName}
-                        modelId={selectedModel}
-                        isActive={true}
-                    />
-                </div>
+                        }
+                    }}
+                />
             </div>
         </div>
     );
