@@ -107,3 +107,22 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* Custom Prose for Markdown Documentation */
+.prose h1 { @apply text-4xl font-black italic mb-8 tracking-tighter text-white uppercase; }
+.prose h2 { @apply text-2xl font-bold mt-12 mb-6 border-b border-white/10 pb-2 text-white/90; }
+.prose h3 { @apply text-xl font-bold mt-8 mb-4 text-white/80; }
+.prose p { @apply text-muted-foreground leading-relaxed mb-6; }
+.prose ul { @apply list-disc pl-6 mb-6 space-y-2 text-muted-foreground; }
+.prose ol { @apply list-decimal pl-6 mb-6 space-y-2 text-muted-foreground; }
+.prose li { @apply pl-2; }
+.prose strong { @apply text-white font-bold; }
+.prose blockquote { @apply border-l-4 border-primary/40 pl-6 my-8 italic text-muted-foreground bg-primary/5 py-4 rounded-r-xl; }
+.prose code { @apply bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono text-[0.9em]; }
+.prose pre { @apply bg-black/40 border border-white/5 rounded-2xl p-6 mb-8 overflow-x-auto; }
+.prose pre code { @apply bg-transparent text-foreground p-0 text-[0.85em]; }
+.prose a { @apply text-primary hover:underline transition-all; }
+.prose hr { @apply my-10 border-white/5; }
+.prose table { @apply w-full border-collapse mb-8; }
+.prose th { @apply text-left p-3 border-b border-white/10 text-white/60 text-xs uppercase tracking-widest font-black; }
+.prose td { @apply p-3 border-b border-white/5 text-sm text-muted-foreground; }

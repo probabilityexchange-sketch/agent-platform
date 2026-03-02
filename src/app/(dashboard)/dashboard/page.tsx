@@ -25,6 +25,19 @@ function DashboardContent() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [models, setModels] = useState<any[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(true);
+  const [selectedModel, setSelectedModel] = useState<string>("");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("randi_selected_model");
+    if (saved) setSelectedModel(saved);
+  }, []);
+
+  const handleModelSelect = (modelId: string) => {
+    setSelectedModel(modelId);
+    localStorage.setItem("randi_selected_model", modelId);
+  };
 
   // Fetch full profile and handle URL-based username
   useEffect(() => {
@@ -64,6 +77,16 @@ function DashboardContent() {
         console.error("Error fetching sessions:", err);
         setLoading(false);
       });
+
+    // Fetch dynamic models
+    setModelsLoading(true);
+    fetch("/api/models")
+      .then((res) => res.json())
+      .then((data) => {
+        setModels(data.models || []);
+      })
+      .catch((err) => console.error("Error fetching models:", err))
+      .finally(() => setModelsLoading(false));
   }, []);
 
   const handleSaveUsername = async () => {
@@ -158,28 +181,49 @@ function DashboardContent() {
         </div>
 
         {/* Model Access */}
-        <div className="glass-card rounded-3xl p-8 transition-all hover:scale-[1.02]">
+        <div className="glass-card rounded-3xl p-8 transition-all hover:scale-[1.02] flex flex-col">
           <div className="flex justify-between items-start mb-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-[0.2em] font-bold">Free Arsenal</p>
-            <span className="text-[10px] text-primary/60 font-black italic">By Kilo Code</span>
+            <p className="text-xs text-muted-foreground uppercase tracking-[0.2em] font-bold">Model Arsenal</p>
+            <span className="text-[10px] text-primary/60 font-black italic">Kilo Power</span>
           </div>
-          <div className="flex flex-col gap-4 mt-2">
-            {[
-              { name: "GLM 5 (Free)", status: "Active" },
-              { name: "MiniMax 2.5 (Free)", status: "Active" },
-              { name: "DeepSeek R1 (Free)", status: "Active" },
-            ].map((m) => (
-              <div key={m.name} className="flex items-center justify-between group">
-                <span className="text-sm font-medium group-hover:text-primary transition-colors">{m.name}</span>
-                <span className="text-[10px] px-2 py-0.5 bg-success/20 text-success rounded-full font-bold uppercase">{m.status}</span>
-              </div>
-            ))}
+
+          <div className="flex-1 overflow-y-auto max-h-[160px] no-scrollbar space-y-2 mb-6 pr-1">
+            {modelsLoading ? (
+              [1, 2, 3].map((i) => (
+                <div key={i} className="h-8 bg-white/5 animate-pulse rounded-lg"></div>
+              ))
+            ) : models.length > 0 ? (
+              models.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => handleModelSelect(m.id)}
+                  className={`w-full flex items-center justify-between group p-2 rounded-xl transition-all ${selectedModel === m.id
+                    ? "bg-primary/20 ring-1 ring-primary/50"
+                    : "hover:bg-white/5"
+                    }`}
+                >
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <div className={`w-1.5 h-1.5 rounded-full ${selectedModel === m.id ? "bg-primary animate-pulse" : "bg-white/20 group-hover:bg-white/40"}`}></div>
+                    <span className={`text-sm font-medium truncate max-w-[120px] transition-colors ${selectedModel === m.id ? "text-primary" : "group-hover:text-primary"}`} title={m.id}>
+                      {m.name || m.id.split("/").pop()?.split(":")[0] || m.id}
+                    </span>
+                  </div>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase ${m.id.includes(":free") ? "bg-success/20 text-success" : "bg-primary/20 text-primary"
+                    }`}>
+                    {m.id.includes(":free") ? "Free" : "Premium"}
+                  </span>
+                </button>
+              ))
+            ) : (
+              <p className="text-xs text-muted-foreground">No models found</p>
+            )}
           </div>
-          <div className="mt-6 p-3 bg-primary/5 rounded-xl border border-primary/10">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Premium Compute</p>
+
+          <div className="p-3 bg-primary/5 rounded-xl border border-primary/10">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Compute Status</p>
             <p className="text-[10px] leading-relaxed">
-              <span className="text-primary font-bold">Opus 4.6</span> & <span className="text-primary font-bold">Gemini 3.1</span>
-              <br />Available for on-demand usage fee.
+              <span className="text-primary font-bold">{models.length}</span> models available across all tiers.
+              <br />Global average latency: <span className="text-success font-bold">140ms</span>
             </p>
           </div>
           <div className="mt-6 pt-5 border-t border-border/50">

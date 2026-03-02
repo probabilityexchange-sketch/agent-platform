@@ -23,7 +23,7 @@ export default function ChatSessionPage() {
 
     // Persist model selection
     useEffect(() => {
-        const savedModel = localStorage.getItem("lastSelectedModel");
+        const savedModel = localStorage.getItem("randi_selected_model");
         if (savedModel) {
             setSelectedModel(savedModel);
         }
@@ -31,7 +31,7 @@ export default function ChatSessionPage() {
 
     useEffect(() => {
         if (selectedModel) {
-            localStorage.setItem("lastSelectedModel", selectedModel);
+            localStorage.setItem("randi_selected_model", selectedModel);
         }
     }, [selectedModel]);
 
