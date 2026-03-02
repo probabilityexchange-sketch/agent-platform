@@ -1,5 +1,5 @@
-import { openai } from "@ai-sdk/openai";
-import { streamText, tool, generateText, type ToolSet, type ModelMessage } from "ai";
+import { aiOpenRouter } from "@/lib/ai/openrouter";
+import { streamText, tool, generateText, stepCountIs, type ToolSet, type ModelMessage } from "ai";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
             if (ot.type !== 'function') return;
             tools[ot.function.name] = tool({
                 description: ot.function.description,
-                parameters: z.any(), // Since we already have the definitions in orchestration/tools.ts
+                inputSchema: z.any(), // Since we already have the definitions in orchestration/tools.ts
                 execute: async (args) => {
                     return await executeOrchestrationToolCall(auth.userId, ot.function.name, args, sessionId || "v2-session");
                 }
@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
             if (ct.type !== 'function') return;
             tools[ct.function.name] = tool({
                 description: ct.function.description,
-                parameters: z.any(),
+                inputSchema: z.any(),
                 execute: async (args) => {
                     return await executeClawnchTool(ct.function.name, args);
                 }
@@ -174,21 +174,21 @@ export async function POST(req: NextRequest) {
             });
             stored.reverse().forEach(m => {
                 if (m.role === 'user' || m.role === 'assistant' || m.role === 'system') {
-                    history.push({ role: m.role, content: m.content });
+                    history.push({ role: m.role as 'user' | 'assistant' | 'system', content: m.content });
                 }
             });
         }
 
         // 5. Run streamText
         const result = streamText({
-            model: openai(model),
+            model: aiOpenRouter(model),
             system: agent.systemPrompt,
             messages: [
                 ...history,
                 { role: 'user', content: message }
             ],
             tools,
-            maxSteps: 10,
+            stopWhen: stepCountIs(10),
             onFinish: async ({ text, toolCalls, toolResults }) => {
                 // Persistence logic
                 let currentSessionId = existingSession?.id;
@@ -197,7 +197,7 @@ export async function POST(req: NextRequest) {
                     let title = message.substring(0, 50);
                     try {
                         const { text: titleText } = await generateText({
-                            model: openai("google/gemini-2.0-flash-lite-preview-02-05:free"),
+                            model: aiOpenRouter("google/gemini-2.0-flash-lite-preview-02-05:free"),
                             system: "Generate a concise 3-4 word title for a chat starting with this message. Return ONLY the title text.",
                             prompt: message,
                         });
@@ -237,7 +237,7 @@ export async function POST(req: NextRequest) {
             }
         });
 
-        return result.toTextStreamResponse();
+        return result.toDataStreamResponse();
 
     } catch (error) {
         console.error("Chat V2 Error:", error);
