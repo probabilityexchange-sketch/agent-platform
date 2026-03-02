@@ -1,0 +1,246 @@
+import { openai } from "@ai-sdk/openai";
+import { streamText, tool, generateText, type ToolSet, type CoreMessage } from "ai";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db/prisma";
+import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
+import { z } from "zod";
+import {
+    ORCHESTRATION_TOOLS,
+    executeOrchestrationToolCall,
+    isOrchestrationTool
+} from "@/lib/orchestration/tools";
+import {
+    CLAWNCH_TOOLS,
+    executeClawnchTool,
+    isClawnchTool
+} from "@/lib/skills/clawnch-tools";
+import { getComposioClient, executeOpenAIToolCall, resolveComposioUserId } from "@/lib/composio/client";
+import { VercelProvider } from "@composio/vercel";
+import { DEFAULT_MODEL, isUnmeteredModel } from "@/lib/openrouter/client";
+import { deductForAgentCall } from "@/lib/credits/engine";
+import {
+    validateModelAccess,
+    isPremiumModel,
+    type StakingLevel
+} from "@/lib/token-gating";
+
+// Input schema
+const schema = z.object({
+    agentId: z.string().optional(),
+    agentSlug: z.string().optional(),
+    sessionId: z.string().optional(),
+    message: z.string().min(1).max(4000),
+    model: z.string().min(1).default(DEFAULT_MODEL),
+});
+
+const MAX_HISTORY = 10;
+
+export async function POST(req: NextRequest) {
+    try {
+        const auth = await requireAuth();
+        const body = await req.json();
+        const { agentId, agentSlug, sessionId, message, model } = schema.parse(body);
+
+        // 1. Billing & Access Checks
+        if (!isUnmeteredModel(model)) {
+            const user = await prisma.user.findUnique({
+                where: { id: auth.userId },
+                select: { subscriptionStatus: true, subscriptionExpiresAt: true, stakingLevel: true },
+            });
+
+            const isSubscribed =
+                user?.subscriptionStatus === "active" &&
+                user.subscriptionExpiresAt &&
+                user.subscriptionExpiresAt > new Date();
+
+            if (!isSubscribed) {
+                if (isPremiumModel(model)) {
+                    const userStakingLevel = (user?.stakingLevel || "NONE") as StakingLevel;
+                    const accessCheck = validateModelAccess(model, userStakingLevel);
+                    if (!accessCheck.allowed) {
+                        return NextResponse.json({ error: accessCheck.reason, code: "STAKING_REQUIRED" }, { status: 403 });
+                    }
+                } else {
+                    return NextResponse.json({ error: "Premium models require a Randi Pro subscription.", code: "SUBSCRIPTION_REQUIRED" }, { status: 403 });
+                }
+            }
+
+            const deduction = await deductForAgentCall(auth.userId, model, `Chat V2: ${message.substring(0, 50)}`, sessionId);
+            if (!deduction.success) {
+                return NextResponse.json({ error: deduction.error || "Insufficient credits.", code: "INSUFFICIENT_FUNDS" }, { status: 402 });
+            }
+        }
+
+        // 2. Fetch Agent Config
+        let existingSession = null;
+        if (sessionId) {
+            existingSession = await prisma.chatSession.findUnique({
+                where: { id: sessionId },
+                select: { id: true, agentId: true, userId: true }
+            });
+            if (!existingSession || existingSession.userId !== auth.userId) {
+                return NextResponse.json({ error: "Session not found" }, { status: 404 });
+            }
+        }
+
+        const resolvedAgentId = existingSession?.agentId || agentId;
+
+        const agent = resolvedAgentId ? await prisma.agentConfig.findUnique({
+            where: { id: resolvedAgentId },
+        }) : (agentSlug ? await prisma.agentConfig.findUnique({
+            where: { slug: agentSlug },
+        }) : null);
+
+        if (!agent || !agent.active) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+
+        // 3. Prepare Tools
+        const tools: ToolSet = {};
+
+        // Load Tools for V2
+        const composioClient = await getComposioClient();
+        if (composioClient && agent.tools) {
+            const parsed = JSON.parse(agent.tools);
+            const resolvedUserId = resolveComposioUserId(auth.userId);
+
+            // Fetch tools from Composio Core Client
+            const composioTools = await composioClient.tools.get(resolvedUserId, {
+                toolkits: parsed.toolkits,
+                tools: parsed.tools
+            });
+
+            // Discover active runtime for container isolation
+            const activeRuntime = await prisma.container.findFirst({
+                where: {
+                    userId: auth.userId,
+                    agentId: agent.id,
+                    expiresAt: { gt: new Date() }
+                },
+                select: { url: true }
+            });
+
+            // Wrap them for Vercel AI SDK
+            const vercelProvider = new VercelProvider();
+            const wrappedComposioTools = vercelProvider.wrapTools(
+                Array.isArray(composioTools) ? composioTools : [composioTools],
+                async (toolSlug, args) => {
+                    // We reuse the existing execution logic which handles runtimeUrl!
+                    // But we need to convert it to the format executeOpenAIToolCall expects
+                    const toolCall = {
+                        id: `v2_${Math.random().toString(36).substr(2, 9)}`,
+                        type: 'function' as const,
+                        function: {
+                            name: toolSlug,
+                            arguments: JSON.stringify(args)
+                        }
+                    };
+                    return await executeOpenAIToolCall(auth.userId, toolCall, activeRuntime?.url ?? undefined);
+                }
+            );
+            Object.assign(tools, wrappedComposioTools);
+        }
+
+        // Add Orchestration Tools
+        ORCHESTRATION_TOOLS.forEach(ot => {
+            if (ot.type !== 'function') return;
+            tools[ot.function.name] = tool({
+                description: ot.function.description,
+                parameters: z.any(), // Since we already have the definitions in orchestration/tools.ts
+                execute: async (args) => {
+                    return await executeOrchestrationToolCall(auth.userId, ot.function.name, args, sessionId || "v2-session");
+                }
+            });
+        });
+
+        // Add Clawnch Tools
+        CLAWNCH_TOOLS.forEach(ct => {
+            if (ct.type !== 'function') return;
+            tools[ct.function.name] = tool({
+                description: ct.function.description,
+                parameters: z.any(),
+                execute: async (args) => {
+                    return await executeClawnchTool(ct.function.name, args);
+                }
+            });
+        });
+
+        // 4. Load History
+        const history: CoreMessage[] = [];
+        if (existingSession) {
+            const stored = await prisma.chatMessage.findMany({
+                where: { sessionId: existingSession.id },
+                orderBy: { createdAt: 'desc' },
+                take: MAX_HISTORY,
+                select: { role: true, content: true }
+            });
+            stored.reverse().forEach(m => {
+                if (m.role === 'user' || m.role === 'assistant' || m.role === 'system') {
+                    history.push({ role: m.role, content: m.content });
+                }
+            });
+        }
+
+        // 5. Run streamText
+        const result = streamText({
+            model: openai(model),
+            system: agent.systemPrompt,
+            messages: [
+                ...history,
+                { role: 'user', content: message }
+            ],
+            tools,
+            maxSteps: 10,
+            onFinish: async ({ text, toolCalls, toolResults }) => {
+                // Persistence logic
+                let currentSessionId = existingSession?.id;
+                if (!currentSessionId) {
+                    // Ported title generation via AI
+                    let title = message.substring(0, 50);
+                    try {
+                        const { text: titleText } = await generateText({
+                            model: openai("google/gemini-2.0-flash-lite-preview-02-05:free"),
+                            system: "Generate a concise 3-4 word title for a chat starting with this message. Return ONLY the title text.",
+                            prompt: message,
+                        });
+                        title = titleText.trim() || title;
+                    } catch (err) {
+                        console.warn("Title generation failed in V2, falling back to snippet", err);
+                    }
+
+                    const newSession = await prisma.chatSession.create({
+                        data: {
+                            userId: auth.userId,
+                            agentId: agent.id,
+                            title: title
+                        }
+                    });
+                    currentSessionId = newSession.id;
+                }
+
+                // Save User Message
+                await prisma.chatMessage.create({
+                    data: {
+                        sessionId: currentSessionId,
+                        role: 'user',
+                        content: message
+                    }
+                });
+
+                // Save Assistant Message
+                await prisma.chatMessage.create({
+                    data: {
+                        sessionId: currentSessionId,
+                        role: 'assistant',
+                        content: text,
+                        toolCalls: toolCalls.length > 0 ? JSON.stringify(toolCalls) : null
+                    }
+                });
+            }
+        });
+
+        return result.toTextStreamResponse();
+
+    } catch (error) {
+        console.error("Chat V2 Error:", error);
+        return handleAuthError(error);
+    }
+}
