@@ -123,15 +123,28 @@ async function processWithRandi(userId: string, agent: any, query: string, token
             if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
                 const toolResults = await Promise.all(
                     assistantMessage.tool_calls.map(async (tc) => {
-                        let result;
-                        if (ORCHESTRATION_TOOLS.some(t => t.function.name === tc.function.name)) {
-                            result = await executeOrchestrationToolCall(userId, tc.function.name, JSON.parse(tc.function.arguments), "telegram-session");
-                        } else {
-                            // Native tools (Gmail, etc.)
-                            // In a real app, we'd need to handle runtimeUrls if using dedicated containers
-                            // For Telegram, we'll assume shared/fallback for now
-                            result = "Tool execution via Telegram is currently limited to orchestration.";
+                        let result = "Unsupported tool type.";
+
+                        // Type-safe check for 'function' tool calls
+                        if (tc.type === 'function' && tc.function) {
+                            const functionName = tc.function.name;
+                            const isOrch = ORCHESTRATION_TOOLS.some((t: any) =>
+                                t.type === 'function' && t.function?.name === functionName
+                            );
+
+                            if (isOrch) {
+                                result = await executeOrchestrationToolCall(
+                                    userId,
+                                    functionName,
+                                    JSON.parse(tc.function.arguments),
+                                    "telegram-session"
+                                );
+                            } else {
+                                // Native tools (Gmail, etc.)
+                                result = "Tool execution via Telegram is currently limited to orchestration.";
+                            }
                         }
+
                         return { role: "tool" as const, tool_call_id: tc.id, content: result };
                     })
                 );
