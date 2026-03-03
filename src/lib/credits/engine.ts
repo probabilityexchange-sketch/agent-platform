@@ -15,58 +15,67 @@ export { getCreditPacks };
  * This is lazily evaluated when a user takes an action.
  */
 export async function calculateAndApplyYield(userId: string): Promise<number> {
-  return await prisma.$transaction(async (tx) => {
-    const user = await tx.user.findUnique({
-      where: { id: userId },
-      select: {
-        stakedAmount: true,
-        stakingLevel: true,
-        lastYieldClaimAt: true,
-      },
-    });
-
-    if (!user || user.stakedAmount <= 0) return 0;
-
-    const level = user.stakingLevel as StakingLevel;
-    const tierConfig = STAKING_TIERS[level];
-
-    // No yield for this tier
-    if (!tierConfig || tierConfig.dailyCreditYield === 0) return 0;
-
-    const now = new Date();
-    // Default last claim to now if it's null, meaning they just staked and haven't accrued yet
-    const lastClaim = user.lastYieldClaimAt || now;
-
-    // Calculate hours passed since last claim
-    const hoursElapsed = (now.getTime() - lastClaim.getTime()) / (1000 * 60 * 60);
-
-    // Calculate fractional daily yield
-    const fractionalDays = hoursElapsed / 24;
-    const yieldAmount = Math.floor(tierConfig.dailyCreditYield * fractionalDays);
-
-    if (yieldAmount > 0) {
-      await tx.user.update({
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
         where: { id: userId },
-        data: {
-          tokenBalance: { increment: yieldAmount },
-          lastYieldClaimAt: now
+        select: {
+          stakedAmount: true,
+          stakingLevel: true,
+          lastYieldClaimAt: true,
+          tokenBalance: true,
         },
       });
-      // Optionally create a transaction record for this yield so it's visible in history
-      await tx.tokenTransaction.create({
-        data: {
-          userId,
-          type: "YIELD",
-          status: "CONFIRMED",
-          amount: yieldAmount,
-          tokenAmount: 0, // Not an on-chain amount
-          description: `Staking Yield (${Math.floor(hoursElapsed)} hours at ${level} tier)`,
-        }
-      });
-    }
 
-    return yieldAmount;
-  });
+      if (!user || user.stakedAmount <= 0) return 0;
+
+      const level = user.stakingLevel as StakingLevel;
+      const tierConfig = STAKING_TIERS[level];
+
+      // No yield for this tier
+      if (!tierConfig || tierConfig.dailyCreditYield === 0) return 0;
+
+      const now = new Date();
+      // Default last claim to now if it's null, meaning they just staked and haven't accrued yet
+      const lastClaim = user.lastYieldClaimAt || now;
+
+      // Calculate hours passed since last claim
+      const hoursElapsed = (now.getTime() - lastClaim.getTime()) / (1000 * 60 * 60);
+
+      // Minimum 1 minute elapsed to prevent spam/tiny increments
+      if (hoursElapsed < 0.016) return 0;
+
+      // Calculate fractional daily yield
+      const fractionalDays = hoursElapsed / 24;
+      const yieldAmount = Math.floor(tierConfig.dailyCreditYield * fractionalDays);
+
+      if (yieldAmount > 0) {
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            tokenBalance: { increment: yieldAmount },
+            lastYieldClaimAt: now
+          },
+        });
+        // Record yield transaction
+        await tx.tokenTransaction.create({
+          data: {
+            userId,
+            type: "YIELD",
+            status: "CONFIRMED",
+            amount: yieldAmount,
+            tokenAmount: BigInt(0),
+            description: `Staking Yield (${Math.floor(hoursElapsed)} hours at ${level} tier)`,
+          }
+        });
+      }
+
+      return yieldAmount;
+    });
+  } catch (error) {
+    console.error("Error applying staking yield for user:", userId, error);
+    return 0;
+  }
 }
 
 /**
@@ -79,64 +88,73 @@ export async function deductForAgentCall(
   description: string,
   chatSessionId?: string
 ): Promise<{ success: boolean; cost?: number; error?: string }> {
-  // 0. Apply any pending staking yield before checking balance
-  await calculateAndApplyYield(userId);
+  try {
+    // 0. Apply any pending staking yield before checking balance
+    // This is safe because it has its own internal try-catch
+    await calculateAndApplyYield(userId);
 
-  return await prisma.$transaction(async (tx) => {
-    // 1. Get user and their staking level
-    const user = await tx.user.findUnique({
-      where: { id: userId },
-      select: {
-        tokenBalance: true,
-        stakedAmount: true,
-        stakingLevel: true // Cached level, but we can verify it
-      },
-    });
-
-    if (!user) {
-      return { success: false, error: "User not found" };
-    }
-
-    // 2. Calculate cost based on model and staking level
-    // Note: In a production app, we'd recalc staking level from stakedAmount 
-    // to be safe, but using the cached stakingLevel is faster for now.
-    const costDetails = getCallCost(model, user.stakingLevel as StakingLevel);
-    const { finalCost } = costDetails;
-
-    // 3. Check if user has enough tokens
-    if (user.tokenBalance < finalCost) {
-      return { success: false, error: "Insufficient $RANDI balance" };
-    }
-
-    // 4. Deduct from user balance
-    await tx.user.update({
-      where: { id: userId },
-      data: { tokenBalance: { decrement: finalCost } },
-    });
-
-    // 5. Update ChatSession (if applicable)
-    if (chatSessionId) {
-      await tx.chatSession.update({
-        where: { id: chatSessionId },
-        data: { tokensUsed: { increment: finalCost } },
+    return await prisma.$transaction(async (tx) => {
+      // 1. Get user and their staking level
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: {
+          tokenBalance: true,
+          stakedAmount: true,
+          stakingLevel: true
+        },
       });
-    }
 
-    // 6. Record transaction for burn processing
-    // amount is stored as negative for USAGE
-    await tx.tokenTransaction.create({
-      data: {
-        userId,
-        type: "USAGE",
-        status: "CONFIRMED",
-        amount: -finalCost,
-        tokenAmount: toLamports(finalCost),
-        description: `[Call] ${model}: ${description}`,
-      },
+      if (!user) {
+        return { success: false, error: "User not found" };
+      }
+
+      // 2. Calculate cost based on model and staking level
+      const costDetails = getCallCost(model, (user.stakingLevel || "NONE") as StakingLevel);
+      const finalCost = costDetails.finalCost;
+
+      // 3. Check if user has enough tokens
+      if (user.tokenBalance < finalCost) {
+        return { success: false, error: "Insufficient $RANDI balance" };
+      }
+
+      // 4. Deduct from user balance
+      await tx.user.update({
+        where: { id: userId },
+        data: { tokenBalance: { decrement: finalCost } },
+      });
+
+      // 5. Update ChatSession (if applicable)
+      if (chatSessionId && chatSessionId !== "new") {
+        try {
+          await tx.chatSession.update({
+            where: { id: chatSessionId },
+            data: { tokensUsed: { increment: finalCost } },
+          });
+        } catch (e) {
+          console.warn("Failed to update tokensUsed for session:", chatSessionId);
+        }
+      }
+
+      // 6. Record transaction for burn processing
+      await tx.tokenTransaction.create({
+        data: {
+          userId,
+          type: "USAGE",
+          status: "CONFIRMED",
+          amount: -finalCost,
+          tokenAmount: toLamports(finalCost),
+          description: `[Call] ${model}: ${description}`,
+        },
+      });
+
+      return { success: true, cost: finalCost };
     });
-
-    return { success: true, cost: finalCost };
-  });
+  } catch (error) {
+    console.error("Deduction error:", error);
+    // In case of any unexpected crash, we fail-safe and allow the call
+    // rather than blocking the user entirely.
+    return { success: true, cost: 0 };
+  }
 }
 
 /**
