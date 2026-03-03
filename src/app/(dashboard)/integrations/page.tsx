@@ -155,24 +155,22 @@ function IntegrationsPageContent() {
     setError(null);
 
     try {
-      let response = await fetch("/api/composio/integrations", { cache: "no-store" });
-      let payload = (await response.json()) as IntegrationsResponse & { error?: string };
+      const response = await fetch("/api/composio/integrations", { cache: "no-store" });
+      const payload = (await response.json()) as IntegrationsResponse & { error?: string };
 
-      if (response.status === 401) {
-        retrySessionSync();
-        // Short delay to allow session sync to attempt recovery
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        response = await fetch("/api/composio/integrations", { cache: "no-store" });
-        payload = (await response.json()) as IntegrationsResponse & { error?: string };
+      if (!response.ok) {
+        if (response.status === 401) {
+          retrySessionSync();
+          return;
+        }
+        throw new Error(payload.error || "Failed to load integrations");
       }
 
-      if (!response.ok) throw new Error(payload.error || "Failed to load integrations");
       setData(payload);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Failed to load integrations");
-      // Don't clear data on error if we already have it
     } finally {
-      if (isInitial) setLoading(false);
+      setLoading(false);
     }
   }, [isAuthenticated, sessionReady, retrySessionSync]);
 
@@ -185,7 +183,7 @@ function IntegrationsPageContent() {
       return;
     }
 
-    // Initial load vs refresh
+    // Only show skeleton on first ever load
     load(data === null).catch(() => { });
   }, [isAuthenticated, sessionReady, load, searchParams]);
 
