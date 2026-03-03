@@ -4,10 +4,70 @@ import {
   toLamports,
   StakingLevel,
   getCreditPacks,
-  CreditPack
+  CreditPack,
+  STAKING_TIERS
 } from "@/lib/tokenomics";
 
 export { getCreditPacks };
+
+/**
+ * Calculate and apply pending yield for a user based on their staking level.
+ * This is lazily evaluated when a user takes an action.
+ */
+export async function calculateAndApplyYield(userId: string): Promise<number> {
+  return await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: {
+        stakedAmount: true,
+        stakingLevel: true,
+        lastYieldClaimAt: true,
+      },
+    });
+
+    if (!user || user.stakedAmount <= 0) return 0;
+
+    const level = user.stakingLevel as StakingLevel;
+    const tierConfig = STAKING_TIERS[level];
+
+    // No yield for this tier
+    if (!tierConfig || tierConfig.dailyCreditYield === 0) return 0;
+
+    const now = new Date();
+    // Default last claim to now if it's null, meaning they just staked and haven't accrued yet
+    const lastClaim = user.lastYieldClaimAt || now;
+
+    // Calculate hours passed since last claim
+    const hoursElapsed = (now.getTime() - lastClaim.getTime()) / (1000 * 60 * 60);
+
+    // Calculate fractional daily yield
+    const fractionalDays = hoursElapsed / 24;
+    const yieldAmount = Math.floor(tierConfig.dailyCreditYield * fractionalDays);
+
+    if (yieldAmount > 0) {
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          tokenBalance: { increment: yieldAmount },
+          lastYieldClaimAt: now
+        },
+      });
+      // Optionally create a transaction record for this yield so it's visible in history
+      await tx.tokenTransaction.create({
+        data: {
+          userId,
+          type: "YIELD",
+          status: "CONFIRMED",
+          amount: yieldAmount,
+          tokenAmount: 0, // Not an on-chain amount
+          description: `Staking Yield (${Math.floor(hoursElapsed)} hours at ${level} tier)`,
+        }
+      });
+    }
+
+    return yieldAmount;
+  });
+}
 
 /**
  * Deduct tokens from user balance for an agent call.
@@ -19,6 +79,9 @@ export async function deductForAgentCall(
   description: string,
   chatSessionId?: string
 ): Promise<{ success: boolean; cost?: number; error?: string }> {
+  // 0. Apply any pending staking yield before checking balance
+  await calculateAndApplyYield(userId);
+
   return await prisma.$transaction(async (tx) => {
     // 1. Get user and their staking level
     const user = await tx.user.findUnique({
@@ -87,6 +150,9 @@ export async function depositTokens(
   baseTokenAmount: bigint,
   memo: string
 ): Promise<void> {
+  // 0. Apply any pending staking yield before processing new deposit
+  await calculateAndApplyYield(userId);
+
   const packs = getCreditPacks();
   const pack = packs.find(p => p.id === packId);
 
@@ -130,6 +196,9 @@ export async function depositTokens(
  * Get user balance and staking info.
  */
 export async function getUserWalletInfo(userId: string) {
+  // Apply any pending yield before returning the balance
+  await calculateAndApplyYield(userId);
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {

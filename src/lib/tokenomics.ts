@@ -149,10 +149,10 @@ export function getModelCost(model: string): number {
 // instead of an unlimited subscription that kills deflation.
 
 export const STAKING_TIERS = {
-    NONE: { threshold: 0, discountBps: 0, label: "Free Tier" },
-    BRONZE: { threshold: 1_000, discountBps: 1500, label: "Bronze (1K $RANDI)" },
-    SILVER: { threshold: 10_000, discountBps: 3000, label: "Silver (10K $RANDI)" },
-    GOLD: { threshold: 100_000, discountBps: 5000, label: "Gold (100K $RANDI)" },
+    NONE: { threshold: 0, discountBps: 0, dailyCreditYield: 0, label: "Free Tier" },
+    BRONZE: { threshold: 1_000, discountBps: 1500, dailyCreditYield: 1_000, label: "Bronze (1K $RANDI)" },
+    SILVER: { threshold: 10_000, discountBps: 3000, dailyCreditYield: 15_000, label: "Silver (10K $RANDI)" },
+    GOLD: { threshold: 100_000, discountBps: 5000, dailyCreditYield: 200_000, label: "Gold (100K $RANDI)" },
 } as const;
 
 export type StakingLevel = keyof typeof STAKING_TIERS;
