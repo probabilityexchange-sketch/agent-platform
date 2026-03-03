@@ -131,8 +131,6 @@ export async function handleNonStandardChat({
                     },
                 ],
             });
-
-            writer.close();
         },
     });
 
