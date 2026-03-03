@@ -1,4 +1,4 @@
-import { createDataStreamResponse, type ToolSet, type ModelMessage } from "ai";
+import { createUIMessageStream, createUIMessageStreamResponse, type ToolSet, type ModelMessage } from "ai";
 import { createChatCompletion } from "@/lib/openrouter/client";
 import { prisma } from "@/lib/db/prisma";
 
@@ -19,8 +19,8 @@ export async function handleNonStandardChat({
     tools: ToolSet;
     sessionId?: string;
 }) {
-    return createDataStreamResponse({
-        execute: async (dataStream) => {
+    const stream = createUIMessageStream({
+        execute: async ({ writer }) => {
             let currentHistory: any[] = [
                 ...history,
                 { role: "user", content: message },
@@ -30,11 +30,11 @@ export async function handleNonStandardChat({
             let iterations = 0;
             const MAX_RESILIENCE_STEPS = 10;
 
-            dataStream.writeMessageAnnotation({ type: "status", content: "Initializing resilience loop..." });
+            // In SDK v6, we write parts to the stream
+            writer.write({ type: "text", text: "" }); // Start message
 
             while (iterations < MAX_RESILIENCE_STEPS) {
                 iterations++;
-                dataStream.writeMessageAnnotation({ type: "status", content: `Step ${iterations}: Thinking...` });
 
                 const response = await createChatCompletion({
                     model,
@@ -58,12 +58,10 @@ export async function handleNonStandardChat({
 
                 if (assistantMsg.content) {
                     lastText = assistantMsg.content;
-                    dataStream.writeText(assistantMsg.content);
+                    writer.write({ type: "text", text: assistantMsg.content });
                 }
 
                 if (assistantMsg.tool_calls && assistantMsg.tool_calls.length > 0) {
-                    dataStream.writeMessageAnnotation({ type: "status", content: `Step ${iterations}: Executing ${assistantMsg.tool_calls.length} tools...` });
-
                     const toolResults = await Promise.all(
                         assistantMsg.tool_calls.map(async (tc: any) => {
                             const toolName = tc.function.name;
@@ -130,6 +128,10 @@ export async function handleNonStandardChat({
                     },
                 ],
             });
+
+            writer.close();
         },
     });
+
+    return createUIMessageStreamResponse({ stream });
 }
