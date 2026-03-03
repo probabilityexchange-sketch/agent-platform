@@ -409,6 +409,8 @@ export async function executeOpenAIToolCall(
   // Fallback to Composio SDK execution
   try {
     console.log(`[Composio] Executing tool: ${toolName} for entity: ${resolvedUserId}`);
+    console.log(`[Composio] Args: ${JSON.stringify(toolArgs)}`);
+    console.log(`[Composio] COMPOSIO_ENTITY_ID env: ${process.env.COMPOSIO_ENTITY_ID ? 'SET' : 'NOT SET'}`);
 
     const result = await composioClient.tools.execute(toolName, {
       userId: resolvedUserId,
@@ -419,12 +421,14 @@ export async function executeOpenAIToolCall(
     console.log(`[Composio] Tool ${toolName} executed successfully`);
     return JSON.stringify(result);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Tool execution failed";
-    console.error(`[Composio] Tool execution error for ${toolName}:`, message);
+    const err = error as any;
+    const message = error instanceof Error ? error.message : "Tool execution failed";
+    const stack = err?.stack || '';
+    console.error(`[Composio] Tool execution error for ${toolName}:`, message, stack);
     return JSON.stringify({
       error: message,
       tool: toolName,
+      details: err?.response?.data || err?.cause || null,
     });
   }
 }
