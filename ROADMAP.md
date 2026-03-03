@@ -63,6 +63,7 @@ This roadmap outlines the strategic phases for evolving the Randi Agent Platform
 - [ ] **Infinite Memory Vault**: Persistent, personalized RAG storage for every user.
 - [ ] **Agent Swarms**: Multi-agent orchestration (PM -> Developer -> Tester) for complex builds.
 - [ ] **Commercial Autonomy**: Shopify and Stripe skills to let Randi manage storefronts and refunds.
+- [ ] **Randi Minions**: "One-shot" end-to-end coding agents. [View Implementation Plan](file:///C:/Users/billy/.gemini/antigravity/brain/66f2185b-21de-4d7a-a758-907738220bed/implementation_plan.md)
 
 ---
 *Note: This is a living document and will be updated as the Randi ecosystem evolves.*
