@@ -184,11 +184,11 @@ export async function POST(req: NextRequest) {
             arguments: args,
           }, activeRuntime?.url || undefined);
 
-          console.log(`[Chat] Tool ${toolSlug} raw result: ${resultStr.substring(0, 500)}`);
+          console.log(`[Chat] Tool ${toolSlug} raw result (len=${resultStr.length}): ${resultStr.substring(0, 1000)}`);
 
           let parsed: Record<string, unknown>;
           try { parsed = JSON.parse(resultStr); } catch { parsed = { result: resultStr }; }
-          console.log(`[Chat] Tool ${toolSlug} parsed result: ${JSON.stringify(parsed).substring(0, 500)}`);
+          console.log(`[Chat] Tool ${toolSlug} parsed result: ${JSON.stringify(parsed).substring(0, 1000)}`);
           
           const isError = parsed && typeof parsed === 'object' && ('error' in parsed || 'errorMessage' in parsed);
           return {
