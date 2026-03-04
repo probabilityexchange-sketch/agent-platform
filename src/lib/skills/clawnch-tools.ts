@@ -304,5 +304,5 @@ export async function executeClawnchTool(
  * Check if a tool name belongs to the Clawnch action skill.
  */
 export function isClawnchTool(toolName: string): boolean {
-  return CLAWNCH_TOOLS.some((t) => t.function.name === toolName);
+  return CLAWNCH_TOOLS.some((t) => t.type === "function" && t.function.name === toolName);
 }

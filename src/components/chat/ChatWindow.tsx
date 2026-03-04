@@ -1,24 +1,30 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useMemo, useState } from "react";
+import { useChat, Chat } from "@ai-sdk/react";
+import { DefaultChatTransport, UIMessage } from "ai";
 import { MessageBubble } from "./MessageBubble";
 import { ChatInput } from "./ChatInput";
-import type { ApprovalRequest, ApprovalDecision } from "./ApprovalCard";
+import type { ApprovalDecision } from "./ApprovalCard";
 
 export interface Message {
     id: string;
-    role: "user" | "assistant" | "system";
+    role: "user" | "assistant" | "system" | "tool";
     content: string;
     createdAt: Date | string;
     error?: boolean;
     type?: "text" | "approval_request";
-    approvalRequest?: ApprovalRequest;
+    toolCalls?: any; // For tool calls
+    toolResults?: any;
+    approvalRequest?: any;
     approvalDecision?: ApprovalDecision;
+    parts?: any[];
 }
 
 interface ChatWindowProps {
     agentId: string;
     sessionId?: string;
+    model: string;
     initialMessages?: Message[];
     onSessionCreated?: (sessionId: string) => void;
 }
@@ -26,187 +32,83 @@ interface ChatWindowProps {
 export function ChatWindow({
     agentId,
     sessionId,
+    model,
     initialMessages = [],
     onSessionCreated,
 }: ChatWindowProps) {
-    const [messages, setMessages] = useState<Message[]>(initialMessages);
-    const [isTyping, setIsTyping] = useState(false);
-    const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(sessionId);
     const scrollRef = useRef<HTMLDivElement>(null);
-    const lastFailedMessage = useRef<string | null>(null);
+    const [localError, setLocalError] = useState<string | null>(null);
 
+    // Transform initial messages to SDK v6 format
+    const transformedInitialMessages = useMemo(() => {
+        return initialMessages.map(m => ({
+            id: m.id,
+            role: (m.role === "tool" ? "assistant" : m.role) as "user" | "assistant" | "system",
+            parts: m.parts || [{ type: "text", text: m.content }],
+            metadata: { createdAt: m.createdAt instanceof Date ? m.createdAt : new Date(m.createdAt) }
+        }));
+    }, [initialMessages]);
+
+    // Build the transport and chat object
+    const chat = useMemo(() => new Chat({
+        messages: transformedInitialMessages as any,
+        transport: new DefaultChatTransport({
+            api: "/api/chat",
+            body: {
+                agentId,
+                sessionId,
+                model,
+            },
+        }),
+    }), [agentId, sessionId, model, transformedInitialMessages]);
+
+    const {
+        messages,
+        sendMessage,
+        status,
+        regenerate,
+        error: chatError,
+    } = useChat({
+        chat,
+    });
+
+    const isLoading = status === "streaming" || status === "submitted";
+
+    // Auto-scroll
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [messages]);
 
-    useEffect(() => {
-        setCurrentSessionId(sessionId);
-    }, [sessionId]);
-
-    const sendMessage = useCallback(async (content: string, resumeApprovalId?: string) => {
-        if (!content.trim()) return;
-        setError(null);
-        if (!resumeApprovalId) lastFailedMessage.current = null;
-
-        const userMessage: Message = {
-            id: `user-${Date.now()}`,
-            role: "user",
-            content,
-            createdAt: new Date(),
-        };
-
-        setMessages((prev) => [...prev, userMessage]);
-        setIsTyping(true);
+    const handleSendMessage = useCallback(async (content: string) => {
+        if (!content.trim() || isLoading) return;
+        setLocalError(null);
 
         try {
-            const payload: {
-                message: string;
-                agentId?: string;
-                sessionId?: string;
-                resumeApprovalId?: string;
-            } = {
-                message: content,
-            };
-            if (currentSessionId) {
-                payload.sessionId = currentSessionId;
-            }
-            if (agentId && agentId.trim().length > 0) {
-                payload.agentId = agentId;
-            }
-            if (resumeApprovalId) {
-                payload.resumeApprovalId = resumeApprovalId;
-            }
-
-            const response = await fetch("/api/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
+            await sendMessage({
+                role: "user",
+                parts: [{ type: "text", text: content }],
             });
-
-            if (!response.ok) {
-                const details = await response.json().catch(() => null) as { error?: string } | null;
-                throw new Error(details?.error || `Request failed (${response.status})`);
-            }
-
-            if (!response.body) {
-                throw new Error("Response body is empty");
-            }
-
-            // Create placeholder assistant message
-            const assistantId = `asst-${Date.now()}`;
-            const assistantMessage: Message = {
-                id: assistantId,
-                role: "assistant",
-                content: "",
-                createdAt: new Date(),
-            };
-            setMessages((prev) => [...prev, assistantMessage]);
-            setIsTyping(false); // Stop typing indicator since we're streaming
-            setStreamingMessageId(assistantId);
-
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let accumulatedContent = "";
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                const chunk = decoder.decode(value, { stream: true });
-
-                // Handle Human-in-the-Loop (HITL) markers
-                if (chunk.includes("__APPROVAL_REQUEST__")) {
-                    const markerStart = chunk.indexOf("__APPROVAL_REQUEST__");
-                    const markerEnd = chunk.indexOf("__END__", markerStart);
-
-                    if (markerEnd !== -1) {
-                        const jsonStr = chunk.substring(markerStart + "__APPROVAL_REQUEST__".length, markerEnd);
-                        try {
-                            const approvalData = JSON.parse(jsonStr);
-                            setMessages((prev) => {
-                                // If the assistant hasn't sent any real text yet, replace the placeholder
-                                // Otherwise, we'd need to append. For now, our API pauses and replaces.
-                                const filtered = prev.filter(m => m.id !== assistantId);
-                                return [...filtered, {
-                                    id: `approval-${approvalData.approvalId}`,
-                                    role: "assistant",
-                                    content: "",
-                                    type: "approval_request",
-                                    approvalRequest: approvalData,
-                                    approvalDecision: "PENDING",
-                                    createdAt: new Date(),
-                                }];
-                            });
-                            setIsTyping(false);
-                            setStreamingMessageId(null);
-                            return; // Stop reading this stream
-                        } catch (e) {
-                            console.error("Failed to parse HITL event", e);
-                        }
-                    }
-                }
-
-                accumulatedContent += chunk;
-
-                setMessages((prev) =>
-                    prev.map((msg) =>
-                        msg.id === assistantId
-                            ? { ...msg, content: accumulatedContent }
-                            : msg
-                    )
-                );
-            }
-            setStreamingMessageId(null);
         } catch (err) {
-            console.error("Chat error:", err);
-            const errorMsg = err instanceof Error ? err.message : "Failed to send message";
-            setError(errorMsg);
-            lastFailedMessage.current = content;
-
-            setMessages((prev) =>
-                prev.map((msg, i) =>
-                    i === prev.length - 1 && msg.role === "user"
-                        ? { ...msg, error: true }
-                        : msg
-                )
-            );
-        } finally {
-            setIsTyping(false);
-            setStreamingMessageId(null);
+            console.error("SendMessage error:", err);
+            setLocalError(err instanceof Error ? err.message : "Failed to send message");
         }
-    }, [agentId, currentSessionId]);
+    }, [sendMessage, isLoading]);
 
-    const handleDecision = useCallback((approvalId: string, decision: ApprovalDecision) => {
-        // Find the user message associated with this flow to resume it
-        // For simplicity, we'll use the last user message
-        const lastUserMessage = [...messages].reverse().find(m => m.role === "user");
-
-        setMessages((prev) =>
-            prev.map((msg) =>
-                msg.approvalRequest?.approvalId === approvalId
-                    ? { ...msg, approvalDecision: decision }
-                    : msg
-            )
-        );
-
+    const handleApprovalDecision = useCallback(async (approvalId: string, decision: ApprovalDecision) => {
         if (decision === "APPROVED" || decision === "REJECTED") {
-            if (lastUserMessage) {
-                sendMessage(lastUserMessage.content, approvalId);
+            try {
+                // In v6, additional data is passed in the body option of ChatRequestOptions
+                await sendMessage({
+                    role: "user",
+                    parts: [{ type: "text", text: "(Resume)" }],
+                }, {
+                    body: { resumeApprovalId: approvalId, decision }
+                });
+            } catch (err) {
+                console.error("Approval flow error:", err);
             }
-        }
-    }, [messages, sendMessage]);
-
-    const handleRetry = useCallback(() => {
-        if (lastFailedMessage.current) {
-            setMessages((prev) => prev.filter((msg) => !msg.error));
-            const msg = lastFailedMessage.current;
-            lastFailedMessage.current = null;
-            setError(null);
-            sendMessage(msg);
         }
     }, [sendMessage]);
 
@@ -233,15 +135,16 @@ export function ChatWindow({
                 {messages.map((msg) => (
                     <MessageBubble
                         key={msg.id}
-                        message={msg}
-                        isStreaming={isTyping === false && msg.id === streamingMessageId && msg.role === "assistant" && msg.content.length > 0
-                            ? false // done streaming
-                            : msg.id === streamingMessageId && msg.role === "assistant"}
-                        onApprovalDecision={handleDecision}
+                        message={{
+                            ...msg,
+                            createdAt: (msg as any).metadata?.createdAt || new Date(),
+                        } as any}
+                        isStreaming={status === "streaming" && msg.id === messages[messages.length - 1].id && msg.role === "assistant"}
+                        onApprovalDecision={handleApprovalDecision}
                     />
                 ))}
 
-                {isTyping && (
+                {isLoading && messages[messages.length - 1]?.role === "user" && (
                     <div className="flex justify-start">
                         <div className="bg-muted px-4 py-2 rounded-2xl rounded-bl-none">
                             <div className="flex gap-1">
@@ -255,20 +158,21 @@ export function ChatWindow({
             </div>
 
             <div className="p-4 border-t border-border bg-card/50">
-                {error && (
+                {(chatError || localError) && (
                     <div className="mb-2 flex items-center justify-between gap-2 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2">
-                        <p className="text-sm text-rose-400">{error}</p>
-                        {lastFailedMessage.current && (
-                            <button
-                                onClick={handleRetry}
-                                className="text-xs bg-red-500/20 hover:bg-red-500/30 text-red-200 px-2 py-1 rounded transition-colors whitespace-nowrap"
-                            >
-                                Retry
-                            </button>
-                        )}
+                        <p className="text-sm text-rose-400">{(chatError as any)?.message || localError || "An error occurred"}</p>
+                        <button
+                            onClick={() => regenerate()}
+                            className="text-xs bg-red-500/20 hover:bg-red-500/30 text-red-200 px-2 py-1 rounded transition-colors whitespace-nowrap"
+                        >
+                            Retry
+                        </button>
                     </div>
                 )}
-                <ChatInput onSend={sendMessage} disabled={isTyping} />
+                <ChatInput
+                    onSend={handleSendMessage}
+                    disabled={isLoading}
+                />
             </div>
         </div>
     );

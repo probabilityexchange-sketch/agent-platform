@@ -1,21 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCredits } from "@/hooks/useCredits";
 import { useTokenPrice } from "@/hooks/useTokenPrice";
 
-const navItems = [
+const mainNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: "grid" },
-  { href: "/agents", label: "Agents", icon: "cpu" },
-  { href: "/chat", label: "Chat", icon: "message" },
+  { href: "/chat", label: "Ask Randi", icon: "message" },
+  { href: "/agents", label: "Agent Skills", icon: "cpu" },
+  { href: "/integrations", label: "Integrations", icon: "link" },
+  { href: "/credits", label: "Tokens", icon: "coins" },
+];
+
+const advancedNavItems = [
   { href: "/containers", label: "Containers", icon: "box" },
   { href: "/fleet", label: "Fleet", icon: "server" },
-  { href: "/integrations", label: "Integrations", icon: "link" },
-  { href: "/roadmap", label: "Roadmap", icon: "map" },
+  { href: "/telegram", label: "Telegram Bot", icon: "message" },
   { href: "/transparency", label: "Transparency", icon: "shield" },
-  { href: "/credits", label: "Tokens", icon: "coins" },
+  { href: "/roadmap", label: "Roadmap", icon: "map" },
 ];
 
 const icons: Record<string, string> = {
@@ -37,47 +41,98 @@ export function Sidebar() {
   const { isSubscribed, balance } = useCredits();
   const { priceUsd } = useTokenPrice();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [skills, setSkills] = useState<any[]>([]);
+  const [skillsLoading, setSkillsLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/skills")
+      .then((res) => res.json())
+      .then((data) => setSkills(data.skills || []))
+      .catch(() => { })
+      .finally(() => setSkillsLoading(false));
+  }, []);
+
+  const renderNavItem = (item: { href: string; label: string; icon: string }) => {
+    const active = pathname === item.href || pathname.startsWith(item.href + "/");
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={() => setMobileOpen(false)}
+        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${active
+          ? "bg-primary/10 text-primary"
+          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+          }`}
+      >
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d={icons[item.icon]}
+          />
+        </svg>
+        {item.label}
+        {item.icon === "coins" && isSubscribed && (
+          <span className="ml-auto text-[10px] bg-success/10 text-success px-1.5 py-0.5 rounded-full">PRO</span>
+        )}
+      </Link>
+    );
+  };
 
   const sidebar = (
     <div className="flex flex-col h-full">
       <div className="mb-6 px-3">
         <BurnCounter />
       </div>
-      <nav className="space-y-1 flex-1">
-        {navItems.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + "/");
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setMobileOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${active
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                }`}
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d={icons[item.icon]}
-                />
-              </svg>
-              {item.label}
-              {item.icon === "coins" && isSubscribed && (
-                <span className="ml-auto text-[10px] bg-success/10 text-success px-1.5 py-0.5 rounded-full">PRO</span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-      <div className="border-t border-border pt-4 space-y-3">
+
+      <div className="flex-1 overflow-y-auto no-scrollbar space-y-6">
+        <nav className="space-y-1">
+          {mainNavItems.map(renderNavItem)}
+        </nav>
+
+        <div>
+          <h3 className="px-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 opacity-50">
+            Invokable Skills
+          </h3>
+          <div className="space-y-1 max-h-[30vh] overflow-y-auto no-scrollbar">
+            {skillsLoading ? (
+              [1, 2, 3].map((i) => (
+                <div key={i} className="h-8 mx-3 bg-muted animate-pulse rounded-md mb-1"></div>
+              ))
+            ) : skills.length > 0 ? (
+              skills.map((skill) => (
+                <Link
+                  key={skill.slug}
+                  href={`/skills/${skill.slug}`}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/40 group-hover:bg-primary"></span>
+                  {skill.name.split("-").map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")}
+                </Link>
+              ))
+            ) : (
+              <p className="px-3 text-[10px] text-muted-foreground italic">No skills found</p>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="px-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 opacity-50">
+            Operator / Advanced
+          </h3>
+          <nav className="space-y-1">
+            {advancedNavItems.map(renderNavItem)}
+          </nav>
+        </div>
+      </div>
+
+      <div className="border-t border-border pt-4 mt-4 space-y-3">
         {/* Subscription Status */}
         <div className="px-3 py-2 bg-muted/50 rounded-lg">
           {isSubscribed ? (
@@ -104,7 +159,7 @@ export function Sidebar() {
         {priceUsd !== null && (
           <div className="px-3 py-2 bg-muted/50 rounded-lg">
             <a
-              href="https://pump.fun/profile/GmnoShpt5vyGwZLyPYsBah2vxPUAfvw6fKSLbBa2XpFy"
+              href="https://pump.fun/coin/FYAz1bPKJUFRwT4pzhUzdN3UqCN5ppXRL2pfto4zpump"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:opacity-80 transition-opacity"
@@ -115,7 +170,7 @@ export function Sidebar() {
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 
   return (

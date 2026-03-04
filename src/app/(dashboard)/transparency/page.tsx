@@ -101,7 +101,7 @@ export default function TransparencyPage() {
                 {/* Current Price */}
                 <div className="bg-card border border-border rounded-xl p-6 relative overflow-hidden group">
                     <a
-                        href="https://pump.fun/profile/GmnoShpt5vyGwZLyPYsBah2vxPUAfvw6fKSLbBa2XpFy"
+                        href="https://pump.fun/coin/FYAz1bPKJUFRwT4pzhUzdN3UqCN5ppXRL2pfto4zpump"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="block"

@@ -3,7 +3,6 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
 import {
-    getStakingLevel,
     getNextTier,
     getTierProgress,
     getAmountToNextTier,
@@ -65,9 +64,11 @@ export async function GET() {
 }
 
 // POST: Record staking transaction (called after Solana confirms stake)
+// NOTE: The staked amount is NOT accepted from the client. To update staking
+// level, callers must use POST /api/staking/verify which reads balances
+// directly from the Solana chain.
 const stakeSchema = z.object({
     txSignature: z.string().min(1),
-    amount: z.number().optional(), // Amount staked (whole tokens)
 });
 
 export async function POST(req: NextRequest) {
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const { txSignature, amount } = parsed.data;
+        const { txSignature } = parsed.data;
 
         // Check if user has a wallet address
         const user = await prisma.user.findUnique({
@@ -106,25 +107,11 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // If amount provided, record the stake directly
-        if (amount !== undefined) {
-            const newLevel = getStakingLevel(amount);
-
-            await prisma.user.update({
-                where: { id: auth.userId },
-                data: {
-                    stakedAmount: amount,
-                    stakingLevel: newLevel,
-                    unstakedAt: null, // Clear any previous unstake
-                },
-            });
-        }
-
         return NextResponse.json({
             success: true,
-            message: "Staking recorded successfully",
+            message: "Staking transaction noted. Use /api/staking/verify to confirm on-chain balance.",
             txSignature,
-            nextAction: amount !== undefined ? "verify" : "pending_verification",
+            nextAction: "verify",
         });
     } catch (error) {
         return handleAuthError(error);

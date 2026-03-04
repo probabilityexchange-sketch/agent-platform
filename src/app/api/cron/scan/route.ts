@@ -1,24 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runScanner } from "@/lib/payments/scanner";
 import { runBurnService } from "@/lib/payments/burn-service";
-
-function isAuthorized(request: NextRequest): boolean {
-    const cronSecret = process.env.CRON_SECRET;
-    if (!cronSecret) return true; // No secret configured, allow (dev mode)
-
-    // Vercel cron sends Authorization: Bearer <CRON_SECRET>
-    const authHeader = request.headers.get("authorization");
-    if (authHeader === `Bearer ${cronSecret}`) return true;
-
-    // Also support legacy x-cron-secret header for manual invocations
-    const headerSecret = request.headers.get("x-cron-secret");
-    if (headerSecret === cronSecret) return true;
-
-    return false;
-}
+import { isCronAuthorized } from "@/lib/utils/cron-auth";
 
 async function handleScan(request: NextRequest) {
-    if (!isAuthorized(request)) {
+    if (!isCronAuthorized(request)) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -10,9 +10,47 @@ import { Message } from "./ChatWindow";
 import { ApprovalCard, type ApprovalDecision } from "./ApprovalCard";
 
 interface MessageBubbleProps {
-    message: Message;
+    message: Message & { parts?: any[] };
     isStreaming?: boolean;
     onApprovalDecision?: (approvalId: string, decision: ApprovalDecision) => void;
+}
+
+function ToolInvocationCard({ toolInvocation }: { toolInvocation: any }) {
+    const { toolName, toolCallId, state, args, result } = toolInvocation;
+
+    return (
+        <div className="my-2 border border-border bg-muted/30 rounded-lg overflow-hidden text-xs">
+            <div className="flex items-center justify-between px-3 py-2 bg-muted/50 border-b border-border">
+                <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${state === 'result' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
+                    <span className="font-mono font-bold">{toolName}</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground font-mono uppercase opacity-50">{toolCallId.slice(-6)}</span>
+            </div>
+
+            <div className="p-3 space-y-2">
+                <div className="flex flex-col gap-1">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Arguments</span>
+                    <pre className="p-2 bg-black/20 rounded font-mono text-[10px] overflow-x-auto">
+                        {JSON.stringify(args, null, 2)}
+                    </pre>
+                </div>
+
+                {state === 'result' && (
+                    <div className="flex flex-col gap-1">
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Result</span>
+                        <div className="p-2 bg-emerald-500/5 border border-emerald-500/10 rounded font-mono text-[10px] max-h-32 overflow-y-auto">
+                            {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
+                        </div>
+                    </div>
+                )}
+
+                {state === 'call' && (
+                    <div className="text-[10px] text-amber-400 italic">Executing action...</div>
+                )}
+            </div>
+        </div>
+    );
 }
 
 /**
@@ -230,38 +268,77 @@ export function MessageBubble({
         ? null
         : messageDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
+    const fullText = useMemo(() => {
+        if (message.content) return message.content;
+        if (message.parts) {
+            return message.parts
+                .filter(p => p.type === 'text')
+                .map(p => p.text)
+                .join("");
+        }
+        return "";
+    }, [message.content, message.parts]);
+
     const handleCopy = useCallback(async () => {
         try {
-            await navigator.clipboard.writeText(message.content);
+            await navigator.clipboard.writeText(fullText);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch {
             // clipboard API may not be available
         }
-    }, [message.content]);
+    }, [fullText]);
 
     return (
         <div className={`group flex ${isUser ? "justify-end" : "justify-start"}`}>
             <div
-                className={`max-w-[85%] lg:max-w-[72%] px-4 py-3 rounded-2xl ${isUser
+                className={`max-w-[85%] lg:max-w-[80%] px-4 py-3 rounded-2xl ${isUser
                     ? `bg-primary text-white rounded-br-none text-sm whitespace-pre-wrap leading-relaxed ${message.error ? "ring-2 ring-red-500/50" : ""
                     }`
                     : "bg-muted text-foreground rounded-bl-none border border-border"
                     }`}
             >
                 {isUser ? (
-                    message.content
+                    message.content || (message.parts && message.parts
+                        .filter(p => p.type === "text")
+                        .map(p => p.text)
+                        .join(""))
                 ) : (
-                    <div className="text-sm leading-relaxed">
-                        <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={markdownComponents}
-                        >
-                            {message.content || ""}
-                        </ReactMarkdown>
-                        {/* Streaming cursor at the very end when content is empty / first chunk */}
-                        {isStreaming && message.content === "" && (
-                            <span className="inline-block w-0.5 h-4 bg-white/70 animate-pulse align-middle" />
+                    <div className="text-sm leading-relaxed space-y-2">
+                        {message.parts && message.parts.length > 0 ? (
+                            message.parts.map((part, i) => {
+                                if (part.type === 'text') {
+                                    return (
+                                        <ReactMarkdown
+                                            key={i}
+                                            remarkPlugins={[remarkGfm]}
+                                            components={markdownComponents}
+                                        >
+                                            {part.text || ""}
+                                        </ReactMarkdown>
+                                    );
+                                }
+                                if (part.type === 'tool-invocation') {
+                                    return <ToolInvocationCard key={i} toolInvocation={part.toolInvocation} />;
+                                }
+                                return null;
+                            })
+                        ) : (
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={markdownComponents}
+                            >
+                                {message.content || ""}
+                            </ReactMarkdown>
+                        )}
+
+                        {/* Improved thinking/streaming indicator */}
+                        {isStreaming && !fullText && (!message.parts || message.parts.every(p => p.type !== 'tool-invocation')) && (
+                            <div className="flex gap-1 py-1">
+                                <span className="w-1 h-1 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                                <span className="w-1 h-1 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                                <span className="w-1 h-1 bg-foreground/40 rounded-full animate-bounce"></span>
+                            </div>
                         )}
                     </div>
                 )}

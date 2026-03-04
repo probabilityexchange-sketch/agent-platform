@@ -26,6 +26,16 @@ export default function ChatHubPage() {
     const [agents, setAgents] = useState<Agent[]>([]);
     const [sessions, setSessions] = useState<ChatSession[]>([]);
     const [activeTab, setActiveTab] = useState<"new" | "recent">("new");
+
+    const promptChips = [
+        "Plan my day from Google Calendar",
+        "Summarize this link with sources",
+        "Draft an email reply from these notes",
+        "Debug this error and propose a fix",
+        "Turn this into a checklist",
+        "Analyze this data and tell me what matters"
+    ];
+
     useEffect(() => {
         // Fetch agents
         fetch("/api/agents")
@@ -40,95 +50,61 @@ export default function ChatHubPage() {
             .catch((err) => console.error("Error fetching sessions:", err));
     }, []);
 
+    const leadAgent = agents.find(a => a.slug === "randi-lead");
+
     return (
-        <div className="max-w-6xl mx-auto px-4 py-8">
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold mb-2">AI Chat Hub</h1>
-                    <p className="text-muted-foreground">Select an agent or continue a previous conversation.</p>
+        <div className="max-w-4xl mx-auto px-4 py-12 min-h-[calc(100vh-8rem)] flex flex-col justify-center">
+            <div className="text-center mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="mb-6 flex justify-center">
+                    <RandiLogo size="xl" variant="icon-only" animated className="drop-shadow-2xl" />
                 </div>
+                <h1 className="text-5xl font-extrabold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+                    Ask Randi
+                </h1>
+                <p className="text-xl text-muted-foreground max-w-xl mx-auto">
+                    One chat. Randi routes your request to the right specialist automatically.
+                </p>
             </div>
 
-            <div className="flex gap-2 mb-8 bg-card/50 p-1 rounded-lg w-fit border border-border">
-                <button
-                    onClick={() => setActiveTab("new")}
-                    className={`px-4 py-2 rounded-md text-sm transition-all ${activeTab === "new" ? "bg-primary text-white shadow-lg" : "hover:bg-muted"
-                        }`}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
+                <Link
+                    href={`/chat/new${leadAgent ? `?agentId=${leadAgent.id}` : ""}`}
+                    className="px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-bold text-lg hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/25 flex items-center justify-center gap-2"
                 >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
                     New Chat
-                </button>
+                </Link>
                 <button
-                    onClick={() => setActiveTab("recent")}
-                    className={`px-4 py-2 rounded-md text-sm transition-all ${activeTab === "recent" ? "bg-primary text-white shadow-lg" : "hover:bg-muted"
-                        }`}
+                    onClick={() => setActiveTab(activeTab === "recent" ? "new" : "recent")}
+                    className="px-8 py-4 bg-muted/50 hover:bg-muted text-foreground rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-2 border border-border"
                 >
-                    Recent Chats ({sessions.length})
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Recent Chats {sessions.length > 0 && `(${sessions.length})`}
                 </button>
             </div>
 
             {activeTab === "new" ? (
-                <div className="space-y-12">
-                    {/* Primary Orchestrator (Randi) */}
-                    {agents.find(a => a.slug === "randi-lead") && (
-                        <div className="relative overflow-hidden bg-card border border-primary/20 rounded-3xl p-8 shadow-2xl">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl animate-pulse"></div>
-                            <div className="relative flex flex-col md:flex-row items-center gap-8">
-                                <div className="w-32 h-32 bg-primary/10 rounded-2xl flex items-center justify-center p-4 border border-primary/20 group">
-                                    <RandiLogo size="lg" variant="icon-only" animated />
-                                </div>
-                                <div className="flex-1 text-center md:text-left">
-                                    <h2 className="text-3xl font-extrabold mb-3 tracking-tight">Meet Randi (Lead)</h2>
-                                    <p className="text-lg text-muted-foreground mb-6 max-w-2xl">
-                                        The primary orchestrator of the platform. Randi has access to our full library of Anthropic Skills,
-                                        the agent-browser, and can delegate tasks to specialists or spawn autonomous developers.
-                                    </p>
-                                    <Link
-                                        href={`/chat/new?agentId=${agents.find(a => a.slug === "randi-lead")?.id}`}
-                                        className="inline-flex items-center px-8 py-3.5 bg-primary text-primary-foreground rounded-xl font-bold hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/25"
-                                    >
-                                        Start Orchestration Chat
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Specialists Grid */}
-                    <div>
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="h-px flex-1 bg-border"></div>
-                            <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground bg-background px-4">Specialist Agents</h3>
-                            <div className="h-px flex-1 bg-border"></div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {agents.filter(a => a.slug !== "randi-lead").map((agent) => (
-                                <div
-                                    key={agent.id}
-                                    className="bg-card/50 border border-border rounded-2xl p-6 flex flex-col hover:border-primary/30 hover:bg-card transition-all group"
-                                >
-                                    <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
-                                        <RandiLogo size="sm" variant="icon-only" />
-                                    </div>
-                                    <h3 className="text-lg font-bold mb-1">{agent.name}</h3>
-                                    <p className="text-sm text-muted-foreground mb-4 flex-1">
-                                        {agent.description}
-                                    </p>
-                                    <Link
-                                        href={`/chat/new?agentId=${agent.id}`}
-                                        className="w-full bg-muted/50 hover:bg-primary/20 text-foreground py-2 rounded-lg text-xs font-bold text-center transition-all"
-                                    >
-                                        Use Specialist
-                                    </Link>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 animate-in fade-in slide-in-from-bottom-12 duration-700 delay-300">
+                    {promptChips.map((chip, i) => (
+                        <Link
+                            key={i}
+                            href={`/chat/new${leadAgent ? `?agentId=${leadAgent.id}` : ""}&prompt=${encodeURIComponent(chip)}`}
+                            className="p-4 bg-card/50 border border-border rounded-xl text-sm font-medium hover:border-primary/40 hover:bg-card transition-all text-left group"
+                        >
+                            <span className="text-muted-foreground group-hover:text-foreground transition-colors line-clamp-2">
+                                {chip}
+                            </span>
+                        </Link>
+                    ))}
                 </div>
             ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 animate-in fade-in duration-500">
                     {sessions.length === 0 ? (
-                        <div className="bg-card/30 border border-dashed border-border rounded-xl p-12 text-center">
+                        <div className="bg-card/30 border border-dashed border-border rounded-2xl p-8 text-center">
                             <p className="text-muted-foreground">No recent chats found.</p>
                         </div>
                     ) : (
@@ -136,22 +112,19 @@ export default function ChatHubPage() {
                             <Link
                                 key={session.id}
                                 href={`/chat/${session.id}`}
-                                className="block bg-card border border-border rounded-xl p-4 hover:border-primary/30 transition-all border-l-4 border-l-primary/50"
+                                className="flex items-center justify-between bg-card border border-border rounded-xl p-4 hover:border-primary/30 transition-all group"
                             >
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h4 className="font-semibold text-lg">{session.title}</h4>
-                                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-primary/40"></span>
-                                            Agent: {session.agent.name}
-                                        </p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-xs text-muted-foreground">
-                                            {new Date(session.createdAt).toLocaleDateString()}
-                                        </p>
+                                <div className="flex-1 min-w-0 pr-4">
+                                    <h4 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">{session.title}</h4>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground/60">{session.agent.name}</span>
+                                        <span className="text-[10px] text-muted-foreground/40">•</span>
+                                        <span className="text-[10px] text-muted-foreground/60">{new Date(session.createdAt).toLocaleDateString()}</span>
                                     </div>
                                 </div>
+                                <svg className="w-5 h-5 text-muted-foreground/30 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
                             </Link>
                         ))
                     )}

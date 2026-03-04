@@ -385,7 +385,7 @@ export const SUPPORTED_COMPOSIO_TOOLKITS: readonly ComposioToolkitDef[] = [
     envKey: "COMPOSIO_AUTH_CONFIG_AWS",
   },
   {
-    slug: "googledrive",
+    slug: "dropbox",
     label: "Dropbox",
     category: "Cloud & Infra",
     icon: "📦",
@@ -395,12 +395,14 @@ export const SUPPORTED_COMPOSIO_TOOLKITS: readonly ComposioToolkitDef[] = [
 ] as const;
 
 // De-duplicate by slug (in case of any accidental duplicates)
-const _seen = new Set<string>();
-export const COMPOSIO_TOOLKITS_DEDUPED = SUPPORTED_COMPOSIO_TOOLKITS.filter((t) => {
-  if (_seen.has(t.slug)) return false;
-  _seen.add(t.slug);
-  return true;
-});
+export const COMPOSIO_TOOLKITS_DEDUPED = (() => {
+  const seenSlugs = new Set<string>();
+  return SUPPORTED_COMPOSIO_TOOLKITS.filter((t) => {
+    if (seenSlugs.has(t.slug)) return false;
+    seenSlugs.add(t.slug);
+    return true;
+  });
+})();
 
 export const COMPOSIO_CATEGORIES: readonly ComposioCategory[] = [
   "Productivity",

@@ -70,7 +70,7 @@ function patchSupabaseConnection(url: string): string {
       params.set("pgbouncer", "true");
     }
     if (!params.has("connection_limit")) {
-      params.set("connection_limit", "1");
+      params.set("connection_limit", "10");
     }
   }
 

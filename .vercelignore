@@ -1,0 +1,29 @@
+# Large files never needed in deployment
+awscliv2.zip
+demo-screenshots/
+.github/
+support-repo-template/
+github-org-profile/
+docs/
+plans/
+aws/
+bridge/
+traefik/
+supabase/
+docker-compose*.yml
+Dockerfile
+*.md
+!README.md
+
+# Temp files
+*.tmp
+.devserver.log
+verified_deposits.txt
+
+# Tooling
+.pi/
+.kilocode/
+.agent/
+.agents/
+.claude/
+.kombai/

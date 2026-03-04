@@ -42,11 +42,10 @@ export default function AgentsPage() {
   };
 
   return (
-    <div className="max-w-5xl">
-      <h1 className="text-2xl font-bold mb-2">Agent Catalog</h1>
-      <p className="text-muted-foreground mb-6">
-        Choose an AI agent to launch. Each agent runs in an isolated container
-        with its own URL.
+    <div className="max-w-5xl py-8">
+      <h1 className="text-4xl font-extrabold tracking-tight mb-3">Agent Skills</h1>
+      <p className="text-lg text-muted-foreground mb-12 max-w-2xl">
+        Specialized skills available to Randi. He routes your requests to the right skill automatically in chat.
       </p>
 
       {loading ? (

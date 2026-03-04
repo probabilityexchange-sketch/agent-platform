@@ -6,8 +6,18 @@ export async function fetchApi(url: string, options: RequestInit = {}): Promise<
     headers.set("X-Requested-With", "XMLHttpRequest");
   }
 
-  return fetch(url, {
-    ...options,
-    headers,
-  });
+  // Add a default timeout of 15 seconds
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      signal: options.signal || controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }

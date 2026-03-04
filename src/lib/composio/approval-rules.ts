@@ -166,6 +166,12 @@ const REQUIRES_APPROVAL_PATTERNS: RegExp[] = [
     // ── Zapier / Make ─────────────────────────────────────────────────────────
     /^ZAPIER_TRIGGER/i,         // running zaps
     /^MAKE_TRIGGER/i,           // running scenarios
+
+    // ── Telegram ─────────────────────────────────────────────────────────────
+    /^TELEGRAM_SEND/i,
+    /^TELEGRAM_CREATE/i,
+    /^TELEGRAM_DELETE/i,
+    /^TELEGRAM_EDIT/i,
 ];
 
 /**
@@ -200,6 +206,9 @@ export function describeToolCall(toolName: string, argsJson: string): string {
     }
     if (name.includes("send") && name.startsWith("twilio")) {
         return `Send an SMS/WhatsApp to ${args.to || "a phone number"}`;
+    }
+    if (name.includes("send") && name.startsWith("telegram")) {
+        return `Send a Telegram message to ${args.chat_id || args.username || "recipient"}`;
     }
     if (name.includes("create") && name.startsWith("github")) {
         const resource = toolName.replace(/^GITHUB_CREATE_/i, "").toLowerCase().replace(/_/g, " ");

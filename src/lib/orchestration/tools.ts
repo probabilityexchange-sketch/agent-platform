@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db/prisma";
 import { openrouter, createChatCompletion } from "@/lib/openrouter/client";
-import { getAgentToolsFromConfig, executeOpenAIToolCall } from "@/lib/composio/client";
+import { getAgentToolsFromConfig, executeOpenAIToolCall, composioToolsToOpenAI } from "@/lib/composio/client";
 import { SkillManager } from "@/lib/skills/manager";
+import { deductForAgentCall } from "@/lib/credits/engine";
 import type OpenAI from "openai";
 
 type ChatMessageParam = OpenAI.Chat.Completions.ChatCompletionMessageParam;
@@ -131,54 +132,77 @@ export async function executeOrchestrationToolCall(
         let specialistTools: ChatTool[] = [];
         if (agent.tools) {
             try {
-                specialistTools = await getAgentToolsFromConfig(agent.tools, userId);
+                const composioTools = await getAgentToolsFromConfig(agent.tools, userId);
+                specialistTools = composioToolsToOpenAI(composioTools);
             } catch (err) {
                 console.warn(`Failed to fetch tools for specialist ${specialistSlug}`, err);
             }
         }
 
+        // ── CREDIT DEDUCTION ──────────────────────────────────────────────────────
+        // Charge for the specialist model call
+        const deduction = await deductForAgentCall(
+            userId,
+            agent.defaultModel,
+            `Delegated: ${specialistSlug} - ${subQuery.substring(0, 50)}${subQuery.length > 50 ? "..." : ""}`,
+            sessionId
+        );
+
+        if (!deduction.success) {
+            return JSON.stringify({
+                error: `Insufficient credits to call specialist '${specialistSlug}'. Required: ${deduction.cost} $RANDI.`
+            });
+        }
+        // ──────────────────────────────────────────────────────────────────────────
+
         const messages: ChatMessageParam[] = [
             { role: "system", content: agent.systemPrompt },
+            {
+                role: "system",
+                content: "You are acting on behalf of the Lead Orchestrator for the user's query: '" + subQuery + "'. " +
+                    "Use your tools (Gmail, Slack, etc.) to fulfill this request. If you retrieve data, PROVIDE A FULL SUMMARY OF IT. " +
+                    "If you get an error, explain what is wrong. Do not simulate results."
+            },
             { role: "user", content: subQuery },
         ];
 
         try {
-            // For orchestration, we'll do a one-shot tool-enabled call for the specialist
-            // To keep it simple and avoid deep recursion in one request, we'll allow 
-            // the specialist to use tools but we'll manage it here.
+            // Specialist Tool Loop
+            let currentMessages = [...messages];
+            let lastContent = "No response from specialist.";
 
-            const response = await createChatCompletion({
-                model: agent.defaultModel,
-                messages,
-                tools: specialistTools.length > 0 ? specialistTools : undefined,
-            });
-
-            const message = response.choices?.[0]?.message;
-            if (!message) return "No response from specialist.";
-
-            // If the specialist wants to call tools, we'll execute them and get the final answer
-            // Note: In a production system, you'd want a more robust loop here.
-            if (message.tool_calls && message.tool_calls.length > 0) {
-                const toolResults = await Promise.all(
-                    message.tool_calls.map(async (tc) => {
-                        let result = await executeOpenAIToolCall(userId, tc);
-                        // Truncate massive tool outputs to avoid crashing the model's context window
-                        if (result.length > 10000) {
-                            result = result.substring(0, 10000) + "... [Truncated for brevity]";
-                        }
-                        return { role: "tool" as const, tool_call_id: tc.id, content: result };
-                    })
-                );
-
-                const finalResponse = await createChatCompletion({
+            for (let i = 0; i < 5; i++) {
+                const response = await createChatCompletion({
                     model: agent.defaultModel,
-                    messages: [...messages, message, ...toolResults],
+                    messages: currentMessages,
+                    tools: specialistTools.length > 0 ? specialistTools : undefined,
                 });
 
-                return finalResponse.choices?.[0]?.message?.content || "Specialist completed task but returned no text.";
+                const assistantMessage = response.choices?.[0]?.message;
+                if (!assistantMessage) break;
+
+                currentMessages.push(assistantMessage as any);
+                lastContent = assistantMessage.content || lastContent;
+
+                if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+                    const toolResults = await Promise.all(
+                        assistantMessage.tool_calls.map(async (tc) => {
+                            let result = await executeOpenAIToolCall(userId, tc);
+                            if (result.length > 10000) {
+                                result = result.substring(0, 10000) + "... [Truncated]";
+                            }
+                            return { role: "tool" as const, tool_call_id: tc.id, content: result };
+                        })
+                    );
+                    currentMessages.push(...toolResults);
+                    continue;
+                }
+
+                // No tool calls, we are done
+                break;
             }
 
-            return message.content || "Specialist returned an empty response.";
+            return lastContent;
         } catch (error) {
             const msg = error instanceof Error ? error.message : "Orchestration failed";
             return JSON.stringify({ error: msg });
@@ -284,5 +308,5 @@ You can monitor the progress on the dashboard: ${result.dashboardUrl}`;
 }
 
 export function isOrchestrationTool(toolName: string): boolean {
-    return ORCHESTRATION_TOOLS.some((t) => t.function.name === toolName);
+    return ORCHESTRATION_TOOLS.some((t) => t.type === "function" && t.function.name === toolName);
 }

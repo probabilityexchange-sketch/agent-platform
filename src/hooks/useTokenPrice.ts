@@ -67,8 +67,8 @@ export function useTokenPrice() {
         const formatter = new Intl.NumberFormat("en-US", {
             style: "currency",
             currency: "USD",
-            notation: "compact",
-            maximumFractionDigits: 2,
+            notation: amount >= 1_000_000 ? "compact" : "standard",
+            maximumFractionDigits: amount >= 1_000_000 ? 2 : 0,
         });
         return formatter.format(amount);
     }, []);

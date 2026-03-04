@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useCredits } from "@/hooks/useCredits";
 import { useTokenPrice } from "@/hooks/useTokenPrice";
 import { useSPLTransfer } from "@/hooks/useSPLTransfer";
-import { TokenPack } from "@/lib/tokenomics";
+import { CreditPack } from "@/lib/tokenomics";
 
 type Step = "plan" | "paying" | "verifying" | "done" | "error";
 
@@ -15,7 +15,7 @@ export function PurchaseForm() {
 
   const [step, setStep] = useState<Step>("plan");
   const [error, setError] = useState<string | null>(null);
-  const [availablePackages, setAvailablePackages] = useState<TokenPack[]>([]);
+  const [availablePackages, setAvailablePackages] = useState<CreditPack[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<string>("builder");
   const [loadingPackages, setLoadingPackages] = useState(true);
 
@@ -36,9 +36,10 @@ export function PurchaseForm() {
 
   const selectedItem = availablePackages.find(p => p.id === selectedItemId);
 
-  const tokenAmount = selectedItem ? selectedItem.tokenAmount : 0;
+  const tokenAmount = selectedItem ? selectedItem.creditAmount : 0;
   const bonusTokens = selectedItem ? Math.floor(tokenAmount * (selectedItem.bonusPercent / 100)) : 0;
   const totalTokens = tokenAmount + bonusTokens;
+  const isSubscription = selectedItem?.type === "subscription";
 
   // Burn calculation (70% on use, but here we show protocol-wide burn for transparency)
   const estimatedBurn = Math.floor(totalTokens * 0.7);
@@ -104,7 +105,7 @@ export function PurchaseForm() {
       <div className="p-6">
         <h3 className="text-xl font-bold mb-4">Deposit $RANDI</h3>
         <p className="text-sm text-muted-foreground mb-6">
-          Fund your account to use AI agents. 70% of every call is burned 🔥
+          Fund your account to use AI agents. 70% of every deposit is burned 🔥
         </p>
 
         {loadingPackages ? (
@@ -138,10 +139,10 @@ export function PurchaseForm() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-primary">{pkg.tokenAmount.toLocaleString()} $RANDI</div>
-                      {priceUsd && (
+                      <div className="font-bold text-primary">{pkg.creditAmount.toLocaleString()} Credits</div>
+                      {priceUsd && !isSubscription && ( // Show price if pay-as-you-go, or $20 if subscription
                         <div className="text-[10px] text-muted-foreground text-opacity-60">
-                          ≈ ${(pkg.tokenAmount * priceUsd).toFixed(2)}
+                          {pkg.type === "subscription" ? "$20.00 / mo" : `≈ $${(pkg.creditAmount * priceUsd).toFixed(2)}`}
                         </div>
                       )}
                     </div>
@@ -162,7 +163,7 @@ export function PurchaseForm() {
               <span className="text-xs font-bold uppercase tracking-wider">Burn Flywheel</span>
             </div>
             <p className="text-[11px] text-muted-foreground mb-2">
-              By depositing, you're fueling the $RANDI deflationary cycle. Using these tokens will burn approximately
+              By depositing, you're fueling the $RANDI deflationary cycle. This deposit will automatically burn
               <span className="text-orange-400 font-bold mx-1">{estimatedBurn.toLocaleString()} $RANDI</span>
               permanently.
             </p>
@@ -194,7 +195,7 @@ export function PurchaseForm() {
             ? "Confirm in wallet..."
             : step === "verifying"
               ? "Verifying on-chain..."
-              : `Deposit ${totalTokens.toLocaleString()} $RANDI`}
+              : isSubscription ? `Subscribe for $20 (or equivalent $RANDI)` : `Deposit ${totalTokens.toLocaleString()} $RANDI`}
         </button>
       </div>
     </div>

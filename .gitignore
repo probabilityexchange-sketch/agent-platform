@@ -60,7 +60,13 @@ next-env.d.ts
 /aws/
 /dist/
 
-# sensitive / generated files that must not be committed
+# temp/tooling
+.pi/
+.kilocode/
+.agent/
+.agents/
+.claude/
+.kombai/
 *.tmp
 *.log
 awscliv2.zip

@@ -2,8 +2,5 @@
     "version": 2,
     "installCommand": "npm install --legacy-peer-deps",
     "buildCommand": "bash scripts/vercel-build.sh",
-    "framework": "nextjs",
-    "regions": [
-        "iad1"
-    ]
+    "framework": "nextjs"
 }

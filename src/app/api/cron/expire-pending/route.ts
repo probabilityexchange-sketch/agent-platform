@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
+import { isCronAuthorized } from "@/lib/utils/cron-auth";
 
 /**
  * POST /api/cron/expire-pending
@@ -14,21 +15,6 @@ import { prisma } from "@/lib/db/prisma";
  * Protected by CRON_SECRET (same pattern as /api/cron/scan).
  */
 
-function isAuthorized(request: NextRequest): boolean {
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) return true; // Dev mode: no secret configured
-
-  // Vercel Cron sends: Authorization: Bearer <CRON_SECRET>
-  const authHeader = request.headers.get("authorization");
-  if (authHeader === `Bearer ${cronSecret}`) return true;
-
-  // Legacy manual invocation header
-  const headerSecret = request.headers.get("x-cron-secret");
-  if (headerSecret === cronSecret) return true;
-
-  return false;
-}
-
 const PENDING_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export async function GET(request: NextRequest) {
@@ -40,7 +26,7 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleExpiry(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

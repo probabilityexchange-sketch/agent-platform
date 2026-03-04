@@ -142,18 +142,6 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  console.log("Session Establishment Diagnostic:", {
-    hasProjectId: process.env.DATABASE_URL?.includes("uoltahlxvmuyznfthgxv"),
-    env: process.env.VERCEL_ENV || "unknown",
-    availableVars: [
-      "DATABASE_URL",
-      "DIRECT_URL",
-      "POSTGRES_PRISMA_URL",
-      "POSTGRES_URL",
-      "POSTGRES_URL_NON_POOLING",
-    ].filter(v => !!process.env[v]),
-  });
-
   try {
     const user = await prisma.user.upsert({
       where: { walletAddress: wallet },
@@ -179,10 +167,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const cookieOptions: any = {
+    const isProd = process.env.NODE_ENV === "production";
+    const cookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: isProd,
+      sameSite: "lax" as const,
       maxAge: 24 * 60 * 60,
       path: "/",
     };
@@ -196,7 +185,6 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("Critical error building server session:", {
       message: error.message,
-      stack: error.stack,
       code: error.code,
       wallet
     });
@@ -204,7 +192,6 @@ export async function POST(request: NextRequest) {
       {
         error: "Internal server error during session establishment",
         code: "session_creation_failed",
-        detail: error.message
       },
       { status: 500 }
     );

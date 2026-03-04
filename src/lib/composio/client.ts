@@ -1,11 +1,32 @@
-import type { Composio as ComposioClient } from "@composio/core";
-import type OpenAI from "openai";
+import type { Composio as ComposioClient, Tool as ComposioTool } from "@composio/core";
 
 const apiKey = process.env.COMPOSIO_API_KEY?.trim() || "";
 const globalForComposio = globalThis as unknown as {
   composioClientPromise?: Promise<ComposioClient | null>;
 };
 let loggedMissingComposioApiKey = false;
+
+export type { ComposioTool };
+
+export interface OpenAITool {
+  type: "function";
+  function: {
+    name: string;
+    description?: string;
+    parameters?: Record<string, unknown>;
+  };
+}
+
+export function composioToolsToOpenAI(tools: ComposioTool[]): OpenAITool[] {
+  return tools.map((t) => ({
+    type: "function" as const,
+    function: {
+      name: t.slug,
+      description: t.description || "",
+      parameters: t.inputParameters,
+    },
+  }));
+}
 
 export async function getComposioClient(): Promise<ComposioClient | null> {
   if (!apiKey) {
@@ -31,12 +52,95 @@ export async function getComposioClient(): Promise<ComposioClient | null> {
   return globalForComposio.composioClientPromise;
 }
 
-type OpenAITool = OpenAI.Chat.Completions.ChatCompletionTool;
-type OpenAIToolCall = OpenAI.Chat.Completions.ChatCompletionMessageToolCall;
-
-const MAX_TOOL_DEFINITIONS = 20;
+const MAX_TOOL_DEFINITIONS = 50;
 const TOOL_SLUG_PATTERN = /^[A-Z0-9_]+$/;
 const TOOLKIT_SLUG_PATTERN = /^[a-z0-9][a-z0-9_-]*$/;
+
+// Curated allowlists: only the most useful tools per toolkit.
+// Toolkits NOT in this map get all tools (capped at 15).
+const CURATED_TOOLKIT_TOOLS: Record<string, string[]> = {
+  gmail: [
+    "GMAIL_FETCH_EMAILS",
+    "GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID",
+    "GMAIL_FETCH_MESSAGE_BY_THREAD_ID",
+    "GMAIL_CREATE_EMAIL_DRAFT",
+    "GMAIL_SEND_EMAIL",
+    "GMAIL_REPLY_TO_THREAD",
+    "GMAIL_FORWARD_MESSAGE",
+    "GMAIL_GET_PROFILE",
+    "GMAIL_ADD_LABEL_TO_EMAIL",
+    "GMAIL_GET_ATTACHMENT",
+  ],
+  googlecalendar: [
+    "GOOGLECALENDAR_FIND_EVENT",
+    "GOOGLECALENDAR_LIST_CALENDARS",
+    "GOOGLECALENDAR_GET_CALENDAR",
+    "GOOGLECALENDAR_CREATE_EVENT",
+    "GOOGLECALENDAR_UPDATE_EVENT",
+    "GOOGLECALENDAR_DELETE_EVENT",
+    "GOOGLECALENDAR_FIND_FREE_SLOTS",
+    "GOOGLECALENDAR_QUICK_ADD_EVENT",
+  ],
+  github: [
+    "GITHUB_LIST_PULL_REQUESTS",
+    "GITHUB_GET_A_PULL_REQUEST",
+    "GITHUB_CREATE_A_PULL_REQUEST",
+    "GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER",
+    "GITHUB_GET_A_REPOSITORY",
+    "GITHUB_CREATE_AN_ISSUE",
+    "GITHUB_LIST_REPOSITORY_ISSUES",
+    "GITHUB_GET_AN_ISSUE",
+    "GITHUB_CREATE_AN_ISSUE_COMMENT",
+    "GITHUB_SEARCH_CODE",
+    "GITHUB_SEARCH_ISSUES_AND_PULL_REQUESTS",
+    "GITHUB_LIST_COMMITS",
+    "GITHUB_GET_A_BRANCH",
+    "GITHUB_LIST_BRANCHES",
+    "GITHUB_CREATE_A_FORK",
+    "GITHUB_GET_COMMITS_OF_A_PULL_REQUEST",
+    "GITHUB_LIST_ORGANIZATIONS_FOR_THE_AUTHENTICATED_USER",
+  ],
+  slack: [
+    "SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL",
+    "SLACK_LIST_ALL_CHANNELS",
+    "SLACK_LIST_ALL_USERS",
+    "SLACK_FIND_CHANNELS",
+    "SLACK_FIND_USERS",
+    "SLACK_OPEN_DM",
+    "SLACK_LIST_CONVERSATIONS",
+    "SLACK_LIST_STARRED_ITEMS",
+    "SLACK_ADD_REACTION",
+    "SLACK_SEARCH_FOR_MESSAGES",
+  ],
+  notion: [
+    "NOTION_SEARCH_NOTION_PAGE",
+    "NOTION_CREATE_NOTION_PAGE",
+    "NOTION_RETRIEVE_PAGE",
+    "NOTION_UPDATE_PAGE",
+    "NOTION_QUERY_DATABASE",
+    "NOTION_INSERT_ROW_DATABASE",
+    "NOTION_FETCH_ALL_BLOCK_CONTENTS",
+    "NOTION_ADD_PAGE_CONTENT",
+    "NOTION_LIST_DATABASES",
+    "NOTION_LIST_USERS",
+  ],
+  coinmarketcap: [
+    "COINMARKETCAP_CRYPTOCURRENCY_LISTINGS_LATEST",
+    "COINMARKETCAP_CRYPTOCURRENCY_QUOTES_LATEST",
+    "COINMARKETCAP_GET_CRYPTOCURRENCY_INFO",
+    "COINMARKETCAP_GLOBAL_METRICS_QUOTES_LATEST",
+    "COINMARKETCAP_CMC_EXCHANGE_LISTINGS_HISTORICAL",
+    "COINMARKETCAP_TOOLS_PRICE_CONVERSION",
+    "COINMARKETCAP_GET_KEY_INFO",
+  ],
+  telegram: [
+    "TELEGRAM_SEND_MESSAGE",
+    "TELEGRAM_GET_ME",
+    "TELEGRAM_LIST_CHATS",
+    "TELEGRAM_GET_CHAT",
+    "TELEGRAM_EDIT_MESSAGE_TEXT",
+  ],
+};
 
 const LEGACY_TOOLKIT_ALIASES: Record<string, string> = {
   github_api: "github",
@@ -52,6 +156,7 @@ const LEGACY_TOOLKIT_ALIASES: Record<string, string> = {
   cmc: "coinmarketcap",
   supabase_api: "supabase",
   vercel_api: "vercel",
+  telegram_api: "telegram",
 };
 
 interface ParsedAgentToolConfig {
@@ -141,26 +246,12 @@ function parseAgentToolConfig(
   };
 }
 
-function isOpenAITool(value: unknown): value is OpenAITool {
-  if (!isRecord(value) || value.type !== "function") return false;
-  const fn = value.function;
-  return isRecord(fn) && typeof fn.name === "string";
-}
-
-function toOpenAITools(value: unknown): OpenAITool[] {
-  if (Array.isArray(value)) {
-    return value.filter(isOpenAITool);
-  }
-
-  return isOpenAITool(value) ? [value] : [];
-}
-
-function dedupeTools(tools: OpenAITool[]): OpenAITool[] {
+function dedupeTools(tools: ComposioTool[]): ComposioTool[] {
   const seen = new Set<string>();
-  const deduped: OpenAITool[] = [];
+  const deduped: ComposioTool[] = [];
 
   for (const tool of tools) {
-    const key = tool.function.name;
+    const key = tool.slug;
     if (seen.has(key)) continue;
     seen.add(key);
     deduped.push(tool);
@@ -175,34 +266,28 @@ type ComposioToolQuery =
 
 async function fetchToolsByQuery(
   composioClient: ComposioClient,
-  userId: string,
   query: ComposioToolQuery
-): Promise<OpenAITool[]> {
+): Promise<ComposioTool[]> {
   try {
     const tools = query.kind === "tools"
-      ? await composioClient.tools.get(userId, { tools: query.tools })
-      : await composioClient.tools.get(userId, {
-          toolkits: query.toolkits,
-          limit: MAX_TOOL_DEFINITIONS,
-        });
-    return toOpenAITools(tools);
+      ? await composioClient.tools.getRawComposioTools({ tools: query.tools })
+      : await composioClient.tools.getRawComposioTools({
+        toolkits: query.toolkits,
+      });
+    return tools;
   } catch (error) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("Composio tool query failed", error);
-    }
+    console.warn("[Composio] Tool query failed:", query, error);
     return [];
   }
 }
 
 async function fetchToolBySlug(
   composioClient: ComposioClient,
-  userId: string,
   slug: string
-): Promise<OpenAITool | null> {
+): Promise<ComposioTool | null> {
   try {
-    const tool = await composioClient.tools.get(userId, slug);
-    const wrappedTools = toOpenAITools(tool);
-    return wrappedTools[0] ?? null;
+    const tool = await composioClient.tools.getRawComposioToolBySlug(slug);
+    return tool ?? null;
   } catch {
     return null;
   }
@@ -211,7 +296,7 @@ async function fetchToolBySlug(
 export async function getAgentToolsFromConfig(
   rawConfig: string | null | undefined,
   userId: string
-): Promise<OpenAITool[]> {
+): Promise<ComposioTool[]> {
   const composioClient = await getComposioClient();
   if (!composioClient) return [];
   const resolvedUserId = resolveComposioUserId(userId);
@@ -225,11 +310,11 @@ export async function getAgentToolsFromConfig(
     return [];
   }
 
-  const collectedTools: OpenAITool[] = [];
+  const collectedTools: ComposioTool[] = [];
 
   if (parsed.explicitTools.length > 0) {
     collectedTools.push(
-      ...(await fetchToolsByQuery(composioClient, resolvedUserId, {
+      ...(await fetchToolsByQuery(composioClient, {
         kind: "tools",
         tools: parsed.explicitTools,
       }))
@@ -237,68 +322,135 @@ export async function getAgentToolsFromConfig(
   }
 
   if (parsed.toolkitHints.length > 0) {
-    collectedTools.push(
-      ...(await fetchToolsByQuery(composioClient, resolvedUserId, {
-        kind: "toolkits",
-        toolkits: parsed.toolkitHints,
-      }))
+    const FALLBACK_LIMIT = 15;
+    const toolkitResults = await Promise.all(
+      parsed.toolkitHints.map(toolkit =>
+        fetchToolsByQuery(composioClient, {
+          kind: "toolkits",
+          toolkits: [toolkit],
+        }).then(tools => {
+          const allowlist = CURATED_TOOLKIT_TOOLS[toolkit];
+          let filtered: ComposioTool[];
+          if (allowlist) {
+            const allowSet = new Set(allowlist);
+            filtered = tools.filter((t) => {
+              return allowSet.has(t.slug);
+            });
+            console.log(`[Composio] Toolkit "${toolkit}": ${tools.length} total, ${filtered.length} curated (allowlist: ${allowlist.length})`);
+          } else {
+            filtered = tools.slice(0, FALLBACK_LIMIT);
+            console.log(`[Composio] Toolkit "${toolkit}": ${tools.length} total, capped to ${filtered.length}`);
+          }
+          return filtered;
+        })
+      )
     );
+    for (const tools of toolkitResults) {
+      collectedTools.push(...tools);
+    }
   }
 
   if (collectedTools.length === 0) {
     for (const fallbackTool of parsed.fallbackTools) {
       const tool = await fetchToolBySlug(
         composioClient,
-        resolvedUserId,
         fallbackTool
       );
       if (tool) collectedTools.push(tool);
     }
   }
 
-  return dedupeTools(collectedTools);
+  const finalTools = dedupeTools(collectedTools);
+  console.log(`[Composio] Collected ${finalTools.length} tools for user ${resolvedUserId}`);
+  if (finalTools.length > 0) {
+    const prefixes = new Set(
+      finalTools.map(t => t.slug.split('_')[0])
+    );
+    console.log(`[Composio] Tools found for prefixes: ${Array.from(prefixes).join(', ')}`);
+  }
+  return finalTools;
 }
 
 export async function executeOpenAIToolCall(
   userId: string,
-  toolCall: OpenAIToolCall
+  toolCall: { type?: string; function?: { name: string; arguments: string } } | { name: string; arguments: string | Record<string, unknown> },
+  runtimeUrl?: string
 ): Promise<string> {
   const composioClient = await getComposioClient();
   if (!composioClient) {
     return JSON.stringify({ error: "COMPOSIO_API_KEY is not configured." });
   }
   const resolvedUserId = resolveComposioUserId(userId);
-  const normalizedToolCall = normalizeToolCallArguments(toolCall);
 
+  let toolName: string;
+  let toolArgs: Record<string, unknown>;
+
+  if ('function' in toolCall && toolCall.function) {
+    if (toolCall.type !== "function") {
+      return JSON.stringify({ error: "Only function tool calls are supported." });
+    }
+    const normalized = normalizeToolCallArgumentsJson(toolCall.function.arguments);
+    toolName = toolCall.function.name;
+    toolArgs = JSON.parse(normalized);
+  } else if ('name' in toolCall) {
+    toolName = toolCall.name;
+    toolArgs = typeof (toolCall as any).arguments === "string" 
+      ? JSON.parse((toolCall as any).arguments) 
+      : ((toolCall as any).arguments || {});
+  } else {
+    return JSON.stringify({ error: "Invalid tool call format" });
+  }
+
+  // ── DEDICATED RUNTIME ROUTING ──────────────────────────────────────────
+  if (runtimeUrl) {
+    try {
+      const endpoint = new URL("/api/tools/execute", runtimeUrl).toString();
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: resolvedUserId,
+          toolName,
+          arguments: toolArgs,
+        }),
+      });
+
+      if (response.ok) {
+        return await response.text();
+      }
+
+      const errorText = await response.text();
+      console.warn(`Dedicated tool execution failed at ${runtimeUrl}:`, errorText);
+    } catch (error) {
+      console.error(`Failed to reach dedicated runtime at ${runtimeUrl}:`, error);
+    }
+  }
+
+  // Fallback to Composio SDK execution
   try {
-    return await composioClient.provider.executeToolCall(
-      resolvedUserId,
-      normalizedToolCall
-    );
+    console.log(`[Composio] Executing tool: ${toolName} for entity: ${resolvedUserId}`);
+    console.log(`[Composio] Args: ${JSON.stringify(toolArgs)}`);
+    console.log(`[Composio] COMPOSIO_ENTITY_ID env: ${process.env.COMPOSIO_ENTITY_ID ? 'SET' : 'NOT SET'}`);
+
+    const result = await composioClient.tools.execute(toolName, {
+      userId: resolvedUserId,
+      arguments: toolArgs,
+      dangerouslySkipVersionCheck: true,
+    });
+
+    console.log(`[Composio] Tool ${toolName} executed successfully`);
+    return JSON.stringify(result);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Tool execution failed";
+    const err = error as any;
+    const message = error instanceof Error ? error.message : "Tool execution failed";
+    const stack = err?.stack || '';
+    console.error(`[Composio] Tool execution error for ${toolName}:`, message, stack);
     return JSON.stringify({
       error: message,
-      tool: toolCall.function.name,
+      tool: toolName,
+      details: err?.response?.data || err?.cause || null,
     });
   }
-}
-
-function normalizeToolCallArguments(toolCall: OpenAIToolCall): OpenAIToolCall {
-  const normalizedArguments = normalizeToolCallArgumentsJson(
-    toolCall.function.arguments
-  );
-
-  if (normalizedArguments === toolCall.function.arguments) return toolCall;
-
-  return {
-    ...toolCall,
-    function: {
-      ...toolCall.function,
-      arguments: normalizedArguments,
-    },
-  };
 }
 
 function normalizeToolCallArgumentsJson(rawArgs: unknown): string {

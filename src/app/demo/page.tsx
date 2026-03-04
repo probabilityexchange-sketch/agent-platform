@@ -77,41 +77,70 @@ const demoSteps = [
         ),
     },
     {
-        title: "4. Subscribe with RANDI",
-        description: "$20/month block of RANDI — 70% burned permanently, 30% to treasury.",
+        title: "4. Deposit & Burn",
+        description: "$RANDI deposits fuel the deflationary engine. 70% of every deposit is burned forever.",
         content: (
-            <div className="bg-card border border-border rounded-xl p-5 space-y-3">
-                <div className="flex items-baseline justify-between">
-                    <span className="text-lg font-bold">Randi Pro</span>
-                    <span className="text-2xl font-bold">$20<span className="text-sm text-muted-foreground font-normal">/ea</span></span>
+            <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Deposit Receipt (Simulation)</span>
+                    <span className="text-xs bg-orange-500/10 text-orange-500 px-2 py-0.5 rounded-full font-bold">70% BURN</span>
                 </div>
-                <div className="text-xs space-y-1 bg-muted/50 rounded-lg p-3">
-                    <div className="flex justify-between">
-                        <span>Total RANDI</span>
-                        <span className="font-mono">2,000,000</span>
+                <div className="space-y-2 p-4 bg-muted/50 rounded-xl border border-border/50">
+                    <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Amount Deposited</span>
+                        <span className="font-mono font-bold">2,000,000 $RANDI</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span>To Treasury (30%)</span>
-                        <span className="font-mono">600,000</span>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Account Credits</span>
+                        <span className="font-mono text-success font-bold">+2,000,000</span>
                     </div>
-                    <div className="flex justify-between text-orange-400">
-                        <span>Burned 🔥 (70%)</span>
-                        <span className="font-mono">1,400,000</span>
+                    <div className="h-px bg-border my-2"></div>
+                    <div className="flex justify-between text-sm text-orange-400">
+                        <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse"></span>
+                            <span>Tokens Incinerated 🔥</span>
+                        </div>
+                        <span className="font-mono font-bold">-1,400,000 $RANDI</span>
                     </div>
                 </div>
-                <div className="text-[11px] text-muted-foreground space-y-1">
-                    <p>✓ Priority access  ✓ All tools  ✓ Multi-agent workflows</p>
-                    <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] opacity-80 border-t border-border pt-2">
-                        <span>Standard Agents: ~400 calls</span>
-                        <span>Premium (Sonnet): ~66 calls</span>
-                        <span className="col-span-2">Ultra (o1): ~13 calls</span>
+                <p className="text-[11px] text-muted-foreground text-center">
+                    Burned tokens are permanently removed from the circulating supply, creating upward price pressure.
+                </p>
+            </div>
+        ),
+    },
+    {
+        title: "5. Stake & Earn",
+        description: "Stake $RANDI to unlock premium models and earn daily passive credit yield.",
+        content: (
+            <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+                <div className="grid grid-cols-3 gap-2">
+                    {[
+                        { tier: "Bronze", stake: "1K", yield: "+1K" },
+                        { tier: "Silver", stake: "10K", yield: "+15K" },
+                        { tier: "Gold", stake: "100K", yield: "+200K" },
+                    ].map((t) => (
+                        <div key={t.tier} className={`p-3 rounded-lg border border-border text-center ${t.tier === "Gold" ? "bg-primary/5 border-primary/30" : "bg-muted/30"}`}>
+                            <p className="text-[10px] text-muted-foreground uppercase mb-1">{t.tier}</p>
+                            <p className="text-sm font-bold">{t.stake}</p>
+                            <p className="text-[10px] text-success font-bold mt-1">{t.yield} / day</p>
+                        </div>
+                    ))}
+                </div>
+                <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-bold text-primary mb-1">Passive Credit Yield</p>
+                        <p className="text-[11px] text-muted-foreground">Credits are added to your balance automatically.</p>
+                    </div>
+                    <div className="text-right">
+                        <span className="text-lg font-mono font-bold text-primary">LIVE</span>
                     </div>
                 </div>
             </div>
         ),
     },
     {
-        title: "5. Use Composio Tools",
+        title: "6. Composio Tools",
         description: "1000+ tool integrations — GitHub, Slack, email, databases, and more.",
         content: (
             <div className="bg-card border border-border rounded-xl p-5">

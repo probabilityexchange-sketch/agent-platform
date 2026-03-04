@@ -8,14 +8,12 @@ import { COMPOSIO_CATEGORIES, type ComposioCategory } from "@/lib/composio/integ
 interface IntegrationItem {
   slug: string;
   label: string;
-  category: ComposioCategory;
+  category: string;
   icon: string;
+  logo: string | null;
   description: string;
   hasAuthConfig: boolean;
   authConfigId: string | null;
-  authConfigName: string | null;
-  authConfigCount: number | null;
-  authConfigError: string | null;
   connectedAccountId: string | null;
   connectedStatus: string;
   connectedStatusReason: string | null;
@@ -76,17 +74,20 @@ function IntegrationCard({
   return (
     <div
       className={`relative flex flex-col gap-3 p-4 rounded-xl border transition-all duration-200 ${isConnected
-          ? "border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50"
-          : "border-border bg-card hover:border-border/80 hover:bg-card/80"
+        ? "border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50"
+        : "border-border bg-card hover:border-border/80 hover:bg-card/80"
         }`}
     >
-      {/* Icon + title */}
       <div className="flex items-start gap-3">
         <div
-          className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${isConnected ? "bg-emerald-500/15" : "bg-muted/60"
+          className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 overflow-hidden ${isConnected ? "bg-emerald-500/15" : "bg-muted/60"
             }`}
         >
-          {integration.icon}
+          {integration.logo ? (
+            <img src={integration.logo} alt="" className="w-full h-full object-contain p-1.5" />
+          ) : (
+            integration.icon
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
@@ -101,8 +102,8 @@ function IntegrationCard({
 
       {/* Auth config warning */}
       {!canConnect && (
-        <p className="text-[10px] text-amber-400/80 bg-amber-500/10 rounded-lg px-2.5 py-1.5">
-          ⚠️ No auth config in Composio dashboard yet. Configure it there first.
+        <p className="text-[10px] text-amber-400/80 bg-amber-500/10 rounded-lg px-2.5 py-1.5 font-medium">
+          Setup required. This integration isn't available yet. Check back soon.
         </p>
       )}
 
@@ -117,8 +118,8 @@ function IntegrationCard({
           onClick={() => onConnect(integration.slug)}
           disabled={isBusy || !canConnect}
           className={`flex-1 px-3 py-1.5 text-xs rounded-lg font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${isConnected
-              ? "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-              : "bg-primary hover:bg-primary/90 text-white"
+            ? "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+            : "bg-primary hover:bg-primary/90 text-white"
             }`}
         >
           {isBusy ? "Working…" : isConnected ? "Reconnect" : "Connect"}
@@ -138,60 +139,53 @@ function IntegrationCard({
 }
 
 function IntegrationsPageContent() {
-  const { isAuthenticated, sessionReady, sessionError, retrySessionSync } = useAuth();
+  const { isAuthenticated, loading: loadingAuth, sessionReady, sessionError, retrySessionSync } = useAuth();
   const searchParams = useSearchParams();
   const [data, setData] = useState<IntegrationsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyToolkit, setBusyToolkit] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState<ComposioCategory | "All">("All");
+  const [activeCategory, setActiveCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const load = useCallback(async () => {
-    if (!isAuthenticated) {
-      setLoading(false);
-      setData(null);
-      setError("Unauthorized");
-      return;
-    }
-    if (!sessionReady) {
-      setLoading(true);
-      return;
-    }
-    setLoading(true);
+  const load = useCallback(async (isInitial = false) => {
+    if (!isAuthenticated || !sessionReady) return;
+
+    if (isInitial) setLoading(true);
     setError(null);
+
     try {
-      let response = await fetch("/api/composio/integrations", { cache: "no-store" });
-      let payload = (await response.json()) as IntegrationsResponse & { error?: string };
-      if (response.status === 401) {
-        retrySessionSync();
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        response = await fetch("/api/composio/integrations", { cache: "no-store" });
-        payload = (await response.json()) as IntegrationsResponse & { error?: string };
+      const response = await fetch("/api/composio/integrations", { cache: "no-store" });
+      const payload = (await response.json()) as IntegrationsResponse & { error?: string };
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          retrySessionSync();
+          return;
+        }
+        throw new Error(payload.error || "Failed to load integrations");
       }
-      if (!response.ok) throw new Error(payload.error || "Failed to load integrations");
+
       setData(payload);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Failed to load integrations");
-      setData(null);
     } finally {
       setLoading(false);
     }
   }, [isAuthenticated, sessionReady, retrySessionSync]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      setLoading(false);
-      setData(null);
-      setError("Unauthorized");
+    if (!isAuthenticated || !sessionReady) {
+      if (!loadingAuth && !isAuthenticated) {
+        setLoading(false);
+        setError("Unauthorized");
+      }
       return;
     }
-    if (!sessionReady) {
-      setLoading(true);
-      return;
-    }
-    load().catch(() => { });
-  }, [isAuthenticated, sessionReady, load]);
+
+    // Only show skeleton on first ever load
+    load(data === null).catch(() => { });
+  }, [isAuthenticated, sessionReady, load, searchParams]);
 
   const callbackBanner = useMemo(() => {
     const status = searchParams.get("status");
@@ -256,6 +250,20 @@ function IntegrationsPageContent() {
     [data]
   );
 
+  const categories = useMemo(() => {
+    if (!data) return ["All"];
+    const cats = new Set<string>(["All"]);
+    data.integrations.forEach(i => {
+      if (i.category) cats.add(i.category);
+    });
+    // Sort so curated categories come first if they exist, then alphabetical
+    return Array.from(cats).sort((a, b) => {
+      if (a === "All") return -1;
+      if (b === "All") return 1;
+      return a.localeCompare(b);
+    });
+  }, [data]);
+
   return (
     <div className="max-w-5xl space-y-6">
       {/* Header */}
@@ -289,7 +297,7 @@ function IntegrationsPageContent() {
       )}
       {data?.sharedEntityMode && (
         <div className="text-sm text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
-          ⚠️ Shared entity mode — all users share these integrations.
+          ⚠️ Shared mode — connections are shared across all users.
         </div>
       )}
 
@@ -304,13 +312,13 @@ function IntegrationsPageContent() {
             className="w-full px-4 py-2 text-sm rounded-xl bg-muted border border-border focus:outline-none focus:ring-1 focus:ring-primary/40 placeholder:text-muted-foreground"
           />
           <div className="flex flex-wrap gap-2">
-            {(["All", ...COMPOSIO_CATEGORIES] as const).map((cat) => (
+            {categories.map((cat) => (
               <button
                 key={cat}
-                onClick={() => setActiveCategory(cat as ComposioCategory | "All")}
+                onClick={() => setActiveCategory(cat)}
                 className={`px-3 py-1 text-xs rounded-full border transition-colors ${activeCategory === cat
-                    ? "bg-primary text-white border-primary"
-                    : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
+                  ? "bg-primary text-white border-primary"
+                  : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
                   }`}
               >
                 {cat}
@@ -345,11 +353,6 @@ function IntegrationsPageContent() {
         </div>
       )}
 
-      {data && (
-        <p className="text-[10px] text-muted-foreground">
-          Composio entity: <span className="font-mono">{data.composioUserId}</span>
-        </p>
-      )}
     </div>
   );
 }

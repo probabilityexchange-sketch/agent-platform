@@ -35,7 +35,7 @@ export function RandiLogo({
         style={{ width, height }}
       >
         <Image
-          src="/randi.png"
+          src="/randi.png?v=5"
           alt="Randi"
           fill
           className="object-contain"

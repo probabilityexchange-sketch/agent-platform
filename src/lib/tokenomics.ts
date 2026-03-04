@@ -149,10 +149,10 @@ export function getModelCost(model: string): number {
 // instead of an unlimited subscription that kills deflation.
 
 export const STAKING_TIERS = {
-    NONE: { threshold: 0, discountBps: 0, label: "Free Tier" },
-    BRONZE: { threshold: 1_000, discountBps: 1500, label: "Bronze (1K $RANDI)" },
-    SILVER: { threshold: 10_000, discountBps: 3000, label: "Silver (10K $RANDI)" },
-    GOLD: { threshold: 100_000, discountBps: 5000, label: "Gold (100K $RANDI)" },
+    NONE: { threshold: 0, discountBps: 0, dailyCreditYield: 0, label: "Free Tier" },
+    BRONZE: { threshold: 1_000, discountBps: 1500, dailyCreditYield: 1_000, label: "Bronze (1K $RANDI)" },
+    SILVER: { threshold: 10_000, discountBps: 3000, dailyCreditYield: 15_000, label: "Silver (10K $RANDI)" },
+    GOLD: { threshold: 100_000, discountBps: 5000, dailyCreditYield: 200_000, label: "Gold (100K $RANDI)" },
 } as const;
 
 export type StakingLevel = keyof typeof STAKING_TIERS;
@@ -198,58 +198,60 @@ export function getCallCost(model: string, stakingLevel: StakingLevel = "NONE") 
     };
 }
 
-// ─── Token Packs (Buy $RANDI → Deposit to Platform) ─────────────────────────
+// ─── Credit Packs & Subscriptions (Kilocode Style) ─────────────────────────
 //
-// Users buy $RANDI on pump.fun/PumpSwap and send to treasury.
-// No USD prices — just token amounts with bonus incentives for bigger buys.
-// The "bonus" is extra tokens from treasury reserves, not minted.
+// Users buy $RANDI on decentralized exchanges and deposit them, OR pay via fiat/Stripe.
+// 1 deposited $RANDI = 1 Randi Credit.
 
-export interface TokenPack {
+export interface CreditPack {
     id: string;
     name: string;
-    tokenAmount: number;
+    creditAmount: number;
     bonusPercent: number;
     /** Approximate call counts at STANDARD tier, no staking discount */
     estimatedStandardCalls: number;
     estimatedPremiumCalls: number;
+    type?: "payg" | "subscription";
 }
 
-export function getTokenPacks(): TokenPack[] {
+export function getCreditPacks(): CreditPack[] {
     return [
         {
             id: "starter",
-            name: "Starter",
-            tokenAmount: 100_000,      // ~$1 at current price
+            name: "Starter Credits",
+            creditAmount: 100_000,      // ~$1 at current price
             bonusPercent: 0,
-            estimatedStandardCalls: Math.floor(100_000 / AGENT_PRICING.STANDARD),  // 20
-            estimatedPremiumCalls: Math.floor(100_000 / AGENT_PRICING.PREMIUM),    // 4
+            estimatedStandardCalls: Math.floor(100_000 / AGENT_PRICING.STANDARD),
+            estimatedPremiumCalls: Math.floor(100_000 / AGENT_PRICING.PREMIUM),
+            type: "payg"
         },
         {
             id: "builder",
-            name: "Builder",
-            tokenAmount: 500_000,      // ~$5 at current price
+            name: "Builder Credits",
+            creditAmount: 500_000,      // ~$5 at current price
             bonusPercent: 10,
-            estimatedStandardCalls: Math.floor(550_000 / AGENT_PRICING.STANDARD),  // 110
-            estimatedPremiumCalls: Math.floor(550_000 / AGENT_PRICING.PREMIUM),    // 22
+            estimatedStandardCalls: Math.floor(550_000 / AGENT_PRICING.STANDARD),
+            estimatedPremiumCalls: Math.floor(550_000 / AGENT_PRICING.PREMIUM),
+            type: "payg"
         },
         {
             id: "degen",
-            name: "Degen",
-            tokenAmount: 2_000_000,    // ~$20 at current price
+            name: "Degen Credits",
+            creditAmount: 2_000_000,    // ~$20 at current price
             bonusPercent: 25,
-            estimatedStandardCalls: Math.floor(2_500_000 / AGENT_PRICING.STANDARD), // 500
-            estimatedPremiumCalls: Math.floor(2_500_000 / AGENT_PRICING.PREMIUM),   // 100
+            estimatedStandardCalls: Math.floor(2_500_000 / AGENT_PRICING.STANDARD),
+            estimatedPremiumCalls: Math.floor(2_500_000 / AGENT_PRICING.PREMIUM),
+            type: "payg"
         },
         {
             id: "pro_monthly",
-            name: "Randi Pro (Subscription)",
-            tokenAmount: 2_000_000,    // ~$20 at current price
+            name: "Randi Pro (Monthly)",
+            creditAmount: 2_000_000,    // 2M credits granted every month
             bonusPercent: 0,
-            estimatedStandardCalls: 400, // 2M / 5,000
-            estimatedPremiumCalls: 66,   // 2M / 30,000
-            estimatedUltraCalls: 13,    // 2M / 150,000 
-            type: "subscription"  // Add a type to distinguish from deposits
-        } as any,
+            estimatedStandardCalls: 400,
+            estimatedPremiumCalls: 66,
+            type: "subscription"
+        }
     ];
 }
 
