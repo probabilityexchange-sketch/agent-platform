@@ -17,6 +17,7 @@ const mainNavItems = [
 const advancedNavItems = [
   { href: "/containers", label: "Containers", icon: "box" },
   { href: "/fleet", label: "Fleet", icon: "server" },
+  { href: "/telegram", label: "Telegram Bot", icon: "message" },
   { href: "/transparency", label: "Transparency", icon: "shield" },
   { href: "/roadmap", label: "Roadmap", icon: "map" },
 ];

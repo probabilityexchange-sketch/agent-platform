@@ -83,6 +83,7 @@ This roadmap outlines the strategic phases for evolving the Randi Agent Platform
 - [ ] **Public API**: Allow third-party developers to rent Randi containers via API.
 - [ ] **Progressive Web App (PWA)**: Mobile-optimized chat experience (Drafted via Telegram PWA).
 - [ ] **Governance Interface**: Allow $RANDI holders to vote on new agent "Personalities" or "Tools."
+- [ ] **PinchTab Integration**: Setup full integration with [PinchTab](https://pinchtab.com/) marketing & analytics.
 
 ## 🛡️ Phase 6: UX REWRITE & RUNTIME RESILIENCE (Completed)
 **Objective**: Decouple the "Brain" from the "Provisioner" to ensure users are never blocked.
@@ -179,8 +180,8 @@ This roadmap outlines the strategic phases for evolving the Randi Agent Platform
                                                 <div key={lIdx} className="flex items-start gap-3 text-sm">
                                                     <div
                                                         className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${isChecked
-                                                                ? "bg-success border-success text-white"
-                                                                : "border-border bg-muted/30"
+                                                            ? "bg-success border-success text-white"
+                                                            : "border-border bg-muted/30"
                                                             }`}
                                                     >
                                                         {isChecked && (

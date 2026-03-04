@@ -4,7 +4,6 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { COMPOSIO_CATEGORIES, type ComposioCategory } from "@/lib/composio/integrations";
-import { TelegramSetup } from "@/components/settings/TelegramSetup";
 
 interface IntegrationItem {
   slug: string;
@@ -353,12 +352,6 @@ function IntegrationsPageContent() {
           ))}
         </div>
       )}
-
-      {/* Telegram Setup Tutorial */}
-      <div className="mt-16 pt-8 border-t border-border">
-        <h2 className="text-xl font-bold mb-6">Messaging Control</h2>
-        <TelegramSetup />
-      </div>
 
     </div>
   );
