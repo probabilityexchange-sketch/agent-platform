@@ -184,27 +184,35 @@ async function fetchPrivyUserPayload(
     headers["Referer"] = `${headers["Origin"]}/`;
   }
 
-  const response = await fetch(`${PRIVY_BASE_URL}/api/v1/users/me`, {
-    method: "GET",
-    headers,
-    cache: "no-store",
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-  if (!response.ok) {
-    const details = await response.text().catch(() => "");
-    const compactDetails = details.trim().slice(0, 200);
-    const suffix = compactDetails ? `: ${compactDetails}` : "";
-    throw new Error(
-      `Unable to validate Privy access token (status ${response.status}, app ${appId})${suffix}`
-    );
+  try {
+    const response = await fetch(`${PRIVY_BASE_URL}/api/v1/users/me`, {
+      method: "GET",
+      headers,
+      cache: "no-store",
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const details = await response.text().catch(() => "");
+      const compactDetails = details.trim().slice(0, 200);
+      const suffix = compactDetails ? `: ${compactDetails}` : "";
+      throw new Error(
+        `Unable to validate Privy access token (status ${response.status}, app ${appId})${suffix}`
+      );
+    }
+
+    const rawPayload = asRecord(await response.json());
+    if (!rawPayload) {
+      throw new Error("Invalid Privy user payload");
+    }
+
+    return rawPayload;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const rawPayload = asRecord(await response.json());
-  if (!rawPayload) {
-    throw new Error("Invalid Privy user payload");
-  }
-
-  return rawPayload;
 }
 
 export async function resolvePrivyWallet(
