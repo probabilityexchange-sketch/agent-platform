@@ -5,7 +5,8 @@ import {
   StakingLevel,
   getCreditPacks,
   CreditPack,
-  STAKING_TIERS
+  STAKING_TIERS,
+  TOKEN_DECIMALS,
 } from "@/lib/tokenomics";
 
 export { getCreditPacks };
@@ -151,9 +152,7 @@ export async function deductForAgentCall(
     });
   } catch (error) {
     console.error("Deduction error:", error);
-    // In case of any unexpected crash, we fail-safe and allow the call
-    // rather than blocking the user entirely.
-    return { success: true, cost: 0 };
+    return { success: false, error: "An internal error occurred. Please try again." };
   }
 }
 
@@ -181,7 +180,7 @@ export async function depositTokens(
   }
 
   // Convert BigInt base amount (lamports) to whole tokens for the bonus calc
-  const decimals = 10 ** 9;
+  const decimals = 10 ** TOKEN_DECIMALS;
   const wholeTokens = Number(baseTokenAmount / BigInt(decimals));
   const finalWholeTokens = Math.floor(wholeTokens * bonusMultiplier);
 

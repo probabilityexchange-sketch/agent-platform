@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 // Debug endpoint to check agent configs
 export async function GET(req: NextRequest) {
     const secret = req.nextUrl.searchParams.get("secret");
-    if (secret !== process.env.COMPOSIO_API_KEY) {
+    if (!process.env.ADMIN_SECRET || secret !== process.env.ADMIN_SECRET) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

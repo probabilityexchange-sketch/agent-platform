@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        if (body.secret !== process.env.COMPOSIO_API_KEY) {
+        if (!process.env.ADMIN_SECRET || body.secret !== process.env.ADMIN_SECRET) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -48,6 +48,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, updated: result.count, toolkits: ["googlecalendar", "slack", "notion", "gmail", "prompmate", "hackernews", "coinmarketcap", "github"] });
     } catch (error: any) {
         console.error("Admin seed error:", error);
-        return NextResponse.json({ error: error.message, stack: error.stack?.substring(0, 500) }, { status: 500 });
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }
