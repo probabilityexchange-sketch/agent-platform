@@ -173,51 +173,33 @@ export async function POST(req: NextRequest) {
       const wrappedComposioTools = vercelProvider.wrapTools(
         composioTools,
         async (toolSlug, args) => {
-          // Approval Gate Check - use a unique separator that won't appear in JSON
+          // Approval Gate Check - use a clean separator
           if (requiresApproval(toolSlug)) {
-            const argsStr = JSON.stringify(args);
-            throw new Error(`APPROVAL_REQUIRED${toolSlug}${argsStr}`);
-          }
-
-          // Normalize arguments - convert string params to arrays where needed for Composio
-          let normalizedArgs = args;
-          if (toolSlug === 'GMAIL_FETCH_EMAILS') {
-            normalizedArgs = { ...args };
-            if (normalizedArgs.label_ids && typeof normalizedArgs.label_ids === 'string') {
-              normalizedArgs.label_ids = [normalizedArgs.label_ids];
-            }
-            if (!normalizedArgs.max_results) {
-              normalizedArgs.max_results = 10;
-            }
-          }
-          if (toolSlug === 'GOOGLECALENDAR_FIND_EVENT') {
-            normalizedArgs = { ...args };
-            if (!normalizedArgs.max_results) {
-              normalizedArgs.max_results = 10;
-            }
+            throw new Error(`APPROVAL_REQUIRED|${toolSlug}|${JSON.stringify(args)}`);
           }
 
           const resultStr = await executeOpenAIToolCall(auth.userId, {
             name: toolSlug,
-            arguments: normalizedArgs,
+            arguments: args,
           }, activeRuntime?.url || undefined);
 
-          console.log(`[Chat] Tool ${toolSlug} args: ${JSON.stringify(normalizedArgs)}`);
-          console.log(`[Chat] Tool ${toolSlug} raw result (len=${resultStr.length}): ${resultStr.substring(0, 1000)}`);
-
-          let parsed: Record<string, unknown>;
-          try { parsed = JSON.parse(resultStr); } catch { parsed = { result: resultStr }; }
+          let parsed: any;
+          try { 
+            parsed = JSON.parse(resultStr); 
+          } catch { 
+            parsed = { data: { result: resultStr }, successful: true, error: null }; 
+          }
           
           // Optimization: Clean up verbose Gmail/Calendar results to save tokens
           if (parsed.data && typeof parsed.data === 'object') {
-            const data = parsed.data as any;
+            const data = parsed.data;
             if (Array.isArray(data.messages)) {
               data.messages = data.messages.map((msg: any) => ({
                 id: msg.messageId || msg.id,
                 from: msg.from || (msg.payload?.headers?.find((h: any) => h.name === 'From')?.value),
                 subject: msg.subject || (msg.payload?.headers?.find((h: any) => h.name === 'Subject')?.value),
                 date: msg.messageTimestamp || msg.date,
-                snippet: msg.snippet || msg.messageText?.substring(0, 200),
+                snippet: msg.snippet || msg.messageText?.substring(0, 300),
               }));
             }
             if (Array.isArray(data.items)) { // Calendar items
@@ -231,14 +213,8 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          console.log(`[Chat] Tool ${toolSlug} parsed result: ${JSON.stringify(parsed).substring(0, 500)}`);
-          
-          const isError = parsed && typeof parsed === 'object' && ('error' in parsed || 'errorMessage' in parsed);
-          return {
-            data: isError ? {} : parsed,
-            error: isError ? String(parsed.error || parsed.errorMessage) : null,
-            successful: !isError,
-          };
+          // Return the parsed result directly - it already has { data, error, successful }
+          return parsed;
         }
       );
       console.log(`[Chat] Wrapped Composio tools: ${Object.keys(wrappedComposioTools).length} -> ${Object.keys(wrappedComposioTools).join(', ')}`);
@@ -366,20 +342,8 @@ export async function POST(req: NextRequest) {
     console.error("Main Chat Route Error:", error);
 
     // Handle specialized Approval Signal
-    if (error.message?.startsWith("APPROVAL_REQUIRED")) {
-      const prefix = "APPROVAL_REQUIRED";
-      const afterPrefix = error.message.slice(prefix.length);
-      let toolName = "";
-      let argsJson = "{}";
-      
-      // Find where tool name ends (first { marks start of JSON args)
-      const jsonStart = afterPrefix.indexOf("{");
-      if (jsonStart !== -1) {
-        toolName = afterPrefix.slice(0, jsonStart);
-        argsJson = afterPrefix.slice(jsonStart);
-      } else {
-        toolName = afterPrefix;
-      }
+    if (error.message?.startsWith("APPROVAL_REQUIRED|")) {
+      const [_, toolName, argsJson] = error.message.split("|");
       
       return NextResponse.json({
         error: "Approval required",
