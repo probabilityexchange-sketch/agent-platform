@@ -91,6 +91,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!message && !resumeApprovalId) {
+      console.warn("[Chat] 400 Bad Request: Empty message in body:", JSON.stringify(body).substring(0, 500));
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 

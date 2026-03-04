@@ -40,31 +40,31 @@ export type AgentTier = keyof typeof AGENT_PRICING;
 // ─── Model → Tier Mapping ────────────────────────────────────────────────────
 
 export const MODEL_TIERS: Record<string, AgentTier> = {
-    "llama-3-70b": "STANDARD",
-    "llama-3.1-8b": "STANDARD",
-    "llama-3.1-70b": "STANDARD",
-    "llama-3.2-90b": "STANDARD",
-    "gemma-2-9b": "STANDARD",
+    "llama-3": "STANDARD",
+    "llama-3.1": "STANDARD",
+    "llama-3.2": "STANDARD",
+    "gemma": "STANDARD",
     "mistral-7b": "STANDARD",
-    "deepseek-v3": "STANDARD",
-    "qwen-2.5-72b": "STANDARD",
+    "deepseek": "STANDARD",
+    "qwen": "STANDARD",
     ":free": "STANDARD",
 
     "gpt-4o": "PREMIUM",
-    "gpt-4o-mini": "PREMIUM",
     "gpt-4-turbo": "PREMIUM",
-    "claude-3.5-sonnet": "PREMIUM",
+    "claude-3-sonnet": "PREMIUM",
     "claude-3-haiku": "PREMIUM",
-    "anthropic/claude-3.5-sonnet": "PREMIUM",
     "mistral-large": "PREMIUM",
+    "gemini-1.5-pro": "PREMIUM",
+    "gemini-1.5-flash": "PREMIUM",
 
     "o1": "ULTRA",
-    "o1-mini": "ULTRA",
-    "o1-preview": "ULTRA",
-    "o1-pro": "ULTRA",
     "claude-3-opus": "ULTRA",
-    "anthropic/claude-3-opus": "ULTRA",
+    "claude-opus": "ULTRA",
+    "anthropic/claude": "ULTRA",
+    "openai/o1": "ULTRA",
+    "gemini-2.0-flash-thinking": "ULTRA",
 };
+
 
 /**
  * Get the pricing tier for a model.
