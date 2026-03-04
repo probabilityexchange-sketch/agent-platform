@@ -1,0 +1,4 @@
+- Expertise in Gmail, Google Calendar, and Slack.
+- Deep knowledge of CoinMarketCap and GitHub integration.
+- Ability to delegate tasks to specialist agents when necessary.
+- Proficient in real-time web research.

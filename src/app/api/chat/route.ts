@@ -17,6 +17,7 @@ import {
 } from "@/lib/skills/clawnch-tools";
 import { getComposioClient, executeOpenAIToolCall, resolveComposioUserId, getAgentToolsFromConfig } from "@/lib/composio/client";
 import { VercelProvider } from "@composio/vercel";
+import { getRandiContext } from "@/lib/randi/context";
 import { DEFAULT_MODEL, isUnmeteredModel } from "@/lib/openrouter/client";
 import { deductForAgentCall } from "@/lib/credits/engine";
 import {
@@ -277,15 +278,22 @@ export async function POST(req: NextRequest) {
       stored.reverse().forEach(m => {
         if (m.role === 'tool' && m.toolCalls) {
           history.push({ role: 'tool', content: m.content, toolCallId: m.toolCalls } as any);
-        } else if (m.role === 'user' || m.role === 'assistant' || m.role === 'system') {
+        } else if (m.role === 'assistant') {
+          history.push({ 
+            role: 'assistant', 
+            content: m.content, 
+            toolCalls: m.toolCalls ? JSON.parse(m.toolCalls) : undefined 
+          } as any);
+        } else if (m.role === 'user' || m.role === 'system') {
           history.push({ role: m.role as any, content: m.content });
         }
       });
     }
 
     // 5. Run Stream Text
+    const randiContext = await getRandiContext();
     console.log(`[Chat] FINAL tool count: ${Object.keys(tools).length} -> ${Object.keys(tools).join(', ')}`);
-    let finalSystemPrompt = agent.systemPrompt + "\n\n" + skillsContext + (tools ? "\n\n" + TOOL_USAGE_SYSTEM_INSTRUCTION : "");
+    let finalSystemPrompt = agent.systemPrompt + "\n\n" + randiContext + "\n\n" + skillsContext + (tools ? "\n\n" + TOOL_USAGE_SYSTEM_INSTRUCTION : "");
 
     // Minimax-specific model hardening:
     // Some gateways/models like minimax-m2.5 default to XML for tool calls, 
