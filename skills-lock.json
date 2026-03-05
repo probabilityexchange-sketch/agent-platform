@@ -10,6 +10,51 @@
       "source": "alchemyplatform/skills",
       "sourceType": "github",
       "computedHash": "642d58c097ceadd2a7b16b83a0963d6d89fc5cbcf3488314306c6c3332215bf9"
+    },
+    "connectors-available": {
+      "source": "hummingbot/skills",
+      "sourceType": "github",
+      "computedHash": "2066799884cc2ddcb3d5e10260c55281e2e5e34246ed86b1828c2f4180e89551"
+    },
+    "find-arbitrage-opps": {
+      "source": "hummingbot/skills",
+      "sourceType": "github",
+      "computedHash": "0783031baefcccd894aba3f0d921593c7569930916c596abc8c57f5dbc17a8b7"
+    },
+    "find-xemm-opps": {
+      "source": "hummingbot/skills",
+      "sourceType": "github",
+      "computedHash": "a59342197a7d5a05d844f815674a07c45002a102563764888c8ba48a8278bb1c"
+    },
+    "hummingbot": {
+      "source": "hummingbot/skills",
+      "sourceType": "github",
+      "computedHash": "63f3e415f4009ff0c0c3ccb3895430971691e83021daa929548407781cadae96"
+    },
+    "hummingbot-deploy": {
+      "source": "hummingbot/skills",
+      "sourceType": "github",
+      "computedHash": "469f32ad4d3a2963daf63eb91891362c01c223b91082a5097bad5bfd24192c5a"
+    },
+    "hummingbot-developer": {
+      "source": "hummingbot/skills",
+      "sourceType": "github",
+      "computedHash": "a20c30171a3c4876f6773c7b82a716c47ef57cd0087331bce1b18c529ad3b79f"
+    },
+    "hummingbot-heartbeat": {
+      "source": "hummingbot/skills",
+      "sourceType": "github",
+      "computedHash": "e5c3c246f3f47cae2b2416066cc7973731864108d55706c542dcf864a5630ab5"
+    },
+    "lp-agent": {
+      "source": "hummingbot/skills",
+      "sourceType": "github",
+      "computedHash": "d6bf6e8fa458752d3a2fa687923cee768a83f52846382b2456f872d590f6e7c1"
+    },
+    "slides-generator": {
+      "source": "hummingbot/skills",
+      "sourceType": "github",
+      "computedHash": "ba2ec1f1cc988a371d35f237b14bd84152d6fbfa94b7a665b4061abbad892e69"
     }
   }
 }
