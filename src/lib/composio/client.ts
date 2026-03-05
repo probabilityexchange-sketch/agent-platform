@@ -164,6 +164,7 @@ const LEGACY_TOOLKIT_ALIASES: Record<string, string> = {
   supabase_api: "supabase",
   vercel_api: "vercel",
   telegram_api: "telegram",
+  "youtube-vrqivy": "youtube",
 };
 
 interface ParsedAgentToolConfig {
