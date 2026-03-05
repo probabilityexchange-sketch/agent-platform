@@ -140,6 +140,13 @@ const CURATED_TOOLKIT_TOOLS: Record<string, string[]> = {
     "TELEGRAM_GET_CHAT",
     "TELEGRAM_EDIT_MESSAGE_TEXT",
   ],
+  youtube: [
+    "YOUTUBE_SEARCH_VIDEOS",
+    "YOUTUBE_LIST_CHANNEL_VIDEOS",
+    "YOUTUBE_GET_VIDEO_DETAILS",
+    "YOUTUBE_LIST_MY_VIDEOS",
+    "YOUTUBE_LIST_PLAYLISTS",
+  ],
 };
 
 const LEGACY_TOOLKIT_ALIASES: Record<string, string> = {
@@ -394,8 +401,8 @@ export async function executeOpenAIToolCall(
     toolArgs = JSON.parse(normalized);
   } else if ('name' in toolCall) {
     toolName = toolCall.name;
-    toolArgs = typeof (toolCall as any).arguments === "string" 
-      ? JSON.parse((toolCall as any).arguments) 
+    toolArgs = typeof (toolCall as any).arguments === "string"
+      ? JSON.parse((toolCall as any).arguments)
       : ((toolCall as any).arguments || {});
   } else {
     return JSON.stringify({ error: "Invalid tool call format" });

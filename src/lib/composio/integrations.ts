@@ -207,6 +207,14 @@ export const SUPPORTED_COMPOSIO_TOOLKITS: readonly ComposioToolkitDef[] = [
     envKey: "COMPOSIO_AUTH_CONFIG_TELEGRAM",
   },
   {
+    slug: "youtube",
+    label: "YouTube",
+    category: "Communication",
+    icon: "📺",
+    description: "Search videos, list channel activity, and manage playlists.",
+    envKey: "COMPOSIO_AUTH_CONFIG_YOUTUBE",
+  },
+  {
     slug: "googlemeet",
     label: "Google Meet",
     category: "Communication",
