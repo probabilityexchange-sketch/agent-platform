@@ -1,6 +1,6 @@
 # Payments Runbook
 
-This document is the operator guide for token purchase-intent and credits-ledger flows in production.
+This document is the operator guide for token purchase-intent and credits-ledger flows in production. For a high-level conceptual overview of how Randi handles different types of payments, see the **[Payments Explainer](docs/PAYMENTS_EXPLAINER.md)**.
 
 ## Scope
 

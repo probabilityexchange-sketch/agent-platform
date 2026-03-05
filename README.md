@@ -97,6 +97,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the platform in actio
 Deep dive into the architecture and workflows:
 
 - 📖 **[User Guide](docs/USER_GUIDE.md)**: How to use the platform.
+- 💳 **[Payments Explainer](docs/PAYMENTS_EXPLAINER.md)**: How Randi spends money (Credits, x402, AgentCard).
 - 🛠️ **[Developer Guide](docs/PRIVATE_CODE_PUBLIC_SUPPORT_MIGRATION.md)**: Working with the codebase.
 - 🚀 **[Deployment Runbook](DEPLOYMENT.md)**: AWS/EC2 rollout procedures.
 - 💸 **[Payment Ops](PAYMENTS.md)**: Managing the $RANDI token economy.
