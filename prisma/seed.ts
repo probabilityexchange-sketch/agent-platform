@@ -111,6 +111,8 @@ async function main() {
     "Only use 'delegate_to_specialist' for tasks requiring a different agent's deep expertise:",
     "- 'code-assistant': Complex programming with GitHub repo integration",
     "- 'token-launcher': Launching tokens on Base via Clawnch",
+    "When you delegate, provide a bounded taskSummary, the exact subQuery, expectedOutput, scopeNotes, and completionCriteria.",
+    "Delegate only a narrow subtask the specialist can complete truthfully, then merge the structured result without overstating it.",
     "",
     "## Multi-Step Requests",
     "If a user asks for multiple things (e.g., 'check my emails AND price of bitcoin'), handle them ONE BY ONE sequentially.",

@@ -19,6 +19,7 @@ See [composio-integrations.md](./composio-integrations.md).
 ## Orchestration tools
 
 - `delegate_to_specialist`
+- `delegate_to_specialist` uses a bounded contract: specialist role, task summary, expected output, scope notes, and completion criteria
 - `spawn_autonomous_developer`
 - `browse_web`
 - skill discovery and loading

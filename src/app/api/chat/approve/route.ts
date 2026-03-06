@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
+import { getApprovalRequestForUser, resolveApprovalRequest } from "@/lib/policy/service";
 
 const schema = z.object({
     approvalId: z.string().min(1),
@@ -29,7 +30,25 @@ export async function POST(req: NextRequest) {
 
         const { approvalId, decision } = parsed.data;
 
-        // Load the approval and verify session ownership
+        const approvalRequest = await getApprovalRequestForUser(approvalId, auth.userId).catch(() => null);
+        if (approvalRequest) {
+            if (approvalRequest.status !== "pending") {
+                return NextResponse.json(
+                    { error: `Approval already ${approvalRequest.status}` },
+                    { status: 409 }
+                );
+            }
+
+            await resolveApprovalRequest({
+                approvalRequestId: approvalId,
+                userId: auth.userId,
+                resolution: decision === "APPROVED" ? "approved" : "rejected",
+            });
+
+            return NextResponse.json({ ok: true, decision });
+        }
+
+        // Load the legacy tool approval and verify session ownership
         const approval = await prisma.toolApproval.findUnique({
             where: { id: approvalId },
             include: { session: { select: { userId: true } } },
@@ -74,6 +93,21 @@ export async function GET(req: NextRequest) {
 
         if (!approvalId) {
             return NextResponse.json({ error: "approvalId required" }, { status: 400 });
+        }
+
+        const approvalRequest = await getApprovalRequestForUser(approvalId, auth.userId).catch(() => null);
+
+        if (approvalRequest) {
+            return NextResponse.json({
+                id: approvalRequest.id,
+                toolName: approvalRequest.toolName,
+                toolArgs: approvalRequest.toolArgsJson,
+                workflowId: approvalRequest.workflowId,
+                status: approvalRequest.status,
+                summary: approvalRequest.summary,
+                createdAt: approvalRequest.createdAt,
+                resolvedAt: approvalRequest.resolvedAt,
+            });
         }
 
         const approval = await prisma.toolApproval.findUnique({

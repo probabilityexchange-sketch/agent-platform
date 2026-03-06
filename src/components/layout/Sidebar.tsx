@@ -9,6 +9,7 @@ import { useTokenPrice } from "@/hooks/useTokenPrice";
 const mainNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: "grid" },
   { href: "/chat", label: "Ask Randi", icon: "message" },
+  { href: "/workflows", label: "Automations", icon: "zap" },
   { href: "/how-it-works", label: "How it Works", icon: "help" },
   { href: "/skills", label: "Skills Library", icon: "cpu" },
   { href: "/integrations", label: "Integrations", icon: "link" },
@@ -26,6 +27,7 @@ const advancedNavItems = [
 const icons: Record<string, string> = {
   grid: "M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z",
   cpu: "M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z",
+  zap: "M13 10V3L4 14h7v7l9-11h-7z",
   message: "M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z",
   link: "M13.828 10.172a4 4 0 000 5.656l.586.586a4 4 0 005.656-5.656l-1.172-1.172a4 4 0 00-5.656 0M10.172 13.828a4 4 0 000-5.656l-.586-.586a4 4 0 10-5.656 5.656l1.172 1.172a4 4 0 005.656 0",
   help: "M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",

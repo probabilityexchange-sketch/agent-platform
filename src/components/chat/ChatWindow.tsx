@@ -112,6 +112,30 @@ export function ChatWindow({
         }
     }, [sendMessage]);
 
+    const handleWorkflowAction = useCallback(async (workflowId: string, action: string, data?: any) => {
+        if (action === "save") {
+            try {
+                await sendMessage({
+                    role: "user",
+                    parts: [{ type: "text", text: `Save this workflow: ${data.title}` }],
+                }, {
+                    // We can pass data to the backend if needed, but the agent 
+                    // should be able to handle it if we just say "save this"
+                    body: { workflowAction: action, workflowId, workflowData: data }
+                });
+            } catch (err) {
+                console.error("Workflow save error:", err);
+            }
+        } else if (action === "view_approval") {
+            // Logic to find and show the approval request
+            // For now, we just tell the agent to show it
+            await sendMessage({
+                role: "user",
+                parts: [{ type: "text", text: "Show the pending approval for this run." }],
+            });
+        }
+    }, [sendMessage]);
+
     return (
         <div className="flex flex-col h-full bg-card/30 rounded-xl border border-border overflow-hidden">
             <div
@@ -141,8 +165,10 @@ export function ChatWindow({
                         } as any}
                         isStreaming={status === "streaming" && msg.id === messages[messages.length - 1].id && msg.role === "assistant"}
                         onApprovalDecision={handleApprovalDecision}
+                        onWorkflowAction={handleWorkflowAction}
                     />
                 ))}
+
 
                 {isLoading && messages[messages.length - 1]?.role === "user" && (
                     <div className="flex justify-start">

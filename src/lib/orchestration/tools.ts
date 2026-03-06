@@ -3,10 +3,220 @@ import { openrouter, createChatCompletion } from "@/lib/openrouter/client";
 import { getAgentToolsFromConfig, executeOpenAIToolCall, composioToolsToOpenAI } from "@/lib/composio/client";
 import { SkillManager } from "@/lib/skills/manager";
 import { deductForAgentCall } from "@/lib/credits/engine";
+import { evaluateAndRecordPolicy } from "@/lib/policy/service";
 import type OpenAI from "openai";
 
 type ChatMessageParam = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 type ChatTool = OpenAI.Chat.Completions.ChatCompletionTool;
+
+export type SpecialistExpectedOutputFormat =
+    | "summary"
+    | "bullet_list"
+    | "structured_findings"
+    | "action_report"
+    | "status_update";
+
+export type DelegateToSpecialistArgs = {
+    specialistSlug: "research-assistant" | "code-assistant" | "productivity-agent" | "token-launcher";
+    taskSummary: string;
+    subQuery: string;
+    expectedOutput: {
+        format: SpecialistExpectedOutputFormat;
+        sections?: string[];
+    };
+    scopeNotes?: string[];
+    completionCriteria?: string[];
+};
+
+export type SpecialistEvidenceItem = {
+    kind: "tool_call" | "url" | "note";
+    detail: string;
+};
+
+export type SpecialistResponseEnvelope = {
+    specialistSlug: string;
+    status: "completed" | "partial" | "blocked" | "failed";
+    role: string;
+    delegatedTask: string;
+    completedWork: string[];
+    output: string;
+    evidence: SpecialistEvidenceItem[];
+    blockedBy: string[];
+    unresolved: string[];
+};
+
+const SPECIALIST_ROLE_LABELS: Record<string, string> = {
+    "research-assistant": "research specialist",
+    "code-assistant": "code specialist",
+    "productivity-agent": "productivity specialist",
+    "token-launcher": "token launch specialist",
+};
+
+/**
+ * Formats a specialist response envelope into a human-readable string.
+ * This is used to prevent raw JSON from leaking into user-facing surfaces
+ * like Telegram when a lead orchestrator returns the raw tool output.
+ */
+export function formatSpecialistResponse(envelope: SpecialistResponseEnvelope): string {
+    const { status, role, delegatedTask, completedWork, output, blockedBy, unresolved } = envelope;
+
+    const emojiMap: Record<string, string> = {
+        completed: "✅",
+        partial: "🟡",
+        blocked: "🛑",
+        failed: "❌",
+    };
+
+    const statusEmoji = emojiMap[status] || "❓";
+    const lines = [
+        `${statusEmoji} *${role.toUpperCase()} REPORT*`,
+        `*Task:* ${delegatedTask}`,
+        "",
+        output,
+        "",
+    ];
+
+    if (completedWork.length > 0) {
+        lines.push("*Work Completed:*");
+        completedWork.forEach((item) => lines.push(`- ${item}`));
+        lines.push("");
+    }
+
+    if (blockedBy.length > 0) {
+        lines.push("*Blocked By:*");
+        blockedBy.forEach((item) => lines.push(`- ${item}`));
+        lines.push("");
+    }
+
+    if (unresolved.length > 0 && status !== "completed") {
+        lines.push("*Unresolved Issues:*");
+        unresolved.forEach((item) => lines.push(`- ${item}`));
+        lines.push("");
+    }
+
+    return lines.join("\n").trim();
+}
+
+function truncateText(value: string, maxLength = 10000): string {
+    if (value.length <= maxLength) {
+        return value;
+    }
+
+    return value.substring(0, maxLength) + "... [Truncated]";
+}
+
+export function buildSpecialistDelegationPrompt(args: DelegateToSpecialistArgs): string {
+    const scopeNotes = args.scopeNotes?.length
+        ? args.scopeNotes.map((note) => `- ${note}`).join("\n")
+        : "- Stay within the delegated task only.";
+    const completionCriteria = args.completionCriteria?.length
+        ? args.completionCriteria.map((item) => `- ${item}`).join("\n")
+        : "- Stop once the delegated task is complete or blocked.";
+    const sections = args.expectedOutput.sections?.length
+        ? args.expectedOutput.sections.join(", ")
+        : "completedWork, output, evidence, blockedBy, unresolved";
+
+    return [
+        "You are acting as a bounded specialist for the Lead Orchestrator.",
+        `Role: ${SPECIALIST_ROLE_LABELS[args.specialistSlug] || args.specialistSlug}`,
+        `Delegated task summary: ${args.taskSummary}`,
+        "",
+        "Delegated request:",
+        args.subQuery,
+        "",
+        "Scope notes:",
+        scopeNotes,
+        "",
+        "Completion criteria:",
+        completionCriteria,
+        "",
+        `Expected output format: ${args.expectedOutput.format}`,
+        `Expected sections: ${sections}`,
+        "",
+        "Return only valid JSON matching this shape:",
+        JSON.stringify(
+            {
+                status: "completed",
+                completedWork: ["Describe concrete work completed"],
+                output: "Final handoff for the lead agent",
+                evidence: [{ kind: "tool_call", detail: "Tool used or source consulted" }],
+                blockedBy: [],
+                unresolved: [],
+            },
+            null,
+            2
+        ),
+        "",
+        "Rules:",
+        "- Do not simulate tool results or claim work that was not completed.",
+        "- If blocked, set status to 'blocked' or 'partial' and explain why.",
+        "- Keep evidence limited to tools actually used, URLs actually visited, or concise notes.",
+        "- Stop after the delegated task. Do not broaden scope.",
+    ].join("\n");
+}
+
+export function parseSpecialistResponseEnvelope(
+    rawContent: string,
+    args: DelegateToSpecialistArgs
+): SpecialistResponseEnvelope {
+    const fallbackOutput = rawContent?.trim() || "No response from specialist.";
+    const baseEnvelope: SpecialistResponseEnvelope = {
+        specialistSlug: args.specialistSlug,
+        status: "failed",
+        role: SPECIALIST_ROLE_LABELS[args.specialistSlug] || args.specialistSlug,
+        delegatedTask: args.taskSummary,
+        completedWork: [],
+        output: fallbackOutput,
+        evidence: [],
+        blockedBy: [],
+        unresolved: fallbackOutput ? ["Specialist response was unstructured."] : ["Specialist returned no content."],
+    };
+
+    try {
+        const parsed = JSON.parse(rawContent);
+        if (!parsed || typeof parsed !== "object") {
+            return baseEnvelope;
+        }
+
+        const status = parsed.status;
+        const completedWork = Array.isArray(parsed.completedWork)
+            ? parsed.completedWork.filter((item: unknown): item is string => typeof item === "string" && item.trim().length > 0)
+            : [];
+        const evidence = Array.isArray(parsed.evidence)
+            ? parsed.evidence
+                .map((item: unknown) => {
+                    if (!item || typeof item !== "object") return null;
+                    const kind = (item as { kind?: unknown }).kind;
+                    const detail = (item as { detail?: unknown }).detail;
+                    if ((kind === "tool_call" || kind === "url" || kind === "note") && typeof detail === "string" && detail.trim()) {
+                        return { kind, detail } satisfies SpecialistEvidenceItem;
+                    }
+                    return null;
+                })
+                .filter((item: SpecialistEvidenceItem | null): item is SpecialistEvidenceItem => item !== null)
+            : [];
+        const blockedBy = Array.isArray(parsed.blockedBy)
+            ? parsed.blockedBy.filter((item: unknown): item is string => typeof item === "string" && item.trim().length > 0)
+            : [];
+        const unresolved = Array.isArray(parsed.unresolved)
+            ? parsed.unresolved.filter((item: unknown): item is string => typeof item === "string" && item.trim().length > 0)
+            : [];
+
+        return {
+            specialistSlug: args.specialistSlug,
+            status: status === "completed" || status === "partial" || status === "blocked" || status === "failed" ? status : "failed",
+            role: SPECIALIST_ROLE_LABELS[args.specialistSlug] || args.specialistSlug,
+            delegatedTask: args.taskSummary,
+            completedWork,
+            output: typeof parsed.output === "string" && parsed.output.trim().length > 0 ? parsed.output : fallbackOutput,
+            evidence,
+            blockedBy,
+            unresolved,
+        };
+    } catch {
+        return baseEnvelope;
+    }
+}
 
 export const ORCHESTRATION_TOOLS: ChatTool[] = [
     {
@@ -19,15 +229,46 @@ export const ORCHESTRATION_TOOLS: ChatTool[] = [
                 properties: {
                     specialistSlug: {
                         type: "string",
-                        enum: ["research-assistant", "code-assistant", "productivity-agent"],
+                        enum: ["research-assistant", "code-assistant", "productivity-agent", "token-launcher"],
                         description: "The slug of the specialist agent to delegate to.",
+                    },
+                    taskSummary: {
+                        type: "string",
+                        description: "A short summary of the bounded objective being delegated.",
                     },
                     subQuery: {
                         type: "string",
                         description: "The specific prompt or instruction for the specialist.",
                     },
+                    expectedOutput: {
+                        type: "object",
+                        description: "The handoff shape the specialist must return.",
+                        properties: {
+                            format: {
+                                type: "string",
+                                enum: ["summary", "bullet_list", "structured_findings", "action_report", "status_update"],
+                                description: "The output format the specialist should target.",
+                            },
+                            sections: {
+                                type: "array",
+                                items: { type: "string" },
+                                description: "Optional named sections the lead agent expects in the handoff.",
+                            },
+                        },
+                        required: ["format"],
+                    },
+                    scopeNotes: {
+                        type: "array",
+                        items: { type: "string" },
+                        description: "Optional constraints that keep the subtask bounded.",
+                    },
+                    completionCriteria: {
+                        type: "array",
+                        items: { type: "string" },
+                        description: "Optional stop conditions for the specialist.",
+                    },
                 },
-                required: ["specialistSlug", "subQuery"],
+                required: ["specialistSlug", "taskSummary", "subQuery", "expectedOutput"],
             },
         },
     },
@@ -118,7 +359,8 @@ export async function executeOrchestrationToolCall(
     sessionId: string
 ): Promise<string> {
     if (toolName === "delegate_to_specialist") {
-        const { specialistSlug, subQuery } = args;
+        const delegation = args as DelegateToSpecialistArgs;
+        const { specialistSlug, subQuery, taskSummary } = delegation;
 
         const agent = await prisma.agentConfig.findUnique({
             where: { slug: specialistSlug },
@@ -144,7 +386,7 @@ export async function executeOrchestrationToolCall(
         const deduction = await deductForAgentCall(
             userId,
             agent.defaultModel,
-            `Delegated: ${specialistSlug} - ${subQuery.substring(0, 50)}${subQuery.length > 50 ? "..." : ""}`,
+            `Delegated: ${specialistSlug} - ${taskSummary.substring(0, 50)}${taskSummary.length > 50 ? "..." : ""}`,
             sessionId
         );
 
@@ -159,9 +401,7 @@ export async function executeOrchestrationToolCall(
             { role: "system", content: agent.systemPrompt },
             {
                 role: "system",
-                content: "You are acting on behalf of the Lead Orchestrator for the user's query: '" + subQuery + "'. " +
-                    "Use your tools (Gmail, Slack, etc.) to fulfill this request. If you retrieve data, PROVIDE A FULL SUMMARY OF IT. " +
-                    "If you get an error, explain what is wrong. Do not simulate results."
+                content: buildSpecialistDelegationPrompt(delegation),
             },
             { role: "user", content: subQuery },
         ];
@@ -187,10 +427,49 @@ export async function executeOrchestrationToolCall(
                 if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
                     const toolResults = await Promise.all(
                         assistantMessage.tool_calls.map(async (tc) => {
-                            let result = await executeOpenAIToolCall(userId, tc);
-                            if (result.length > 10000) {
-                                result = result.substring(0, 10000) + "... [Truncated]";
+                            if (tc.type !== "function" || !tc.function) {
+                                return { role: "tool" as const, tool_call_id: tc.id, content: "Unsupported tool type." };
                             }
+
+                            const toolName = tc.function.name;
+                            const toolArgs = JSON.parse(tc.function.arguments || "{}");
+
+                            // --- POLICY GATE: Specialists must also respect policies ---
+                            const policyDecision = await evaluateAndRecordPolicy({
+                                subjectType: "tool_call",
+                                actor: { userId, sessionId: sessionId ?? undefined },
+                                triggerSource: "orchestration",
+                                toolName,
+                                toolArgs,
+                                scopes: [{
+                                    tool: toolName,
+                                    mode: "write", // Specialists are often doing work that needs write context
+                                    resources: [],
+                                    reason: `Specialist ${specialistSlug} requested tool ${toolName}`
+                                }],
+                            });
+
+                            if (policyDecision.decision === "deny") {
+                                return {
+                                    role: "tool" as const,
+                                    tool_call_id: tc.id,
+                                    content: JSON.stringify({ error: `Policy Denied: ${policyDecision.reason}` })
+                                };
+                            }
+
+                            if (policyDecision.decision === "approve") {
+                                // For now, specialists cannot trigger interactive HITL approvals mid-loop
+                                // They are intended for automated/safe or pre-approved tasks.
+                                return {
+                                    role: "tool" as const,
+                                    tool_call_id: tc.id,
+                                    content: JSON.stringify({ error: "Specialist attempted a tool call that requires manual approval. Delegation aborted." })
+                                };
+                            }
+                            // ---------------------------------------------------------
+
+                            let result = await executeOpenAIToolCall(userId, tc);
+                            result = truncateText(result);
                             return { role: "tool" as const, tool_call_id: tc.id, content: result };
                         })
                     );
@@ -202,10 +481,20 @@ export async function executeOrchestrationToolCall(
                 break;
             }
 
-            return lastContent;
+            return JSON.stringify(parseSpecialistResponseEnvelope(lastContent, delegation));
         } catch (error) {
             const msg = error instanceof Error ? error.message : "Orchestration failed";
-            return JSON.stringify({ error: msg });
+            return JSON.stringify({
+                specialistSlug,
+                status: "failed",
+                role: SPECIALIST_ROLE_LABELS[specialistSlug] || specialistSlug,
+                delegatedTask: taskSummary,
+                completedWork: [],
+                output: `Specialist execution failed: ${msg}`,
+                evidence: [],
+                blockedBy: [msg],
+                unresolved: ["Delegated task did not complete."],
+            } satisfies SpecialistResponseEnvelope);
         }
     }
 

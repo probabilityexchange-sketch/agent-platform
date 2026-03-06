@@ -8,18 +8,69 @@ import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
 import { Message } from "./ChatWindow";
 import { ApprovalCard, type ApprovalDecision } from "./ApprovalCard";
+import { WorkflowPlanCard } from "../workflows/WorkflowPlanCard";
+import { WorkflowRunCard } from "../workflows/WorkflowRunCard";
+import { WorkflowScheduleCard } from "../workflows/WorkflowScheduleCard";
 
 interface MessageBubbleProps {
     message: Message & { parts?: any[] };
     isStreaming?: boolean;
     onApprovalDecision?: (approvalId: string, decision: ApprovalDecision) => void;
+    onWorkflowAction?: (workflowId: string, action: string, data?: any) => void;
 }
 
-function ToolInvocationCard({ toolInvocation }: { toolInvocation: any }) {
+function ToolInvocationCard({ 
+    toolInvocation, 
+    onWorkflowAction 
+}: { 
+    toolInvocation: any;
+    onWorkflowAction?: (workflowId: string, action: string, data?: any) => void;
+}) {
     const { toolName, toolCallId, state, args, result } = toolInvocation;
+
+    // Special rendering for Workflow tools
+    if (state === 'result' && result) {
+        if (toolName === 'compile_workflow_plan' || toolName === 'save_workflow_draft') {
+            const plan = toolName === 'compile_workflow_plan' ? result : result.workflow?.plan;
+            if (plan) {
+                return (
+                    <WorkflowPlanCard 
+                        plan={plan} 
+                        isSaved={toolName === 'save_workflow_draft'}
+                        onSave={(p) => onWorkflowAction?.(result.workflow?.id || "new", "save", p)}
+                    />
+                );
+            }
+        }
+
+        if (toolName === 'start_workflow_run') {
+            const run = result.run;
+            if (run) {
+                return (
+                    <WorkflowRunCard 
+                        run={run}
+                        onAction={(action) => onWorkflowAction?.(run.workflowId, action, run)}
+                    />
+                );
+            }
+        }
+
+        if (toolName === 'configure_workflow_schedule') {
+            const schedule = result.schedule;
+            if (schedule) {
+                return (
+                    <WorkflowScheduleCard 
+                        schedule={schedule}
+                        onAction={(action) => onWorkflowAction?.(schedule.workflowId, action, schedule)}
+                    />
+                );
+            }
+        }
+    }
 
     return (
         <div className="my-2 border border-border bg-muted/30 rounded-lg overflow-hidden text-xs">
+
             <div className="flex items-center justify-between px-3 py-2 bg-muted/50 border-b border-border">
                 <div className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full ${state === 'result' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
@@ -240,6 +291,7 @@ export function MessageBubble({
     message,
     isStreaming = false,
     onApprovalDecision,
+    onWorkflowAction,
 }: MessageBubbleProps) {
     if (message.type === "approval_request" && message.approvalRequest) {
         return (
@@ -319,10 +371,11 @@ export function MessageBubble({
                                     );
                                 }
                                 if (part.type === 'tool-invocation') {
-                                    return <ToolInvocationCard key={i} toolInvocation={part.toolInvocation} />;
+                                    return <ToolInvocationCard key={i} toolInvocation={part.toolInvocation} onWorkflowAction={onWorkflowAction} />;
                                 }
                                 return null;
                             })
+
                         ) : (
                             <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}

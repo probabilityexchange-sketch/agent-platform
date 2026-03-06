@@ -37,6 +37,15 @@ model User {
   agentRuntimes      AgentRuntime[]
   storageVolumes     StorageVolume[]
   agentPreferences   UserAgentPreference[]
+  workflows          Workflow[]
+  workflowRuns       WorkflowRun[]
+  workflowSchedules  WorkflowSchedule[]
+  policyDecisions    PolicyDecision[]
+  approvalRequests   ApprovalRequest[]
+  policyAuditLogs    PolicyAuditLog[]
+  cryptoGuardrailConfig CryptoGuardrailConfig?
+  cryptoDestinationAllowlistEntries CryptoDestinationAllowlistEntry[]
+  cryptoAuditLogs    CryptoAuditLog[]
 }
 
 model Session {
@@ -94,6 +103,10 @@ model ChatSession {
   agent     AgentConfig    @relation(fields: [agentId], references: [id])
   messages  ChatMessage[]
   approvals ToolApproval[]
+  policyDecisions PolicyDecision[]
+  approvalRequests ApprovalRequest[]
+  policyAuditLogs PolicyAuditLog[]
+  cryptoAuditLogs CryptoAuditLog[]
 
   @@index([userId])
 }
@@ -227,6 +240,233 @@ model ToolApproval {
   session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId, status])
+}
+
+model Workflow {
+  id              String        @id @default(cuid())
+  userId          String
+  title           String
+  status          String        @default("draft") // draft, ready, archived
+  planJson        String
+  safetyJson      String
+  latestRunStatus String?       // pending, ready, blocked, running, failed, completed, cancelled
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  runs WorkflowRun[]
+  schedule WorkflowSchedule?
+  approvalRequests ApprovalRequest[]
+  policyAuditLogs PolicyAuditLog[]
+  cryptoAuditLogs CryptoAuditLog[]
+
+  @@unique([id, userId])
+  @@index([userId, updatedAt])
+  @@index([userId, status])
+}
+
+model WorkflowRun {
+  id               String   @id @default(cuid())
+  workflowId       String
+  userId           String
+  scheduleId       String?
+  status           String   @default("pending") // pending, ready, blocked, running, failed, completed, cancelled
+  attemptNumber    Int      @default(1)
+  triggerSource    String   // manual, api, schedule, event, system
+  blockedReason    String?
+  lastErrorJson    String?
+  retryHistoryJson String   @default("[]")
+  scheduledFor     DateTime?
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  // WP8: Cost tracking fields (in token units, same as User.tokenBalance)
+  estimatedTokens  Int?     // Conservative minimum estimate before execution
+  actualTokens     Int?     // Actual tokens consumed after completion
+  costAttributionMethod String? // WP8 Follow-up: exact, time_window_attributed, unavailable
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  schedule WorkflowSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([id, userId])
+  @@index([workflowId, createdAt])
+  @@index([scheduleId, createdAt])
+  @@index([userId, status])
+}
+
+model WorkflowSchedule {
+  id                 String   @id @default(cuid())
+  workflowId         String   @unique
+  userId             String
+  status             String   @default("draft") // draft, active, paused, blocked
+  cronExpression     String
+  timezone           String   @default("UTC")
+  schedulerTarget    String   @default("github_actions") // github_actions, interactive_runtime, manual_only
+  deploymentState    String   @default("pending_manual_sync") // pending_manual_sync, synced, blocked
+  deploymentReason   String?
+  githubWorkflowName String?
+  githubWorkflowPath String?
+  githubSecretName   String?
+  triggerTokenHash   String
+  lastTriggeredAt    DateTime?
+  lastSuccessfulAt   DateTime?
+  lastRunId          String?
+  lastError          String?
+  consecutiveFailures Int     @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  runs     WorkflowRun[]
+
+  @@unique([id, userId])
+  @@unique([workflowId, userId])
+  @@index([userId, status])
+  @@index([status, deploymentState])
+}
+
+model PolicyDecision {
+  id               String   @id @default(cuid())
+  userId           String
+  sessionId        String?
+  subjectType      String
+  subjectId        String
+  actionType       String
+  riskLevel        String
+  decision         String
+  reason           String
+  requiresApproval Boolean  @default(false)
+  simulateOnly     Boolean  @default(false)
+  auditRequired    Boolean  @default(false)
+  scopesJson       String
+  inputJson        String
+  metadataJson     String   @default("{}")
+  createdAt        DateTime @default(now())
+
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session ChatSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([subjectType, subjectId])
+  @@index([decision, riskLevel])
+}
+
+model ApprovalRequest {
+  id             String   @id @default(cuid())
+  userId         String
+  sessionId      String?
+  workflowId     String?
+  toolCallId     String?
+  toolName       String?
+  toolArgsJson   String?
+  summary        String
+  status         String   @default("pending")
+  decisionType   String
+  reason         String
+  scopesJson     String
+  pendingMessages String?
+  metadataJson   String   @default("{}")
+  resolvedAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session  ChatSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  workflow Workflow?   @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@unique([id, userId])
+  @@index([userId, status])
+  @@index([workflowId, status])
+  @@index([sessionId, status])
+}
+
+model PolicyAuditLog {
+  id          String   @id @default(cuid())
+  userId      String
+  sessionId   String?
+  workflowId  String?
+  eventType   String
+  category    String
+  outcome     String
+  reason      String
+  detailsJson String   @default("{}")
+  createdAt   DateTime @default(now())
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session  ChatSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  workflow Workflow?   @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([workflowId, createdAt])
+  @@index([category, outcome])
+}
+
+model CryptoGuardrailConfig {
+  id                         String   @id @default(cuid())
+  userId                     String   @unique
+  defaultDecision            String   @default("simulate") // simulate, deny
+  perTransactionUsdCapCents  Int      @default(1000)
+  dailyUsdCapCents           Int      @default(5000)
+  enforceDestinationAllowlist Boolean @default(true)
+  blockScheduledCrypto       Boolean  @default(true)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CryptoDestinationAllowlistEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  label       String
+  destination String
+  asset       String?
+  chain       String?
+  notes       String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, destination, asset, chain])
+  @@index([userId, active])
+  @@index([destination])
+}
+
+model CryptoAuditLog {
+  id               String   @id @default(cuid())
+  userId           String
+  sessionId        String?
+  workflowId       String?
+  subjectType      String
+  subjectId        String
+  triggerSource    String
+  cryptoActionType String
+  asset            String?
+  amount           String?
+  amountUsdCents   Int?
+  destination      String?
+  riskLevel        String
+  decision         String
+  reason           String
+  capStatus        String
+  allowlistStatus  String
+  simulateOnly     Boolean  @default(false)
+  requiresApproval Boolean  @default(false)
+  detailsJson      String   @default("{}")
+  createdAt        DateTime @default(now())
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session  ChatSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  workflow Workflow?   @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([workflowId, createdAt])
+  @@index([decision, cryptoActionType])
 }
 
 model FleetStats {

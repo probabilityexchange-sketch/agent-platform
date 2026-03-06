@@ -24,6 +24,7 @@ Use this file to decide the execution path. Keep this decision separate from how
 
 - a bounded subtask fits a specialist role
 - the user benefits from a narrower expert perspective
+- the lead agent can specify the delegated objective, expected handoff shape, and stop condition clearly
 
 ## Choose autonomous developer spawning when
 

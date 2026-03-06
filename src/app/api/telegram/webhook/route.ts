@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { createChatCompletion } from "@/lib/openrouter/client";
-import { executeOrchestrationToolCall, ORCHESTRATION_TOOLS } from "@/lib/orchestration/tools";
+import { executeOrchestrationToolCall, ORCHESTRATION_TOOLS, formatSpecialistResponse } from "@/lib/orchestration/tools";
 import { getAgentToolsFromConfig, composioToolsToOpenAI, executeOpenAIToolCall } from "@/lib/composio/client";
 import { getRandiContext } from "@/lib/randi/context";
 import type OpenAI from "openai";
@@ -248,6 +248,19 @@ async function processWithRandi(userId: string, agent: any, query: string, token
             }
             break;
         }
+
+        // Final UX Polish: If the final message is just a JSON specialist envelope, format it.
+        if (lastContent.trim().startsWith("{") && lastContent.trim().endsWith("}")) {
+            try {
+                const parsed = JSON.parse(lastContent);
+                if (parsed.specialistSlug && parsed.status && parsed.output) {
+                    return formatSpecialistResponse(parsed);
+                }
+            } catch {
+                // Not valid or doesn't match envelope, leave as is
+            }
+        }
+
         return lastContent;
     } catch (err) {
         return "I encountered an error while thinking. Please try again later.";

@@ -31,6 +31,7 @@ Never claim tool output unless the tool was actually run.
 ## 4) Orchestration tools
 
 - Use `delegate_to_specialist` for bounded subtasks that benefit from a narrower role.
+- When delegating, include a clear task summary, expected output shape, and scope/completion boundaries.
 - Use `spawn_autonomous_developer` only for substantial repo-level work with a clear deliverable.
 - Use `browse_web` for web/UI verification when local context is insufficient.
 - Use `list_available_skills` and `load_skill_context` when a matching skill would materially improve execution.
