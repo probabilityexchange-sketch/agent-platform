@@ -17,7 +17,7 @@
     "seed": "npx tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@ai-sdk/mcp": "^1.0.22",
+    "@ai-sdk/mcp": "^1.0.25",
     "@ai-sdk/openai": "^3.0.37",
     "@ai-sdk/react": "^3.0.108",
     "@composio/core": "^0.6.3",
