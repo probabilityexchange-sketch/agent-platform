@@ -1,96 +1,23 @@
-import fs from "fs/promises";
-import path from "path";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { loadSkillBySlug } from "@/lib/skills/catalog";
 
 interface SkillPageProps {
     params: Promise<{ slug: string }>;
 }
 
-function formatSkillName(value: string): string {
-    return value
-        .replace(/[-_]/g, " ")
-        .split(" ")
-        .filter(Boolean)
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ");
-}
-
-function parseSkillDocument(rawContent: string): { body: string; frontmatter: Record<string, string> } {
-    const lines = rawContent.split(/\r?\n/);
-    if (lines[0]?.trim() !== "---") {
-        return { body: rawContent.trim(), frontmatter: {} };
-    }
-
-    const frontmatter: Record<string, string> = {};
-    let index = 1;
-
-    while (index < lines.length) {
-        const line = lines[index];
-        if (line.trim() === "---") {
-            index += 1;
-            break;
-        }
-
-        const match = line.match(/^([A-Za-z0-9_-]+):\s*(.+)$/);
-        if (match) {
-            const [, key, value] = match;
-            frontmatter[key] = value.trim().replace(/^['"]|['"]$/g, "");
-        }
-        index += 1;
-    }
-
-    return {
-        body: lines.slice(index).join("\n").trim(),
-        frontmatter
-    };
-}
-
-function extractSummary(markdown: string): string {
-    const lines = markdown.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-    for (const line of lines) {
-        if (
-            line.startsWith("#") ||
-            line.startsWith("```") ||
-            line.startsWith("|") ||
-            line.startsWith("- ") ||
-            line.startsWith("* ")
-        ) {
-            continue;
-        }
-        return line;
-    }
-    return "Detailed documentation for this skill is available below.";
-}
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export default async function SkillPage({ params }: SkillPageProps) {
     const slug = (await params).slug;
-    const projectRoot = process.env.PROJECT_ROOT || process.cwd();
-    const skillPath = path.resolve(projectRoot, "skills", slug, "SKILL.md");
+    const skill = await loadSkillBySlug(slug);
 
-    let rawContent = "";
-    try {
-        rawContent = await fs.readFile(skillPath, "utf-8");
-    } catch {
-        try {
-            const fallbackPath = path.resolve(process.cwd(), "skills", slug, "SKILL.md");
-            if (fallbackPath !== skillPath) {
-                rawContent = await fs.readFile(fallbackPath, "utf-8");
-            } else {
-                notFound();
-            }
-        } catch {
-            notFound();
-        }
+    if (!skill) {
+        notFound();
     }
-
-    const { body, frontmatter } = parseSkillDocument(rawContent);
-    const title = frontmatter.name ? formatSkillName(frontmatter.name) : formatSkillName(slug);
-    const description = frontmatter.description || extractSummary(body);
-    const version = frontmatter.version;
-    const author = frontmatter.author;
 
     return (
         <div className="mx-auto max-w-5xl px-6 py-10">
@@ -103,7 +30,7 @@ export default async function SkillPage({ params }: SkillPageProps) {
                     Skills
                 </Link>
                 <span>/</span>
-                <span className="font-semibold text-foreground">{title}</span>
+                <span className="font-semibold text-foreground">{skill.name}</span>
             </nav>
 
             <header className="glass-card rounded-3xl border border-border/60 p-8 md:p-10">
@@ -113,21 +40,24 @@ export default async function SkillPage({ params }: SkillPageProps) {
                             <span className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-primary">
                                 Skill Guide
                             </span>
-                            {version && (
+                            <span className="rounded-full border border-border bg-background/60 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                {skill.source}
+                            </span>
+                            {skill.version && (
                                 <span className="rounded-full border border-border bg-background/60 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                    v{version}
+                                    v{skill.version}
                                 </span>
                             )}
-                            {author && (
+                            {skill.author && (
                                 <span className="rounded-full border border-border bg-background/60 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                    {author}
+                                    {skill.author}
                                 </span>
                             )}
                         </div>
 
-                        <h1 className="text-3xl font-black tracking-tight md:text-4xl">{title}</h1>
+                        <h1 className="text-3xl font-black tracking-tight md:text-4xl">{skill.name}</h1>
                         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
-                            {description}
+                            {skill.description}
                         </p>
                         <p className="mt-4 font-mono text-xs text-muted-foreground">
                             /{slug}
@@ -154,7 +84,7 @@ export default async function SkillPage({ params }: SkillPageProps) {
             <article className="mt-8 rounded-3xl border border-border/60 bg-background/40 p-6 md:p-8">
                 <div className="prose prose-neutral max-w-none dark:prose-invert prose-headings:font-black prose-headings:tracking-tight prose-a:text-primary">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {body}
+                        {skill.body}
                     </ReactMarkdown>
                 </div>
             </article>
