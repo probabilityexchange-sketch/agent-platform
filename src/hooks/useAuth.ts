@@ -255,13 +255,20 @@ export function useAuth() {
     }
   }, [logout, localIsLoggingOut]);
 
+  const retrySessionSync = useCallback(() => {
+    sharedNextRetryAt = 0;
+    sharedSyncAttempts = 0;
+    setSessionError(null);
+    setSyncRetryTick((v) => v + 1);
+  }, []);
+
   return {
     user: user ? { id: user.id, walletAddress: user.wallet?.address || primaryWallet?.address } : null,
     loading: !ready || localIsLoggingOut,
     isAuthenticated: authenticated,
     sessionReady: !authenticated || sessionSynced,
     sessionError,
-    retrySessionSync: () => { sharedNextRetryAt = 0; sharedSyncAttempts = 0; setSessionError(null); setSyncRetryTick((v) => v + 1); },
+    retrySessionSync,
     signIn,
     signOut
   };

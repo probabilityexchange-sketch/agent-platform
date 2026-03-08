@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { COMPOSIO_CATEGORIES } from "@/lib/composio/integrations";
@@ -53,7 +53,7 @@ function StatusBadge({ status }: { status: string }) {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/20 bg-rose-500/10 px-2.5 py-0.5 text-xs font-semibold text-rose-400">
         <span className="h-1.5 w-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
-        Needs attention
+        Action Needed
       </span>
     );
   }
@@ -145,7 +145,7 @@ function IntegrationCard({
         <div className="space-y-4">
           {/* Capabilities */}
           <div className="rounded-2xl border border-border/40 bg-background/30 p-4">
-            <h4 className="text-sm font-semibold text-foreground">Capabilities</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground">Capabilities</h4>
             <ul className="mt-2.5 space-y-2">
               {capabilities.map((capability) => (
                 <li key={capability} className="flex items-center gap-2 text-sm text-foreground/80">
@@ -158,12 +158,12 @@ function IntegrationCard({
 
           {/* Status & Trust */}
           <div className="rounded-2xl border border-border/40 bg-background/30 p-4">
-            <h4 className="text-sm font-semibold text-foreground">Status & Safety</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground">Status and safety</h4>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               {connectionSummary(integration)}
             </p>
             {isConnected && (
-              <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-500/5 px-2 py-1.5 text-xs font-medium text-emerald-400/90">
+              <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-500/5 px-2 py-1.5 text-[11px] font-medium text-emerald-400/90">
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
@@ -180,7 +180,7 @@ function IntegrationCard({
           {/* Suggested prompt after connection */}
           {isConnected && (
             <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-4 transition-colors hover:bg-emerald-500/[0.08]">
-              <h4 className="text-sm font-semibold text-emerald-400">Try it in chat</h4>
+              <h4 className="text-xs font-semibold text-emerald-400/90">Try it in chat</h4>
               <p className="mt-2 text-sm italic leading-relaxed text-foreground/90">
                 &ldquo;{suggestedPrompt}&rdquo;
               </p>
@@ -237,12 +237,15 @@ function IntegrationCard({
 function IntegrationsPageContent() {
   const { isAuthenticated, loading: loadingAuth, sessionReady, sessionError, retrySessionSync } = useAuth();
   const searchParams = useSearchParams();
+  const callbackStatus = searchParams.get("status");
+  const callbackToolkit = searchParams.get("toolkit");
   const [data, setData] = useState<IntegrationsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyToolkit, setBusyToolkit] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const hasLoadedRef = useRef(false);
 
   const load = useCallback(async (isInitial = false) => {
     if (!isAuthenticated || !sessionReady) return;
@@ -280,23 +283,25 @@ function IntegrationsPageContent() {
       return;
     }
 
-    load(true).catch(() => { });
-  }, [isAuthenticated, sessionReady, loadingAuth, load, searchParams]);
+    load(!hasLoadedRef.current)
+      .then(() => {
+        hasLoadedRef.current = true;
+      })
+      .catch(() => { });
+  }, [isAuthenticated, sessionReady, loadingAuth, load, callbackStatus, callbackToolkit]);
 
   const callbackBanner = useMemo(() => {
-    const status = searchParams.get("status");
-    const toolkit = searchParams.get("toolkit");
-    if (!status) return null;
+    if (!callbackStatus) return null;
 
-    const suffix = toolkit ? ` for ${toolkit}` : "";
-    if (status === "success") {
+    const suffix = callbackToolkit ? ` for ${callbackToolkit}` : "";
+    if (callbackStatus === "success") {
       return {
         tone: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
         text: `Connection completed${suffix}. You can now try it from chat.`,
       };
     }
 
-    if (status === "failed") {
+    if (callbackStatus === "failed") {
       return {
         tone: "text-rose-400 bg-rose-500/10 border-rose-500/20",
         text: `Connection failed${suffix}. Review the setup and try again.`,
@@ -305,9 +310,9 @@ function IntegrationsPageContent() {
 
     return {
       tone: "text-amber-400 bg-amber-500/10 border-amber-500/20",
-      text: `Connection returned status "${status}"${suffix}.`,
+      text: `Connection returned status "${callbackStatus}"${suffix}.`,
     };
-  }, [searchParams]);
+  }, [callbackStatus, callbackToolkit]);
 
   const connect = useCallback(async (toolkit: string) => {
     setBusyToolkit(toolkit);
@@ -384,8 +389,8 @@ function IntegrationsPageContent() {
     <div className="max-w-6xl space-y-12 pb-20">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-primary">
-            Workspace Capabilities
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
+            Integrations
           </div>
           <h1 className="text-4xl font-black tracking-tight sm:text-5xl">Connect your tools</h1>
           <p className="max-w-2xl text-lg text-muted-foreground leading-relaxed">
@@ -410,7 +415,7 @@ function IntegrationsPageContent() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
-          <p className="mt-4 text-sm font-semibold text-muted-foreground">Active connections</p>
+          <p className="mt-4 text-sm font-semibold text-muted-foreground/80">Connected tools</p>
           <p className="mt-1 text-4xl font-black tracking-tight">{loading ? "—" : connectedCount}</p>
           <p className="mt-2 text-sm text-muted-foreground">Ready for real actions in chat.</p>
         </div>
@@ -421,7 +426,7 @@ function IntegrationsPageContent() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
           </div>
-          <p className="mt-4 text-sm font-semibold text-muted-foreground">Apps supported</p>
+          <p className="mt-4 text-sm font-semibold text-muted-foreground/80">Apps available</p>
           <p className="mt-1 text-4xl font-black tracking-tight">{loading ? "—" : availableCount}</p>
           <p className="mt-2 text-sm text-muted-foreground">Only connect what you actually use.</p>
         </div>
@@ -432,7 +437,7 @@ function IntegrationsPageContent() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
           </div>
-          <p className="mt-4 text-sm font-semibold text-muted-foreground">Privacy first</p>
+          <p className="mt-4 text-sm font-semibold text-muted-foreground/80">Approval review</p>
           <p className="mt-1 text-xl font-black tracking-tight">Review & Approve</p>
           <p className="mt-2 text-sm text-muted-foreground">Randi only acts when you say it&apos;s okay.</p>
         </div>
@@ -469,8 +474,8 @@ function IntegrationsPageContent() {
         {!loading && data && (
           <div className="flex flex-col gap-4 rounded-[2rem] border border-border bg-card/30 p-6 md:flex-row md:items-end">
             <div className="flex-1 space-y-2.5">
-              <label htmlFor="integration-search" className="text-xs font-bold uppercase tracking-widest text-muted-foreground/80">
-                Search Catalog
+              <label htmlFor="integration-search" className="text-sm font-semibold text-muted-foreground/80">
+                Search
               </label>
               <div className="relative">
                 <svg className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -488,7 +493,7 @@ function IntegrationsPageContent() {
             </div>
 
             <div className="min-w-[240px] space-y-2.5">
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/80">Category</p>
+              <p className="text-sm font-semibold text-muted-foreground/80">Category</p>
               <div className="flex flex-wrap gap-1.5">
                 <select 
                   value={activeCategory}
