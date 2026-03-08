@@ -4,16 +4,15 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCredits } from "@/hooks/useCredits";
-import { useTokenPrice } from "@/hooks/useTokenPrice";
 
 const mainNavItems = [
-  { href: "/dashboard", label: "Dashboard", icon: "grid" },
-  { href: "/chat", label: "Ask Randi", icon: "message" },
+  { href: "/dashboard", label: "Home", icon: "grid" },
+  { href: "/chat", label: "Open chat", icon: "message" },
+  { href: "/integrations", label: "Connect tools", icon: "link" },
   { href: "/workflows", label: "Automations", icon: "zap" },
-  { href: "/how-it-works", label: "How it Works", icon: "help" },
   { href: "/skills", label: "Skills Library", icon: "cpu" },
-  { href: "/integrations", label: "Integrations", icon: "link" },
-  { href: "/credits", label: "Tokens", icon: "coins" },
+  { href: "/how-it-works", label: "Getting Started", icon: "help" },
+  { href: "/credits", label: "Credits", icon: "coins" },
 ];
 
 const advancedNavItems = [
@@ -38,12 +37,9 @@ const icons: Record<string, string> = {
   server: "M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01",
 };
 
-import { BurnCounter } from "./BurnCounter";
-
 export function Sidebar() {
   const pathname = usePathname();
   const { isSubscribed, balance } = useCredits();
-  const { priceUsd } = useTokenPrice();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const renderNavItem = (item: { href: string; label: string; icon: string }) => {
@@ -73,7 +69,7 @@ export function Sidebar() {
         </svg>
         {item.label}
         {item.icon === "coins" && isSubscribed && (
-          <span className="ml-auto text-[10px] bg-success/10 text-success px-1.5 py-0.5 rounded-full">PRO</span>
+          <span className="ml-auto rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-semibold text-success">Pro</span>
         )}
       </Link>
     );
@@ -81,8 +77,27 @@ export function Sidebar() {
 
   const sidebar = (
     <div className="flex flex-col h-full">
-      <div className="mb-6 px-3">
-        <BurnCounter />
+      <div className="mb-6 rounded-2xl border border-border bg-muted/30 p-4">
+        <p className="text-sm font-semibold text-primary">Start here</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          Connect the tools you trust, ask Randi for a task, then save repeat work as an automation.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link
+            href="/integrations"
+            onClick={() => setMobileOpen(false)}
+            className="inline-flex items-center rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+          >
+            Connect tools
+          </Link>
+          <Link
+            href="/chat"
+            onClick={() => setMobileOpen(false)}
+            className="inline-flex items-center rounded-lg border border-border px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+          >
+            Open chat
+          </Link>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar space-y-6">
@@ -91,8 +106,8 @@ export function Sidebar() {
         </nav>
 
         <div>
-          <h3 className="px-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 opacity-50">
-            Operator / Advanced
+          <h3 className="mb-2 px-3 text-xs font-semibold text-muted-foreground">
+            Advanced tools
           </h3>
           <nav className="space-y-1">
             {advancedNavItems.map(renderNavItem)}
@@ -101,42 +116,33 @@ export function Sidebar() {
       </div>
 
       <div className="border-t border-border pt-4 mt-4 space-y-3">
-        {/* Subscription Status */}
         <div className="px-3 py-2 bg-muted/50 rounded-lg">
+          <p className="mb-1 text-xs font-medium text-muted-foreground">Plan</p>
           {isSubscribed ? (
             <>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Status</p>
-              <p className="text-sm font-bold text-success">Randi Pro Active</p>
+              <p className="text-sm font-semibold text-success">Pro plan active</p>
             </>
           ) : (
             <>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Status</p>
-              <p className="text-sm font-semibold text-muted-foreground">Free Tier</p>
-              <Link href="/credits" className="text-xs text-primary hover:underline mt-1 inline-block">
-                Upgrade →
+              <p className="text-sm font-semibold text-muted-foreground">Free plan</p>
+              <Link href="/credits" className="mt-1 inline-block text-sm font-medium text-primary hover:underline">
+                View options
               </Link>
             </>
           )}
         </div>
-        {/* Token Balance */}
+
         <div className="px-3 py-2 bg-muted/50 rounded-lg">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">On-Demand Tokens</p>
-          <p className="text-sm font-bold text-primary">{balance.toLocaleString()} TK</p>
-        </div>
-        {/* RANDI Price */}
-        {priceUsd !== null && (
-          <div className="px-3 py-2 bg-muted/50 rounded-lg">
-            <a
-              href="https://pump.fun/coin/FYAz1bPKJUFRwT4pzhUzdN3UqCN5ppXRL2pfto4zpump"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:opacity-80 transition-opacity"
-            >
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 hover:text-primary transition-colors">RANDI Price ↗</p>
-              <p className="text-sm font-mono font-bold">${priceUsd.toFixed(8)}</p>
-            </a>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">Available credits</p>
+              <p className="text-sm font-bold text-primary">{balance.toLocaleString()}</p>
+            </div>
+            <Link href="/credits" className="whitespace-nowrap text-sm font-medium text-primary hover:underline">
+              Manage credits
+            </Link>
           </div>
-        )}
+        </div>
       </div>
     </div >
   );
