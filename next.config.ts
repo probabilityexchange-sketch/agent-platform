@@ -6,9 +6,6 @@ const nextConfig: NextConfig = {
     cpus: 1,
     workerThreads: false,
   },
-  webpack: (config) => {
-    return config;
-  },
 };
 
 export default nextConfig;
