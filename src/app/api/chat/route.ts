@@ -96,8 +96,10 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Billing & Access Checks
+    // Skip credit deduction if user provides their own KILO_API_KEY
     const resolvedModel = model || DEFAULT_MODEL;
-    if (!isUnmeteredModel(resolvedModel)) {
+    const hasKiloApiKey = Boolean(process.env.KILO_API_KEY);
+    if (!isUnmeteredModel(resolvedModel) && !hasKiloApiKey) {
       const deduction = await deductForAgentCall(auth.userId, resolvedModel, `Chat: ${message.substring(0, 50)}`, sessionId);
       if (!deduction.success) {
         return NextResponse.json({ error: deduction.error || "Insufficient credits.", code: "INSUFFICIENT_FUNDS" }, { status: 402 });
