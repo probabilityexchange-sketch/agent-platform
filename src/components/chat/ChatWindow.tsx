@@ -33,7 +33,7 @@ interface ChatWindowProps {
     sessionId?: string;
     model: string;
     initialMessages?: Message[];
-    onSessionCreated?: (sessionId: string) => void;
+    initialDraft?: string;
 }
 
 export function ChatWindow({
@@ -41,6 +41,7 @@ export function ChatWindow({
     sessionId,
     model,
     initialMessages = [],
+    initialDraft = "",
 }: ChatWindowProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [localError, setLocalError] = useState<string | null>(null);
@@ -142,16 +143,16 @@ export function ChatWindow({
         }
     }, [sendMessage]);
 
-    return (
-        <div className="flex flex-col h-full bg-card/30 rounded-xl border border-border overflow-hidden">
-            <div
-                ref={scrollRef}
-                role="log"
-                aria-label="Chat conversation"
-                aria-live="polite"
-                aria-busy={isLoading}
-                className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth"
-            >
+     return (
+         <div className="flex flex-col h-full min-h-[24rem] bg-card/30 rounded-xl border border-border overflow-hidden">
+             <div
+                 ref={scrollRef}
+                 role="log"
+                 aria-label="Chat conversation"
+                 aria-live="polite"
+                 aria-busy={isLoading}
+                 className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth"
+             >
                 {messages.length === 0 && (
                     <div className="h-full flex flex-col items-center justify-center text-center p-8">
                         <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
@@ -171,15 +172,15 @@ export function ChatWindow({
                                     type="button"
                                     onClick={() => void handleSendMessage(prompt)}
                                     disabled={isLoading}
-                                    className="rounded-2xl border border-border bg-card/50 px-4 py-4 text-left text-sm font-medium text-foreground/90 transition-all hover:border-primary/40 hover:bg-card disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="rounded-xl border border-border/80 bg-card/60 px-4 py-4 text-left text-sm font-medium text-foreground/90 transition-all hover:border-primary/50 hover:bg-card/80 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {prompt}
                                 </button>
                             ))}
                         </div>
-                        <div className="mt-6 max-w-xl rounded-2xl border border-border/60 bg-background/40 p-4 text-left">
+                        <div className="mt-6 max-w-xl rounded-xl border border-border/60 bg-background/60 p-4 text-left">
                             <p className="text-sm font-semibold text-foreground">How approvals work</p>
-                            <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+                            <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
                                 Randi only pauses when a tool request needs review. You will see the app, requested action, likely effect, and technical details before choosing whether to continue.
                             </p>
                         </div>
@@ -204,37 +205,37 @@ export function ChatWindow({
                     <div className="flex justify-start">
                         <div className="bg-muted px-4 py-2 rounded-2xl rounded-bl-none">
                             <div className="flex gap-1">
-                                <span className="w-1.5 h-1.5 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                                <span className="w-1.5 h-1.5 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                                <span className="w-1.5 h-1.5 bg-foreground/40 rounded-full animate-bounce"></span>
+                                <span className="w-1.5 h-1.5 bg-foreground/70 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                                <span className="w-1.5 h-1.5 bg-foreground/70 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                                <span className="w-1.5 h-1.5 bg-foreground/70 rounded-full animate-bounce"></span>
                             </div>
                         </div>
                     </div>
                 )}
             </div>
 
-            <div className="p-4 border-t border-border bg-card/50">
+            <div className="p-4 border-t border-border/60 bg-card/60">
                 {(chatError || localError) && (
-                    <div className="mb-2 flex items-center justify-between gap-2 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2">
-                        <p className="text-sm text-rose-400">{(chatError as any)?.message || localError || "An error occurred"}</p>
+                    <div className="mb-3 flex items-start justify-between gap-3 rounded-xl bg-red-500/15 border border-red-500/30 px-4 py-3">
+                        <p className="text-sm text-red-300">{(chatError as any)?.message || localError || "An error occurred"}</p>
                         <button
                             onClick={() => regenerate()}
-                            className="text-sm bg-red-500/20 hover:bg-red-500/30 text-red-200 px-3 py-1.5 rounded transition-colors whitespace-nowrap"
+                            className="text-sm bg-red-500/25 hover:bg-red-500/40 text-red-200 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0"
                         >
                             Try again
                         </button>
                     </div>
                 )}
-                <div className="mb-3 grid gap-3 rounded-2xl border border-border/60 bg-background/40 px-4 py-3 sm:grid-cols-2">
+                <div className="mb-3 grid gap-3 rounded-xl border border-border/60 bg-background/60 px-4 py-3 sm:grid-cols-2">
                     <div>
                         <p className="text-sm font-semibold text-foreground">Best results start with context</p>
-                        <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+                        <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
                             Say what you want back, paste the source material, and mention any constraints or tone you care about.
                         </p>
                     </div>
                     <div>
                         <p className="text-sm font-semibold text-foreground">Approvals stay in chat</p>
-                        <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+                        <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
                             Planning and drafting can happen immediately. Sensitive tool actions pause here so you can approve or decline them.
                         </p>
                     </div>
@@ -242,6 +243,7 @@ export function ChatWindow({
                 <ChatInput
                     onSend={handleSendMessage}
                     disabled={isLoading}
+                    initialValue={initialDraft}
                 />
             </div>
         </div>

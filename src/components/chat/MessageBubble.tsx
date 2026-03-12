@@ -76,7 +76,7 @@ function ToolInvocationCard({
                     <div className={`w-2 h-2 rounded-full ${state === 'result' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
                     <span className="font-mono font-bold">{toolName}</span>
                 </div>
-                <span className="text-[10px] text-muted-foreground font-mono uppercase opacity-50">{toolCallId.slice(-6)}</span>
+                <span className="text-[10px] text-muted-foreground font-mono uppercase opacity-70">{toolCallId.slice(-6)}</span>
             </div>
 
             <div className="p-3 space-y-2">
@@ -193,7 +193,7 @@ function useMarkdownComponents(isStreaming: boolean): Components {
 
                 return (
                     <code
-                        className="px-1.5 py-0.5 rounded text-[0.8em] font-mono bg-white/10 text-rose-300"
+                        className="px-1.5 py-0.5 rounded text-[0.8em] font-mono bg-white/15 text-rose-200"
                         {...props}
                     >
                         {children}
@@ -345,9 +345,9 @@ export function MessageBubble({
         <div className={`group flex ${isUser ? "justify-end" : "justify-start"}`}>
             <div
                 className={`max-w-[85%] lg:max-w-[80%] px-4 py-3 rounded-2xl ${isUser
-                    ? `bg-primary text-white rounded-br-none text-sm whitespace-pre-wrap leading-relaxed ${message.error ? "ring-2 ring-red-500/50" : ""
+                    ? `bg-primary text-white rounded-br-md text-sm whitespace-pre-wrap leading-relaxed ${message.error ? "ring-2 ring-red-500/60" : ""
                     }`
-                    : "bg-muted text-foreground rounded-bl-none border border-border"
+                    : "bg-muted/80 text-foreground rounded-bl-md border border-border/60"
                     }`}
             >
                 {isUser ? (
@@ -388,9 +388,9 @@ export function MessageBubble({
                         {/* Improved thinking/streaming indicator */}
                         {isStreaming && !fullText && (!message.parts || message.parts.every(p => p.type !== 'tool-invocation')) && (
                             <div className="flex gap-1 py-1">
-                                <span className="w-1 h-1 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                                <span className="w-1 h-1 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                                <span className="w-1 h-1 bg-foreground/40 rounded-full animate-bounce"></span>
+                                <span className="w-1 h-1 bg-foreground/70 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                                <span className="w-1 h-1 bg-foreground/70 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                                <span className="w-1 h-1 bg-foreground/70 rounded-full animate-bounce"></span>
                             </div>
                         )}
                     </div>
