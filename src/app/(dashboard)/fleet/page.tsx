@@ -202,8 +202,8 @@ export default function FleetPage() {
                                     <YAxis tick={{ fontSize: 12 }} />
                                     <Tooltip />
                                     <Legend verticalAlign="top" height={36} />
-                                    <Line type="monotone" dataKey="networkRx" stroke="#f72585" strokeWidth={2} dot={false} label="Received" />
-                                    <Line type="monotone" dataKey="networkTx" stroke="#4cc9f0" strokeWidth={2} dot={false} label="Transmitted" />
+                                    <Line type="monotone" dataKey="networkRx" stroke="#f72585" strokeWidth={2} dot={false} name="Received" />
+                                    <Line type="monotone" dataKey="networkTx" stroke="#4cc9f0" strokeWidth={2} dot={false} name="Transmitted" />
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
