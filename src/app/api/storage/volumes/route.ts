@@ -45,11 +45,11 @@ export async function GET(req: NextRequest) {
  */
 export async function DELETE(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const auth = await requireAuth();
-    const { id } = await context.params;
+    const { id } = params;
 
     // First get the volume to verify ownership and get storage details
     const volume = await prisma.storageVolume.findFirst({

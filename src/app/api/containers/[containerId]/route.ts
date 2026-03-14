@@ -5,11 +5,11 @@ import { stopContainer } from "@/lib/docker/lifecycle";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ containerId: string }> }
+  { params }: { params: { containerId: string } }
 ) {
   try {
     const auth = await requireAuth();
-    const { containerId } = await params;
+    const { containerId } = params;
 
     const container = await prisma.container.findUnique({
       where: { id: containerId },
@@ -40,11 +40,11 @@ export async function GET(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: Promise<{ containerId: string }> }
+  { params }: { params: { containerId: string } }
 ) {
   try {
     const auth = await requireAuth();
-    const { containerId } = await params;
+    const { containerId } = params;
 
     const container = await prisma.container.findUnique({
       where: { id: containerId },

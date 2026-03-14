@@ -9,11 +9,11 @@ import { prisma } from "@/lib/db/prisma";
  */
 export async function POST(
   req: NextRequest,
-  context: { params: Promise<{ containerId: string }> }
+  { params }: { params: { containerId: string } }
 ) {
   try {
     const auth = await requireAuth();
-    const { containerId } = await context.params;
+    const { containerId } = params;
     const body = await req.json();
     const { agentSlug } = body;
 
