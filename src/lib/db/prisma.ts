@@ -1,5 +1,6 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
+import * as pg from "pg";
 
 const bigIntPrototype = BigInt.prototype as bigint & {
   toJSON?: () => string;
@@ -147,11 +148,27 @@ function createPrismaClient(): PrismaClient {
     });
   }
 
+  // Strip sslmode from the URL — pg's connection-string parser treats
+  // sslmode=require as verify-full and overwrites any explicit `ssl`
+  // config with an empty object (rejectUnauthorized defaults to true).
+  // Supabase's pooler uses certificates not in Node's default trust
+  // store, so we must set rejectUnauthorized=false explicitly.
+  let sanitizedUrl = selected.url;
+  try {
+    const u = new URL(sanitizedUrl);
+    u.searchParams.delete("sslmode");
+    sanitizedUrl = u.toString();
+  } catch {
+    // leave URL as-is if unparseable
+  }
+
+  const pool = new pg.Pool({
+    connectionString: sanitizedUrl,
+    ssl: { rejectUnauthorized: false },
+  });
+
   return new PrismaClient({
-    adapter: new PrismaPg({
-      connectionString: selected.url,
-      ssl: { rejectUnauthorized: false },
-    }),
+    adapter: new PrismaPg(pool),
   });
 }
 
