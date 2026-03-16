@@ -15,10 +15,10 @@ function main() {
 
     let content = fs.readFileSync(SCHEMA_PATH, "utf-8");
 
+    // Prisma 7+: url/directUrl live in prisma.config.ts, not the schema.
+    // Only the provider field belongs here.
     const pgBlock = `datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }`;
 
     const sqliteBlock = `datasource db {
