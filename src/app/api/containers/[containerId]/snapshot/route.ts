@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
 import { prisma } from "@/lib/db/prisma";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
 
 /**
  * POST /api/containers/[containerId]/snapshot
@@ -13,6 +14,12 @@ export async function POST(
 ) {
   try {
     const auth = await requireAuth();
+
+    const { allowed } = await checkRateLimit(`containers-snapshot:${auth.userId}`, RATE_LIMITS.provision);
+    if (!allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const { containerId } = await params;
     const body = await req.json();
     const { agentSlug } = body;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
 import { prisma } from "@/lib/db/prisma";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
 
 /**
  * DELETE /api/storage/volumes/[id]
@@ -12,6 +13,12 @@ export async function DELETE(
 ) {
   try {
     const auth = await requireAuth();
+
+    const { allowed } = await checkRateLimit(`storage-volumes:${auth.userId}`, RATE_LIMITS.general);
+    if (!allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const { id } = await params;
 
     // First get the volume to verify ownership and get storage details

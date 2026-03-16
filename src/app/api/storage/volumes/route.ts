@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
 import { prisma } from "@/lib/db/prisma";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
 
 /**
  * GET /api/storage/volumes
@@ -9,7 +10,12 @@ import { prisma } from "@/lib/db/prisma";
 export async function GET(req: NextRequest) {
   try {
     const auth = await requireAuth();
-    
+
+    const { allowed } = await checkRateLimit(`storage-volumes:${auth.userId}`, RATE_LIMITS.general);
+    if (!allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const storageVolumes = await prisma.storageVolume.findMany({
       where: { userId: auth.userId },
       orderBy: { updatedAt: "desc" },
