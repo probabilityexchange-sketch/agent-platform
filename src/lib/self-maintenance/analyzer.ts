@@ -224,29 +224,26 @@ export class CodeAnalyzer {
     }
   }
 
-  /**
-   * Check for documentation issues
-   */
-  private checkDocumentation(filePath: string): Issue[] {
-    const issues: Issue[] = [];
-    
-    try {
-      const content = require('fs').readFileSync(filePath, 'utf8');
-      
-      // Check for missing JSDoc on exported functions
-      if (this.isTypeScriptFile(filePath)) {
-        const jsdocIssues = this.checkForMissingJSDoc(content);
-        issues.push(...jsdocIssues.map(issue => ({
-          ...issue,
-          type: 'documentation'
-        })));
-      }
-    } catch (error) {
-      // If we can't read the file, skip documentation check
-    }
-    
-    return issues;
-  }
+   /**
+    * Check for documentation issues
+    */
+   private checkDocumentation(filePath: string): Issue[] {
+     const issues: Issue[] = [];
+     
+     try {
+       const content = require('fs').readFileSync(filePath, 'utf8');
+       
+       // Check for missing JSDoc on exported functions
+       if (this.isTypeScriptFile(filePath)) {
+         const jsdocIssues = this.checkForMissingJSDoc(content);
+         issues.push(...jsdocIssues);
+       }
+     } catch (error) {
+       // If we can't read the file, skip documentation check
+     }
+     
+     return issues;
+   }
 
   /**
    * Check for missing JSDoc comments on exported functions
@@ -276,13 +273,14 @@ export class CodeAnalyzer {
         }
       }
       
-      if (!hasJSDoc) {
-        issues.push({
-          severity: 'warning',
-          message: `Exported function '${match[1]}' is missing JSDoc documentation`,
-          line: lineNum
-        });
-      }
+       if (!hasJSDoc) {
+         issues.push({
+           type: 'documentation',
+           severity: 'warning',
+           message: `Exported function '${match[1]}' is missing JSDoc documentation`,
+           line: lineNum
+         });
+       }
     }
     
     return issues;
