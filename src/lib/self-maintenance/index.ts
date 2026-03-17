@@ -1,8 +1,8 @@
-import { CodeAnalyzer } from './analyzer';
+import { CodeAnalyzer, AnalysisResult } from './analyzer';
 import { ImprovementGenerator } from './improvement-generator';
 import { ImprovementExecutor } from './executor';
 
-export { CodeAnalyzer, ImprovementGenerator, ImprovementExecutor };
+export { CodeAnalyzer, AnalysisResult, ImprovementGenerator, ImprovementExecutor };
 
 // Export a convenient facade for use in skills
 export class SelfMaintenanceService {
