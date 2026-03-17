@@ -1,4 +1,5 @@
-import { CodeAnalyzer, AnalysisResult } from './analyzer';
+import { CodeAnalyzer } from './analyzer';
+import type { AnalysisResult } from './analyzer';
 import { ImprovementGenerator } from './improvement-generator';
 import { ImprovementExecutor } from './executor';
 

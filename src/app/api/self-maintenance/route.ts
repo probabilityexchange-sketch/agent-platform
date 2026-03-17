@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { SelfMaintenanceService, AnalysisResult } from "@/lib/self-maintenance";
+import { SelfMaintenanceService } from "@/lib/self-maintenance";
+import type { AnalysisResult } from "@/lib/self-maintenance/analyzer";
 
 export const runtime = "nodejs";
 
