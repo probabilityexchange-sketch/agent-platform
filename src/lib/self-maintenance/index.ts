@@ -27,7 +27,7 @@ export class SelfMaintenanceService {
   /**
    * Generate an improvement plan from analysis results
    */
-  generatePlan(results: ReturnType<this['analyze']>) {
+  generatePlan(results: AnalysisResult[]) {
     return this.generator.generateImprovements(results);
   }
 
