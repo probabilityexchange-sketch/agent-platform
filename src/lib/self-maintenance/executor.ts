@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { execSync, spawn } from 'child_process';
 import { join, resolve } from 'path';
-import { Improvement } from './improvement-generator';
+import type { Improvement } from './improvement-generator';
 
 interface ExecutionResult {
   success: boolean;

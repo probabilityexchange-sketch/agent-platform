@@ -1,6 +1,6 @@
 import { AnalysisResult } from './analyzer';
 
-interface Improvement {
+export interface Improvement {
   filepath: string;
   type: 'lint-fix' | 'format-fix' | 'test-add' | 'doc-add' | 'refactor';
   description: string;
@@ -12,7 +12,7 @@ interface Improvement {
   branchName: string;
 }
 
-interface ImprovementPlan {
+export interface ImprovementPlan {
   improvements: Improvement[];
   summary: {
     total: number;
