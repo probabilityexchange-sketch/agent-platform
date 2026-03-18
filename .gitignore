@@ -71,3 +71,4 @@ next-env.d.ts
 *.log
 awscliv2.zip
 verified_deposits.txt
+evals/.env
