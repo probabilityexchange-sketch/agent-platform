@@ -5,7 +5,14 @@ import type { Improvement } from './improvement-generator';
 import { ImprovementExecutor } from './executor';
 import type { ExecutionResult } from './executor';
 
-export { CodeAnalyzer, AnalysisResult, ImprovementGenerator, ImprovementExecutor, type Improvement, type ExecutionResult };
+export {
+  CodeAnalyzer,
+  AnalysisResult,
+  ImprovementGenerator,
+  ImprovementExecutor,
+  type Improvement,
+  type ExecutionResult,
+};
 
 // Export a convenient facade for use in skills
 export class SelfMaintenanceService {
@@ -43,52 +50,55 @@ export class SelfMaintenanceService {
   /**
    * Run a full self-maintenance cycle: analyze, generate plan, optionally execute
    */
-  async runCycle(options: {
-    targetPath?: string;
-    autoFix?: boolean; // Whether to automatically execute safe improvements
-    interactive?: boolean; // Whether to require confirmation for each improvement
-  } = {}): Promise<{
-    analysis: ReturnType<this['analyze']>;
-    plan: ReturnType<this['generatePlan']>;
+  async runCycle(
+    options: {
+      targetPath?: string;
+      autoFix?: boolean; // Whether to automatically execute safe improvements
+      interactive?: boolean; // Whether to require confirmation for each improvement
+    } = {}
+  ): Promise<{
+    analysis: ReturnType<CodeAnalyzer['analyze']>;
+    plan: ReturnType<ImprovementGenerator['generateImprovements']>;
     executionResults?: ExecutionResult[];
   }> {
     const { targetPath = 'src', autoFix = false, interactive = false } = options;
-    
+
     // Step 1: Analyze
     const analysis = await this.analyze(targetPath);
-    
+
     // Step 2: Generate plan
     const plan = this.generatePlan(analysis);
-    
+
     // Step 3: Optionally execute
     let executionResults: ExecutionResult[] | undefined;
-    
+
     if (autoFix && plan.improvements.length > 0) {
       // Filter to only safe, automatable improvements if not interactive
-      const improvementsToExecute = interactive 
-        ? plan.improvements 
-        : plan.improvements.filter(imp => 
-            imp.automatable && 
-            (imp.type === 'format-fix' || imp.type === 'lint-fix') && 
-            imp.priority === 'high'
+      const improvementsToExecute = interactive
+        ? plan.improvements
+        : plan.improvements.filter(
+            imp =>
+              imp.automatable &&
+              (imp.type === 'format-fix' || imp.type === 'lint-fix') &&
+              imp.priority === 'high'
           );
-      
+
       executionResults = [];
       for (const improvement of improvementsToExecute) {
         const result = await this.execute(improvement);
         executionResults.push(result);
-        
+
         // If interactive and execution failed or requires input, stop
         if (interactive && (!result.success || result.error)) {
           break;
         }
       }
     }
-    
+
     return {
       analysis,
       plan,
-      executionResults
+      executionResults,
     };
   }
 }
