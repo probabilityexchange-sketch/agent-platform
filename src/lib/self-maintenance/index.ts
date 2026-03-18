@@ -57,8 +57,8 @@ export class SelfMaintenanceService {
       interactive?: boolean; // Whether to require confirmation for each improvement
     } = {}
   ): Promise<{
-    analysis: ReturnType<CodeAnalyzer['analyze']>;
-    plan: ReturnType<ImprovementGenerator['generateImprovements']>;
+    analysis: Awaited<ReturnType<CodeAnalyzer['analyze']>>;
+    plan: Awaited<ReturnType<ImprovementGenerator['generateImprovements']>>;
     executionResults?: ExecutionResult[];
   }> {
     const { targetPath = 'src', autoFix = false, interactive = false } = options;
