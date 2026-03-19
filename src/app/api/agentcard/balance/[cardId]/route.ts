@@ -3,9 +3,9 @@ import { AgentCardService } from '@/lib/agentcard';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: Request, { params }: { params: { cardId: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ cardId: string }> }) {
   try {
-    const { cardId } = params;
+    const { cardId } = await params;
 
     if (!cardId) {
       return NextResponse.json({ error: 'cardId is required' }, { status: 400 });
