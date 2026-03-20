@@ -48,6 +48,8 @@ model User {
   // Marketplace relations
   ownedAgents        AgentConfig[] @relation(name: "AgentOwner")
   rentalsAsRenter    AgentRental[] @relation("AgentRentalRenter")
+  // Research relations
+  researchExperiments ResearchExperiment[]
 }
 
 model Session {
