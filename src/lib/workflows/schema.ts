@@ -4,12 +4,26 @@ export const workflowTriggerSchema = z.object({
   type: z.enum(["manual", "schedule", "event", "monitor", "unknown"]),
   description: z.string().min(1),
   schedule: z.string().optional(),
-  preferredRunner: z.enum(["github_actions", "interactive_runtime", "manual", "unknown"]),
+  preferredRunner: z.enum([
+    "github_actions",
+    "interactive_runtime",
+    "manual",
+    "unknown",
+  ]),
 });
 
 export const workflowStepSchema = z.object({
   id: z.string().min(1),
-  kind: z.enum(["research", "monitor", "decision", "action", "notify", "financial", "report", "unknown"]),
+  kind: z.enum([
+    "research",
+    "monitor",
+    "decision",
+    "action",
+    "notify",
+    "financial",
+    "report",
+    "unknown",
+  ]),
   description: z.string().min(1),
   toolHints: z.array(z.string()).default([]),
   requiresApproval: z.boolean().default(false),
@@ -33,7 +47,11 @@ export const workflowGuardrailsSchema = z.object({
   requiresAuditLog: z.boolean(),
   requiresExplicitScopes: z.boolean(),
   simulateOnlyByDefault: z.boolean(),
-  schedulingPreference: z.enum(["github_actions_when_possible", "interactive_runtime_if_stateful", "manual_only"]),
+  schedulingPreference: z.enum([
+    "github_actions_when_possible",
+    "interactive_runtime_if_stateful",
+    "manual_only",
+  ]),
 });
 
 export const workflowPlanSchema = z.object({
@@ -54,11 +72,20 @@ export const workflowPlanSchema = z.object({
   nextActions: z.array(z.enum(["edit", "confirm"])).min(1),
 });
 
-export const workflowStoredStatusSchema = z.enum(["draft", "ready", "archived"]);
+export const workflowStoredStatusSchema = z.enum([
+  "draft",
+  "ready",
+  "archived",
+]);
 
 export const workflowRiskLevelSchema = z.enum(["low", "medium", "high"]);
 
-export const workflowApprovalStateSchema = z.enum(["not_required", "required", "approved", "rejected"]);
+export const workflowApprovalStateSchema = z.enum([
+  "not_required",
+  "required",
+  "approved",
+  "rejected",
+]);
 
 export const workflowRunStatusSchema = z.enum([
   "pending",
@@ -70,7 +97,12 @@ export const workflowRunStatusSchema = z.enum([
   "cancelled",
 ]);
 
-export const workflowScheduleStatusSchema = z.enum(["draft", "active", "paused", "blocked"]);
+export const workflowScheduleStatusSchema = z.enum([
+  "draft",
+  "active",
+  "paused",
+  "blocked",
+]);
 
 export const workflowScheduleDeploymentStateSchema = z.enum([
   "pending_manual_sync",
@@ -94,7 +126,7 @@ export const workflowScheduleDeploymentBundleSchema = z.object({
   filePath: z.string().min(1),
   content: z.string().min(1),
   secrets: z.array(workflowScheduleSecretRequirementSchema),
-  envVars: z.record(z.string()),
+  envVars: z.record(z.string(), z.string()),
   dispatchUrl: z.string().min(1),
   syncStatus: workflowScheduleDeploymentStateSchema,
   instructions: z.array(z.string()),
@@ -125,7 +157,11 @@ export const workflowSafetyMetadataSchema = z.object({
   approvalState: workflowApprovalStateSchema,
   explicitScopesRequired: z.boolean(),
   scopes: z.array(workflowScopeSchema),
-  schedulePreference: z.enum(["github_actions_when_possible", "interactive_runtime_if_stateful", "manual_only"]),
+  schedulePreference: z.enum([
+    "github_actions_when_possible",
+    "interactive_runtime_if_stateful",
+    "manual_only",
+  ]),
 });
 
 export const workflowRunRetrySchema = z.object({
@@ -138,7 +174,7 @@ export const workflowRunErrorSchema = z.object({
   message: z.string().min(1),
   code: z.string().min(1).optional(),
   stepId: z.string().min(1).optional(),
-  details: z.record(z.unknown()).optional(),
+  details: z.record(z.string(), z.unknown()).optional(),
   occurredAt: z.string().datetime(),
 });
 
@@ -160,7 +196,9 @@ export const workflowScheduleSchema = z.object({
   lastRunId: z.string().nullable(),
   lastError: z.string().nullable(),
   consecutiveFailures: z.number().int().min(0),
-  deploymentBundle: workflowScheduleDeploymentBundleSchema.nullable().optional(),
+  deploymentBundle: workflowScheduleDeploymentBundleSchema
+    .nullable()
+    .optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -203,7 +241,10 @@ export const workflowRunRecordSchema = z.object({
   retryHistory: z.array(workflowRunRetrySchema),
   estimatedTokens: z.number().int().nullable(),
   actualTokens: z.number().int().nullable(),
-  costAttributionMethod: z.enum(["exact", "time_window_attributed", "unavailable"]).nullable().optional(),
+  costAttributionMethod: z
+    .enum(["exact", "time_window_attributed", "unavailable"])
+    .nullable()
+    .optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -212,16 +253,30 @@ export type WorkflowPlan = z.infer<typeof workflowPlanSchema>;
 export type WorkflowStep = z.infer<typeof workflowStepSchema>;
 export type WorkflowStoredStatus = z.infer<typeof workflowStoredStatusSchema>;
 export type WorkflowRunStatus = z.infer<typeof workflowRunStatusSchema>;
-export type WorkflowScheduleStatus = z.infer<typeof workflowScheduleStatusSchema>;
-export type WorkflowScheduleDeploymentState = z.infer<typeof workflowScheduleDeploymentStateSchema>;
-export type WorkflowSchedulerTarget = z.infer<typeof workflowSchedulerTargetSchema>;
-export type WorkflowSafetyMetadata = z.infer<typeof workflowSafetyMetadataSchema>;
+export type WorkflowScheduleStatus = z.infer<
+  typeof workflowScheduleStatusSchema
+>;
+export type WorkflowScheduleDeploymentState = z.infer<
+  typeof workflowScheduleDeploymentStateSchema
+>;
+export type WorkflowSchedulerTarget = z.infer<
+  typeof workflowSchedulerTargetSchema
+>;
+export type WorkflowSafetyMetadata = z.infer<
+  typeof workflowSafetyMetadataSchema
+>;
 export type WorkflowScope = z.infer<typeof workflowScopeSchema>;
 export type WorkflowRunError = z.infer<typeof workflowRunErrorSchema>;
 export type WorkflowRunRetry = z.infer<typeof workflowRunRetrySchema>;
 export type WorkflowSchedule = z.infer<typeof workflowScheduleSchema>;
-export type WorkflowSchedulePreview = z.infer<typeof workflowSchedulePreviewSchema>;
-export type WorkflowScheduleDeploymentBundle = z.infer<typeof workflowScheduleDeploymentBundleSchema>;
-export type WorkflowScheduleSecretRequirement = z.infer<typeof workflowScheduleSecretRequirementSchema>;
+export type WorkflowSchedulePreview = z.infer<
+  typeof workflowSchedulePreviewSchema
+>;
+export type WorkflowScheduleDeploymentBundle = z.infer<
+  typeof workflowScheduleDeploymentBundleSchema
+>;
+export type WorkflowScheduleSecretRequirement = z.infer<
+  typeof workflowScheduleSecretRequirementSchema
+>;
 export type SavedWorkflow = z.infer<typeof savedWorkflowSchema>;
 export type WorkflowRunRecord = z.infer<typeof workflowRunRecordSchema>;

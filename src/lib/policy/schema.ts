@@ -5,9 +5,19 @@ import {
   cryptoGuardrailDecisionSchema,
 } from "@/lib/crypto/schema";
 
-export const policyDecisionTypeSchema = z.enum(["allow", "approve", "deny", "simulate"]);
+export const policyDecisionTypeSchema = z.enum([
+  "allow",
+  "approve",
+  "deny",
+  "simulate",
+]);
 
-export const policyRiskLevelSchema = z.enum(["low", "medium", "high", "critical"]);
+export const policyRiskLevelSchema = z.enum([
+  "low",
+  "medium",
+  "high",
+  "critical",
+]);
 
 export const policySubjectTypeSchema = z.enum(["tool_call", "workflow_run"]);
 
@@ -30,7 +40,15 @@ export const policyScopeSchema = z.object({
   reason: z.string().min(1),
 });
 
-export const policyTriggerSourceSchema = z.enum(["manual", "api", "schedule", "event", "system", "chat", "orchestration"]);
+export const policyTriggerSourceSchema = z.enum([
+  "manual",
+  "api",
+  "schedule",
+  "event",
+  "system",
+  "chat",
+  "orchestration",
+]);
 
 export const policyActorSchema = z.object({
   userId: z.string().min(1),
@@ -44,10 +62,12 @@ export const toolPolicyInputSchema = z.object({
   toolName: z.string().min(1),
   toolArgs: z.unknown(),
   scopes: z.array(policyScopeSchema).default([]),
-  crypto: z.object({
-    config: cryptoGuardrailConfigSchema.nullable(),
-    destinations: z.array(cryptoDestinationAllowlistEntrySchema).default([]),
-  }).optional(),
+  crypto: z
+    .object({
+      config: cryptoGuardrailConfigSchema.nullable(),
+      destinations: z.array(cryptoDestinationAllowlistEntrySchema).default([]),
+    })
+    .optional(),
 });
 
 export const workflowRunPolicyInputSchema = z.object({
@@ -67,15 +87,24 @@ export const workflowRunPolicyInputSchema = z.object({
     approvalState: z.enum(["not_required", "required", "approved", "rejected"]),
     explicitScopesRequired: z.boolean(),
     scopes: z.array(policyScopeSchema),
-    schedulePreference: z.enum(["github_actions_when_possible", "interactive_runtime_if_stateful", "manual_only"]),
+    schedulePreference: z.enum([
+      "github_actions_when_possible",
+      "interactive_runtime_if_stateful",
+      "manual_only",
+    ]),
   }),
-  crypto: z.object({
-    config: cryptoGuardrailConfigSchema.nullable(),
-    destinations: z.array(cryptoDestinationAllowlistEntrySchema).default([]),
-  }).optional(),
+  crypto: z
+    .object({
+      config: cryptoGuardrailConfigSchema.nullable(),
+      destinations: z.array(cryptoDestinationAllowlistEntrySchema).default([]),
+    })
+    .optional(),
 });
 
-export const policyInputSchema = z.union([toolPolicyInputSchema, workflowRunPolicyInputSchema]);
+export const policyInputSchema = z.union([
+  toolPolicyInputSchema,
+  workflowRunPolicyInputSchema,
+]);
 
 export const policyDecisionSchema = z.object({
   subjectType: policySubjectTypeSchema,
@@ -88,7 +117,7 @@ export const policyDecisionSchema = z.object({
   simulateOnly: z.boolean(),
   auditRequired: z.boolean(),
   approvalRequestRequired: z.boolean(),
-  metadata: z.record(z.unknown()).default({}),
+  metadata: z.record(z.string(), z.unknown()).default({}),
   crypto: cryptoGuardrailDecisionSchema.nullable().optional(),
 });
 
@@ -96,6 +125,8 @@ export type PolicyDecisionType = z.infer<typeof policyDecisionTypeSchema>;
 export type PolicyRiskLevel = z.infer<typeof policyRiskLevelSchema>;
 export type PolicyScope = z.infer<typeof policyScopeSchema>;
 export type ToolPolicyInput = z.infer<typeof toolPolicyInputSchema>;
-export type WorkflowRunPolicyInput = z.infer<typeof workflowRunPolicyInputSchema>;
+export type WorkflowRunPolicyInput = z.infer<
+  typeof workflowRunPolicyInputSchema
+>;
 export type PolicyInput = z.infer<typeof policyInputSchema>;
 export type PolicyDecision = z.infer<typeof policyDecisionSchema>;
