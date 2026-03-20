@@ -45,6 +45,8 @@ else
       echo "  Injection successful (URL hint: ${DB_PUSH_URL%%@*}@...)" >&2
     else
       echo "  ERROR: POSTGRES_PASSWORD is also missing. Auth will likely fail." >&2
+      echo "  Set POSTGRES_PASSWORD in your Vercel environment variables." >&2
+      exit 1
     fi
   fi
   echo "Running prisma db push (source: ${DB_PUSH_URL%%@*}@...)" >&2
