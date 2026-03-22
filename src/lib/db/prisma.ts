@@ -80,23 +80,16 @@ function patchSupabaseConnection(url: string): string {
 }
 
 function selectDatabaseUrl(): { url: string | null; source: string | null } {
-  const managedFirst =
-    process.env.VERCEL === "1" || process.env.VERCEL_ENV === "production";
-  const orderedNames = managedFirst
-    ? [
-      "POSTGRES_PRISMA_URL",
-      "POSTGRES_URL",
-      "DATABASE_URL",
-      "DIRECT_URL",
-      "POSTGRES_URL_NON_POOLING",
-    ]
-    : [
-      "DATABASE_URL",
-      "POSTGRES_PRISMA_URL",
-      "POSTGRES_URL",
-      "DIRECT_URL",
-      "POSTGRES_URL_NON_POOLING",
-    ];
+  // ALWAYS prioritize DATABASE_URL and DIRECT_URL. 
+  // Vercel sometimes injects POSTGRES_PRISMA_URL automatically if an integration 
+  // is linked, which can conflict with our manual Supabase setup.
+  const orderedNames = [
+    "DATABASE_URL",
+    "DIRECT_URL",
+    "POSTGRES_URL",
+    "POSTGRES_PRISMA_URL",
+    "POSTGRES_URL_NON_POOLING",
+  ];
 
   const candidates = orderedNames.map((name) => {
     const raw = normalizedEnv(name);
@@ -107,16 +100,13 @@ function selectDatabaseUrl(): { url: string | null; source: string | null } {
     readonly [string, string]
   >;
 
+  // If we find a Supabase pooler, use it as top priority
   const preferredPooler = valid.find(([, value]) => isSupabasePooler(value));
   if (preferredPooler) {
     return { source: preferredPooler[0], url: preferredPooler[1] };
   }
 
-  const nonDirect = valid.find(([, value]) => !isSupabaseDirect(value));
-  if (nonDirect) {
-    return { source: nonDirect[0], url: nonDirect[1] };
-  }
-
+  // Otherwise use the first valid URL found in order
   return valid[0]
     ? { source: valid[0][0], url: valid[0][1] }
     : { source: null, url: null };

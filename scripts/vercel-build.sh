@@ -85,13 +85,20 @@ else
      DATABASE_URL="$DB_PUSH_URL" \
      DIRECT_URL="$DB_PUSH_URL" \
      npx prisma db push --accept-data-loss; then
-    echo "Schema push succeeded" >&2
+    echo "✅ Schema push succeeded" >&2
     echo "Regenerating Prisma Client from latest schema..." >&2
     DATABASE_URL="$DB_PUSH_URL" npx prisma generate
     echo "Seeding database..." >&2
-    DATABASE_URL="$DB_PUSH_URL" npx prisma db seed
+    if DATABASE_URL="$DB_PUSH_URL" npx prisma db seed; then
+      echo "✅ Database seeded successfully" >&2
+    else
+      echo "❌ Seeding failed!" >&2
+      exit 1
+    fi
   else
-    echo "WARNING: prisma db push failed (tables may already exist) — continuing build" >&2
+    echo "❌ CRITICAL: prisma db push failed! The database schema is out of sync." >&2
+    echo "Check your DIRECT_URL and POSTGRES_PASSWORD." >&2
+    exit 1
   fi
 fi
 
