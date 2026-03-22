@@ -22,22 +22,34 @@ sanitize_url() {
 }
 
 # Prefer non-pooling URL for schema push (DDL needs direct connection)
-RAW_URL="${POSTGRES_URL_NON_POOLING:-${DIRECT_URL:-${POSTGRES_PRISMA_URL:-${DATABASE_URL:-}}}}"
+# Use a series of checks to determine which name was selected
+RAW_URL=""
+SELECTED_NAME=""
+if [[ -n "${POSTGRES_URL_NON_POOLING:-}" ]]; then
+  RAW_URL="$POSTGRES_URL_NON_POOLING"
+  SELECTED_NAME="POSTGRES_URL_NON_POOLING"
+elif [[ -n "${DIRECT_URL:-}" ]]; then
+  RAW_URL="$DIRECT_URL"
+  SELECTED_NAME="DIRECT_URL"
+elif [[ -n "${POSTGRES_PRISMA_URL:-}" ]]; then
+  RAW_URL="$POSTGRES_PRISMA_URL"
+  SELECTED_NAME="POSTGRES_PRISMA_URL"
+elif [[ -n "${DATABASE_URL:-}" ]]; then
+  RAW_URL="$DATABASE_URL"
+  SELECTED_NAME="DATABASE_URL"
+fi
+
 DB_PUSH_URL="$(sanitize_url "$RAW_URL")"
 
 if [[ -z "$DB_PUSH_URL" ]]; then
   echo "WARNING: No valid database URL found for prisma db push" >&2
   echo "  Checked in order: POSTGRES_URL_NON_POOLING, DIRECT_URL, POSTGRES_PRISMA_URL, DATABASE_URL" >&2
-  echo "  Current state of variables:" >&2
-  [[ -n "${POSTGRES_URL_NON_POOLING:-}" ]] && echo "    POSTGRES_URL_NON_POOLING: detected (len: ${#POSTGRES_URL_NON_POOLING})" >&2
-  [[ -n "${DIRECT_URL:-}" ]] && echo "    DIRECT_URL: detected (len: ${#DIRECT_URL})" >&2
-  [[ -n "${POSTGRES_PRISMA_URL:-}" ]] && echo "    POSTGRES_PRISMA_URL: detected (len: ${#POSTGRES_PRISMA_URL})" >&2
-  [[ -n "${DATABASE_URL:-}" ]] && echo "    DATABASE_URL: detected (len: ${#DATABASE_URL})" >&2
   echo "  Skipping schema push — tables must exist already" >&2
 else
+  echo "Selected database connection source: $SELECTED_NAME" >&2
   # Debug: Check if the URL contains a password (look for colon after postgresql:// and before @host)
   if [[ "$DB_PUSH_URL" =~ postgresql://[^:]+:@ ]]; then
-    echo "CRITICAL: Detected empty password in DB_PUSH_URL!" >&2
+    echo "CRITICAL: Detected empty password in $SELECTED_NAME!" >&2
     if [[ -n "${POSTGRES_PASSWORD:-}" ]]; then
       echo "  Attempting to inject POSTGRES_PASSWORD..." >&2
       # Inject password between colon and @ (matches the :@ pattern)
