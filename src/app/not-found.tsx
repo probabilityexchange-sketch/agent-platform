@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { RandiLogo } from "@/components/branding/RandiLogo";
+import Link from 'next/link';
+import { RandiLogo } from '@/components/branding/RandiLogo';
 
 export default function NotFound() {
   return (
@@ -9,12 +9,10 @@ export default function NotFound() {
           <RandiLogo size="lg" variant="icon-only" />
         </div>
         <h1 className="text-6xl font-bold mb-4">404</h1>
-        <h2 className="text-2xl font-semibold mb-4 text-primary">
-          Page Not Found
-        </h2>
+        <h2 className="text-2xl font-semibold mb-4 text-primary">Page Not Found</h2>
         <p className="text-muted-foreground mb-8 max-w-md">
-          Oops! The page you&apos;re looking for doesn&apos;t exist. It might
-          have been moved or deleted.
+          Oops! The page you&apos;re looking for doesn&apos;t exist. It might have been moved or
+          deleted.
         </p>
         <Link
           href="/"

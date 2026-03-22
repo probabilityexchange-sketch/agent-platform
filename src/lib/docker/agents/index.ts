@@ -1,5 +1,5 @@
-import { agentZeroConfig } from "./agent-zero";
-import { openClawConfig } from "./openclaw";
+import { agentZeroConfig } from './agent-zero';
+import { openClawConfig } from './openclaw';
 
 export interface AgentContainerConfig {
   image: string;
@@ -20,12 +20,12 @@ export type AgentConfigFactory = (opts: {
 }) => AgentContainerConfig;
 
 const agentRegistry: Record<string, AgentConfigFactory> = {
-  "agent-zero": agentZeroConfig,
+  'agent-zero': agentZeroConfig,
   openclaw: openClawConfig,
   // Map seeded agents to agent-zero config
-  "research-assistant": agentZeroConfig,
-  "code-assistant": agentZeroConfig,
-  "productivity-agent": agentZeroConfig,
+  'research-assistant': agentZeroConfig,
+  'code-assistant': agentZeroConfig,
+  'productivity-agent': agentZeroConfig,
 };
 
 export function getAgentConfig(slug: string): AgentConfigFactory | undefined {

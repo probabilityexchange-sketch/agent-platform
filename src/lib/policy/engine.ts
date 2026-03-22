@@ -1,12 +1,12 @@
-import { requiresApproval } from "@/lib/composio/approval-rules";
-import { evaluateCryptoGuardrails } from "@/lib/crypto/guardrails";
+import { requiresApproval } from '@/lib/composio/approval-rules';
+import { evaluateCryptoGuardrails } from '@/lib/crypto/guardrails';
 import {
   policyDecisionSchema,
   policyInputSchema,
   type PolicyDecision,
   type PolicyInput,
   type PolicyScope,
-} from "@/lib/policy/schema";
+} from '@/lib/policy/schema';
 
 const READ_ONLY_TOOL_PATTERNS: RegExp[] = [
   /_GET_/i,
@@ -34,26 +34,35 @@ const CRYPTO_TOOL_PATTERNS: RegExp[] = [
 
 function normalizeScopes(scopes: PolicyScope[], fallbackTool: string): PolicyScope[] {
   if (scopes.length > 0) return scopes;
-  return [{ tool: fallbackTool, mode: "write", resources: [], reason: `Explicit scope placeholder for ${fallbackTool}` }];
+  return [
+    {
+      tool: fallbackTool,
+      mode: 'write',
+      resources: [],
+      reason: `Explicit scope placeholder for ${fallbackTool}`,
+    },
+  ];
 }
 
 function isReadOnlyTool(toolName: string): boolean {
-  return READ_ONLY_TOOL_PATTERNS.some((pattern) => pattern.test(toolName)) && !requiresApproval(toolName);
+  return (
+    READ_ONLY_TOOL_PATTERNS.some(pattern => pattern.test(toolName)) && !requiresApproval(toolName)
+  );
 }
 
 function isFinancialScope(scope: PolicyScope): boolean {
-  return CRYPTO_TOOL_PATTERNS.some((pattern) => pattern.test(scope.tool));
+  return CRYPTO_TOOL_PATTERNS.some(pattern => pattern.test(scope.tool));
 }
 
 export function evaluatePolicy(input: PolicyInput): PolicyDecision {
   const parsed = policyInputSchema.parse(input);
 
-  if (parsed.subjectType === "tool_call") {
+  if (parsed.subjectType === 'tool_call') {
     const scopes = normalizeScopes(parsed.scopes, parsed.toolName);
     const approvalNeeded = requiresApproval(parsed.toolName);
     const readOnly = isReadOnlyTool(parsed.toolName);
     const cryptoDecision = evaluateCryptoGuardrails({
-      subjectType: "tool_call",
+      subjectType: 'tool_call',
       triggerSource: parsed.triggerSource,
       actor: parsed.actor,
       tool: {
@@ -65,14 +74,15 @@ export function evaluatePolicy(input: PolicyInput): PolicyDecision {
     });
 
     if (cryptoDecision.isCryptoRelated) {
-      const actionType = cryptoDecision.cryptoActionType === "trading"
-        ? "trading"
-        : cryptoDecision.cryptoActionType === "payment"
-          ? "payment"
-          : "financial";
+      const actionType =
+        cryptoDecision.cryptoActionType === 'trading'
+          ? 'trading'
+          : cryptoDecision.cryptoActionType === 'payment'
+            ? 'payment'
+            : 'financial';
 
       return policyDecisionSchema.parse({
-        subjectType: "tool_call",
+        subjectType: 'tool_call',
         actionType,
         riskLevel: cryptoDecision.riskLevel,
         scopes,
@@ -81,20 +91,25 @@ export function evaluatePolicy(input: PolicyInput): PolicyDecision {
         requiresApproval: cryptoDecision.requiresApproval,
         simulateOnly: cryptoDecision.simulateOnly,
         auditRequired: true,
-        approvalRequestRequired: cryptoDecision.decision === "approve",
-        metadata: { toolName: parsed.toolName, triggerSource: parsed.triggerSource, cryptoRelated: true },
+        approvalRequestRequired: cryptoDecision.decision === 'approve',
+        metadata: {
+          toolName: parsed.toolName,
+          triggerSource: parsed.triggerSource,
+          cryptoRelated: true,
+        },
         crypto: cryptoDecision,
       });
     }
 
     if (approvalNeeded) {
       return policyDecisionSchema.parse({
-        subjectType: "tool_call",
-        actionType: "write",
-        riskLevel: "medium",
+        subjectType: 'tool_call',
+        actionType: 'write',
+        riskLevel: 'medium',
         scopes,
-        decision: "approve",
-        reason: "External write or mutating tool actions require explicit approval before execution.",
+        decision: 'approve',
+        reason:
+          'External write or mutating tool actions require explicit approval before execution.',
         requiresApproval: true,
         simulateOnly: false,
         auditRequired: false,
@@ -106,12 +121,12 @@ export function evaluatePolicy(input: PolicyInput): PolicyDecision {
 
     if (readOnly) {
       return policyDecisionSchema.parse({
-        subjectType: "tool_call",
-        actionType: "read",
-        riskLevel: "low",
-        scopes: scopes.map((scope) => ({ ...scope, mode: "read" })),
-        decision: "allow",
-        reason: "Read-only tool action is low-risk and may proceed automatically.",
+        subjectType: 'tool_call',
+        actionType: 'read',
+        riskLevel: 'low',
+        scopes: scopes.map(scope => ({ ...scope, mode: 'read' })),
+        decision: 'allow',
+        reason: 'Read-only tool action is low-risk and may proceed automatically.',
         requiresApproval: false,
         simulateOnly: false,
         auditRequired: false,
@@ -122,12 +137,12 @@ export function evaluatePolicy(input: PolicyInput): PolicyDecision {
     }
 
     return policyDecisionSchema.parse({
-      subjectType: "tool_call",
-      actionType: "dangerous",
-      riskLevel: "high",
+      subjectType: 'tool_call',
+      actionType: 'dangerous',
+      riskLevel: 'high',
       scopes,
-      decision: "approve",
-      reason: "Unsupported or non-read-only tool action defaults to explicit approval for safety.",
+      decision: 'approve',
+      reason: 'Unsupported or non-read-only tool action defaults to explicit approval for safety.',
       requiresApproval: true,
       simulateOnly: false,
       auditRequired: false,
@@ -140,7 +155,7 @@ export function evaluatePolicy(input: PolicyInput): PolicyDecision {
   const { safety } = parsed;
   const scopes = parsed.safety.scopes;
 
-  // Closure of Policy Blind Spot: 
+  // Closure of Policy Blind Spot:
   // We double-check the scopes here even if containsFinancialSteps is false.
   // This ensures that if the pre-computed metadata is inconsistent, we still
   // treat the workflow as financial for policy evaluation.
@@ -148,7 +163,7 @@ export function evaluatePolicy(input: PolicyInput): PolicyDecision {
   const containsFinancialSteps = safety.containsFinancialSteps || hasFinancialScope;
 
   const cryptoDecision = evaluateCryptoGuardrails({
-    subjectType: "workflow_run",
+    subjectType: 'workflow_run',
     triggerSource: parsed.triggerSource,
     actor: parsed.actor,
     workflow: {
@@ -171,8 +186,8 @@ export function evaluatePolicy(input: PolicyInput): PolicyDecision {
 
   if (cryptoDecision.isCryptoRelated) {
     return policyDecisionSchema.parse({
-      subjectType: "workflow_run",
-      actionType: "financial",
+      subjectType: 'workflow_run',
+      actionType: 'financial',
       riskLevel: cryptoDecision.riskLevel,
       scopes,
       decision: cryptoDecision.decision,
@@ -180,7 +195,7 @@ export function evaluatePolicy(input: PolicyInput): PolicyDecision {
       requiresApproval: cryptoDecision.requiresApproval,
       simulateOnly: cryptoDecision.simulateOnly,
       auditRequired: true,
-      approvalRequestRequired: cryptoDecision.decision === "approve",
+      approvalRequestRequired: cryptoDecision.decision === 'approve',
       metadata: {
         workflowId: parsed.workflowId,
         workflowTitle: parsed.workflowTitle,
@@ -191,14 +206,14 @@ export function evaluatePolicy(input: PolicyInput): PolicyDecision {
     });
   }
 
-  if (safety.approvalState === "required" || safety.requiresApproval) {
+  if (safety.approvalState === 'required' || safety.requiresApproval) {
     return policyDecisionSchema.parse({
-      subjectType: "workflow_run",
-      actionType: "workflow_execute",
-      riskLevel: safety.riskLevel === "high" ? "high" : "medium",
+      subjectType: 'workflow_run',
+      actionType: 'workflow_execute',
+      riskLevel: safety.riskLevel === 'high' ? 'high' : 'medium',
       scopes,
-      decision: "approve",
-      reason: "Workflow run requires explicit approval before becoming runnable.",
+      decision: 'approve',
+      reason: 'Workflow run requires explicit approval before becoming runnable.',
       requiresApproval: true,
       simulateOnly: false,
       auditRequired: safety.requiresAuditLog,
@@ -214,12 +229,12 @@ export function evaluatePolicy(input: PolicyInput): PolicyDecision {
   }
 
   return policyDecisionSchema.parse({
-    subjectType: "workflow_run",
-    actionType: "workflow_execute",
+    subjectType: 'workflow_run',
+    actionType: 'workflow_execute',
     riskLevel: safety.riskLevel,
     scopes,
-    decision: "allow",
-    reason: "Workflow run satisfies current policy checks and may proceed to runnable state.",
+    decision: 'allow',
+    reason: 'Workflow run satisfies current policy checks and may proceed to runnable state.',
     requiresApproval: false,
     simulateOnly: false,
     auditRequired: safety.requiresAuditLog,

@@ -14,12 +14,7 @@
       "description": "Collection of document processing suite including Excel, Word, PowerPoint, and PDF capabilities",
       "source": "./",
       "strict": false,
-      "skills": [
-        "./skills/xlsx",
-        "./skills/docx",
-        "./skills/pptx",
-        "./skills/pdf"
-      ]
+      "skills": ["./skills/xlsx", "./skills/docx", "./skills/pptx", "./skills/pdf"]
     },
     {
       "name": "example-skills",

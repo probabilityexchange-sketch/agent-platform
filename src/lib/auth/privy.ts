@@ -1,36 +1,36 @@
-import { decodeJwt } from "jose";
-import { isValidSolanaAddress } from "@/lib/solana/validation";
+import { decodeJwt } from 'jose';
+import { isValidSolanaAddress } from '@/lib/solana/validation';
 
-const PRIVY_BASE_URL = process.env.PRIVY_BASE_URL || "https://auth.privy.io";
+const PRIVY_BASE_URL = process.env.PRIVY_BASE_URL || 'https://auth.privy.io';
 
 type UnknownRecord = Record<string, unknown>;
 
 function asRecord(value: unknown): UnknownRecord | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null;
   }
   return value as UnknownRecord;
 }
 
 function asString(value: unknown): string | null {
-  return typeof value === "string" && value.length > 0 ? value : null;
+  return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
 function normalizeEnvString(value: string | undefined): string | null {
   if (!value) return null;
-  const normalized = value.trim().replace(/^['"]|['"]$/g, "");
+  const normalized = value.trim().replace(/^['"]|['"]$/g, '');
   return normalized.length > 0 ? normalized : null;
 }
 
 function normalizeAccessToken(value: string): string {
   const normalized = value.trim();
   if (!normalized) {
-    throw new Error("Missing Privy access token");
+    throw new Error('Missing Privy access token');
   }
 
   const lowered = normalized.toLowerCase();
-  if (lowered === "undefined" || lowered === "null") {
-    throw new Error("Missing Privy access token");
+  if (lowered === 'undefined' || lowered === 'null') {
+    throw new Error('Missing Privy access token');
   }
 
   return normalized;
@@ -39,7 +39,7 @@ function normalizeAccessToken(value: string): string {
 function isSolanaChain(chainType: string | null): boolean {
   if (!chainType) return false;
   const normalized = chainType.toLowerCase();
-  return normalized === "solana" || normalized.startsWith("solana:");
+  return normalized === 'solana' || normalized.startsWith('solana:');
 }
 
 function extractAddress(account: UnknownRecord): string | null {
@@ -85,9 +85,7 @@ function collectSolanaWallets(user: UnknownRecord): string[] {
   for (const account of extractLinkedAccounts(user)) {
     const accountType = asString(account.type)?.toLowerCase() || null;
     const chainType =
-      asString(account.chain_type) ||
-      asString(account.chainType) ||
-      asString(account.chain);
+      asString(account.chain_type) || asString(account.chainType) || asString(account.chain);
 
     const walletClientType =
       asString(account.wallet_client_type) ||
@@ -97,11 +95,11 @@ function collectSolanaWallets(user: UnknownRecord): string[] {
 
     const looksSolana =
       isSolanaChain(chainType) ||
-      (walletClientType ? walletClientType.toLowerCase().includes("solana") : false);
+      (walletClientType ? walletClientType.toLowerCase().includes('solana') : false);
     const isWalletLike =
-      accountType === "wallet" ||
-      accountType === "smart_wallet" ||
-      (accountType ? accountType.includes("wallet") : false);
+      accountType === 'wallet' ||
+      accountType === 'smart_wallet' ||
+      (accountType ? accountType.includes('wallet') : false);
 
     const address = extractAddress(account);
 
@@ -115,7 +113,7 @@ function collectSolanaWallets(user: UnknownRecord): string[] {
 
   // Handle user.wallet as object or string
   const walletValue = user.wallet;
-  if (typeof walletValue === "string" && isValidSolanaAddress(walletValue)) {
+  if (typeof walletValue === 'string' && isValidSolanaAddress(walletValue)) {
     wallets.add(walletValue);
   } else {
     const walletObject = asRecord(walletValue);
@@ -129,7 +127,7 @@ function collectSolanaWallets(user: UnknownRecord): string[] {
   const walletList = user.wallets;
   if (Array.isArray(walletList)) {
     for (const candidate of walletList) {
-      if (typeof candidate === "string" && isValidSolanaAddress(candidate)) {
+      if (typeof candidate === 'string' && isValidSolanaAddress(candidate)) {
         wallets.add(candidate);
         continue;
       }
@@ -166,22 +164,20 @@ async function fetchPrivyUserPayload(
 ): Promise<UnknownRecord> {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${accessToken}`,
-    "privy-app-id": appId,
+    'privy-app-id': appId,
     // Mirror the client SDK header shape to avoid stricter API routing behavior.
-    "privy-client": "agent-platform-server",
-    Accept: "application/json",
-    "Content-Type": "application/json",
+    'privy-client': 'agent-platform-server',
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
   };
 
   const origin =
     originHint ||
     process.env.NEXT_PUBLIC_APP_URL ||
-    (process.env.NEXT_PUBLIC_DOMAIN
-      ? `https://${process.env.NEXT_PUBLIC_DOMAIN}`
-      : undefined);
+    (process.env.NEXT_PUBLIC_DOMAIN ? `https://${process.env.NEXT_PUBLIC_DOMAIN}` : undefined);
   if (origin) {
-    headers["Origin"] = origin.replace(/\/+$/, "");
-    headers["Referer"] = `${headers["Origin"]}/`;
+    headers['Origin'] = origin.replace(/\/+$/, '');
+    headers['Referer'] = `${headers['Origin']}/`;
   }
 
   const controller = new AbortController();
@@ -189,16 +185,16 @@ async function fetchPrivyUserPayload(
 
   try {
     const response = await fetch(`${PRIVY_BASE_URL}/api/v1/users/me`, {
-      method: "GET",
+      method: 'GET',
       headers,
-      cache: "no-store",
+      cache: 'no-store',
       signal: controller.signal,
     });
 
     if (!response.ok) {
-      const details = await response.text().catch(() => "");
+      const details = await response.text().catch(() => '');
       const compactDetails = details.trim().slice(0, 200);
-      const suffix = compactDetails ? `: ${compactDetails}` : "";
+      const suffix = compactDetails ? `: ${compactDetails}` : '';
       throw new Error(
         `Unable to validate Privy access token (status ${response.status}, app ${appId})${suffix}`
       );
@@ -206,7 +202,7 @@ async function fetchPrivyUserPayload(
 
     const rawPayload = asRecord(await response.json());
     if (!rawPayload) {
-      throw new Error("Invalid Privy user payload");
+      throw new Error('Invalid Privy user payload');
     }
 
     return rawPayload;
@@ -223,7 +219,7 @@ export async function resolvePrivyWallet(
   const normalizedAccessToken = normalizeAccessToken(accessToken);
   const appIds = getPrivyAppIds();
   if (appIds.length === 0) {
-    throw new Error("NEXT_PUBLIC_PRIVY_APP_ID is not configured");
+    throw new Error('NEXT_PUBLIC_PRIVY_APP_ID is not configured');
   }
 
   let rawPayload: UnknownRecord | null = null;
@@ -233,7 +229,7 @@ export async function resolvePrivyWallet(
       rawPayload = await fetchPrivyUserPayload(normalizedAccessToken, appId, originHint);
       break;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown Privy verification error";
+      const message = error instanceof Error ? error.message : 'Unknown Privy verification error';
       attempts.push(message);
     }
   }
@@ -248,15 +244,15 @@ export async function resolvePrivyWallet(
         const did = asString(decoded.sub);
         if (did) {
           const appId = appIds[0];
-          const auth = Buffer.from(`${appId}:${appSecret}`).toString("base64");
+          const auth = Buffer.from(`${appId}:${appSecret}`).toString('base64');
           const response = await fetch(`${PRIVY_BASE_URL}/api/v1/users/${did}`, {
-            method: "GET",
+            method: 'GET',
             headers: {
               Authorization: `Basic ${auth}`,
-              "privy-app-id": appId,
-              Accept: "application/json",
+              'privy-app-id': appId,
+              Accept: 'application/json',
             },
-            cache: "no-store",
+            cache: 'no-store',
           });
 
           if (response.ok) {
@@ -264,20 +260,20 @@ export async function resolvePrivyWallet(
           }
         }
       } catch (fallbackError) {
-        console.warn("Privy App Secret fallback failed", fallbackError);
+        console.warn('Privy App Secret fallback failed', fallbackError);
       }
     }
   }
 
   if (!rawPayload) {
-    throw new Error(attempts.join(" | "));
+    throw new Error(attempts.join(' | '));
   }
 
   const payload = asRecord(rawPayload.user) || rawPayload;
 
   const solanaWallets = collectSolanaWallets(payload);
   if (solanaWallets.length === 0) {
-    throw new Error("No linked Solana wallet found on Privy user");
+    throw new Error('No linked Solana wallet found on Privy user');
   }
 
   if (!requestedWallet) {
@@ -285,11 +281,11 @@ export async function resolvePrivyWallet(
   }
 
   if (!isValidSolanaAddress(requestedWallet)) {
-    throw new Error("Invalid requested wallet");
+    throw new Error('Invalid requested wallet');
   }
 
   if (!solanaWallets.includes(requestedWallet)) {
-    throw new Error("Requested wallet is not linked to authenticated Privy user");
+    throw new Error('Requested wallet is not linked to authenticated Privy user');
   }
 
   return requestedWallet;

@@ -1,10 +1,10 @@
 export type ContainerStatus =
-  | "PROVISIONING"
-  | "RUNNING"
-  | "STOPPING"
-  | "STOPPED"
-  | "EXPIRED"
-  | "ERROR";
+  | 'PROVISIONING'
+  | 'RUNNING'
+  | 'STOPPING'
+  | 'STOPPED'
+  | 'EXPIRED'
+  | 'ERROR';
 
 export interface ContainerInfo {
   id: string;

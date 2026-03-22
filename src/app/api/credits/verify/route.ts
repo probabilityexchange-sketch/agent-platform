@@ -1,30 +1,29 @@
-import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@/generated/prisma/client";
-import { z } from "zod";
-import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
-import {
-  verifyNativeSolTransaction,
-  verifyTransaction,
-} from "@/lib/solana/tx-verification";
-import { prisma } from "@/lib/db/prisma";
+import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@/generated/prisma/client';
+import { z } from 'zod';
+import { requireAuth, handleAuthError } from '@/lib/auth/middleware';
+import { verifyNativeSolTransaction, verifyTransaction } from '@/lib/solana/tx-verification';
+import { prisma } from '@/lib/db/prisma';
 import {
   parseBurnBpsFromMemo,
   resolvePaymentAsset,
   resolveSolBurnWallet,
   splitTokenAmountsByBurn,
-} from "@/lib/payments/token-pricing";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
+} from '@/lib/payments/token-pricing';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/utils/rate-limit';
 
 const schema = z.object({
-  transactionId: z.string().min(1, "Transaction id required"),
-  txSignature: z.string().min(1, "Transaction signature required"),
-  memo: z.string().min(1, "Memo required"),
+  transactionId: z.string().min(1, 'Transaction id required'),
+  txSignature: z.string().min(1, 'Transaction signature required'),
+  memo: z.string().min(1, 'Memo required'),
 });
 
 function isRetryableVerificationFailure(error: string | undefined): boolean {
   if (!error) return true;
   const normalized = error.toLowerCase();
-  return normalized.includes("transaction not found") || normalized.startsWith("verification failed:");
+  return (
+    normalized.includes('transaction not found') || normalized.startsWith('verification failed:')
+  );
 }
 
 const DEFAULT_PURCHASE_INTENT_TTL_MS = 15 * 60 * 1000;
@@ -61,16 +60,13 @@ export async function POST(request: NextRequest) {
       RATE_LIMITS.purchaseVerify
     );
     if (!allowed) {
-      return NextResponse.json({ error: "Too many verification attempts" }, { status: 429 });
+      return NextResponse.json({ error: 'Too many verification attempts' }, { status: 429 });
     }
 
     const body = await request.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0].message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
 
     const { transactionId, txSignature, memo } = parsed.data;
@@ -87,7 +83,7 @@ export async function POST(request: NextRequest) {
     if (existing) {
       if (
         existing.userId === auth.userId &&
-        existing.status === "CONFIRMED" &&
+        existing.status === 'CONFIRMED' &&
         existing.memo === memo
       ) {
         return NextResponse.json({
@@ -97,10 +93,7 @@ export async function POST(request: NextRequest) {
           idempotent: true,
         });
       }
-      return NextResponse.json(
-        { error: "Transaction already processed" },
-        { status: 409 }
-      );
+      return NextResponse.json({ error: 'Transaction already processed' }, { status: 409 });
     }
 
     const intent = await prisma.tokenTransaction.findFirst({
@@ -108,7 +101,7 @@ export async function POST(request: NextRequest) {
         id: transactionId,
         userId: auth.userId,
         memo,
-        type: { in: ["PURCHASE", "SUBSCRIBE"] },
+        type: { in: ['PURCHASE', 'SUBSCRIBE'] },
       },
       select: {
         id: true,
@@ -122,12 +115,12 @@ export async function POST(request: NextRequest) {
 
     if (!intent) {
       return NextResponse.json(
-        { error: "No purchase intent found for this transaction" },
+        { error: 'No purchase intent found for this transaction' },
         { status: 404 }
       );
     }
 
-    if (intent.status === "CONFIRMED") {
+    if (intent.status === 'CONFIRMED') {
       if (intent.txSignature === txSignature) {
         return NextResponse.json({
           success: true,
@@ -137,12 +130,12 @@ export async function POST(request: NextRequest) {
         });
       }
       return NextResponse.json(
-        { error: "Purchase intent already confirmed with a different transaction" },
+        { error: 'Purchase intent already confirmed with a different transaction' },
         { status: 409 }
       );
     }
 
-    if (intent.status !== "PENDING") {
+    if (intent.status !== 'PENDING') {
       return NextResponse.json(
         { error: `Purchase intent is not pending (status: ${intent.status})` },
         { status: 409 }
@@ -153,22 +146,22 @@ export async function POST(request: NextRequest) {
     const intentAgeMs = intentCreatedAtMs ? Date.now() - intentCreatedAtMs : null;
     if (intentAgeMs !== null && intentAgeMs > resolvePurchaseIntentTtlMs()) {
       await prisma.tokenTransaction.updateMany({
-        where: { id: intent.id, status: "PENDING" },
-        data: { status: "EXPIRED" },
+        where: { id: intent.id, status: 'PENDING' },
+        data: { status: 'EXPIRED' },
       });
       return NextResponse.json(
-        { error: "Purchase intent has expired. Please create a new purchase." },
+        { error: 'Purchase intent has expired. Please create a new purchase.' },
         { status: 410 }
       );
     }
 
     if (!intent.tokenAmount) {
       await prisma.tokenTransaction.updateMany({
-        where: { id: intent.id, status: "PENDING" },
-        data: { status: "FAILED" },
+        where: { id: intent.id, status: 'PENDING' },
+        data: { status: 'FAILED' },
       });
       return NextResponse.json(
-        { error: "Pending purchase is missing token amount" },
+        { error: 'Pending purchase is missing token amount' },
         { status: 500 }
       );
     }
@@ -182,37 +175,37 @@ export async function POST(request: NextRequest) {
     // The application must fail loudly if TREASURY_WALLET is not configured.
     const treasuryWallet = process.env.TREASURY_WALLET;
     if (!treasuryWallet) {
-      console.error("CRITICAL: TREASURY_WALLET environment variable is not set.");
+      console.error('CRITICAL: TREASURY_WALLET environment variable is not set.');
       return NextResponse.json(
-        { error: "Payment verification is not available: treasury wallet is not configured." },
+        { error: 'Payment verification is not available: treasury wallet is not configured.' },
         { status: 500 }
       );
     }
 
     const result =
-      paymentAsset === "sol"
+      paymentAsset === 'sol'
         ? await verifyNativeSolTransaction({
-          txSignature,
-          expectedRecipient: treasuryWallet,
-          expectedTreasuryAmountLamports: split.treasuryTokenAmount,
-          expectedMemo: memo,
-          expectedBurnAmountLamports: split.burnTokenAmount,
-          expectedBurnRecipient: resolveSolBurnWallet(),
-          expectedSender: auth.wallet,
-        })
+            txSignature,
+            expectedRecipient: treasuryWallet,
+            expectedTreasuryAmountLamports: split.treasuryTokenAmount,
+            expectedMemo: memo,
+            expectedBurnAmountLamports: split.burnTokenAmount,
+            expectedBurnRecipient: resolveSolBurnWallet(),
+            expectedSender: auth.wallet,
+          })
         : await verifyTransaction(
-          txSignature,
-          (process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT)!,
-          treasuryWallet,
-          split.treasuryTokenAmount,
-          memo,
-          split.burnTokenAmount,
-          auth.wallet
-        );
+            txSignature,
+            (process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT)!,
+            treasuryWallet,
+            split.treasuryTokenAmount,
+            memo,
+            split.burnTokenAmount,
+            auth.wallet
+          );
 
     if (!result.valid) {
       return NextResponse.json(
-        { error: result.error || "Verification failed" },
+        { error: result.error || 'Verification failed' },
         { status: result.retryable || isRetryableVerificationFailure(result.error) ? 503 : 400 }
       );
     }
@@ -222,17 +215,17 @@ export async function POST(request: NextRequest) {
     let idempotent = false;
 
     try {
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async tx => {
         const claimResult = await tx.tokenTransaction.updateMany({
           where: {
             id: intent.id,
             userId: auth.userId,
             memo,
-            status: "PENDING",
+            status: 'PENDING',
             txSignature: null,
           },
           data: {
-            status: "CONFIRMED",
+            status: 'CONFIRMED',
             txSignature,
             tokenAmount: expectedTokenAmount,
           },
@@ -244,7 +237,7 @@ export async function POST(request: NextRequest) {
             select: { status: true, txSignature: true },
           });
           if (
-            existingIntent?.status === "CONFIRMED" &&
+            existingIntent?.status === 'CONFIRMED' &&
             existingIntent.txSignature === txSignature
           ) {
             idempotent = true;
@@ -256,10 +249,10 @@ export async function POST(request: NextRequest) {
             tokensAdded = 0;
             return;
           }
-          throw new Error("Purchase intent is no longer pending");
+          throw new Error('Purchase intent is no longer pending');
         }
 
-        const isSubscription = memo.includes(":subscribe:");
+        const isSubscription = memo.includes(':subscribe:');
 
         if (isSubscription) {
           // Activate 30-day subscription
@@ -267,9 +260,9 @@ export async function POST(request: NextRequest) {
           const user = await tx.user.update({
             where: { id: auth.userId },
             data: {
-              subscriptionStatus: "active",
+              subscriptionStatus: 'active',
               subscriptionExpiresAt: expiresAt,
-              tier: "PRO",
+              tier: 'PRO',
             },
             select: { tokenBalance: true, subscriptionStatus: true, subscriptionExpiresAt: true },
           });
@@ -286,18 +279,15 @@ export async function POST(request: NextRequest) {
         }
       });
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2002"
-      ) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         return NextResponse.json(
-          { error: "Transaction already used by another purchase" },
+          { error: 'Transaction already used by another purchase' },
           { status: 409 }
         );
       }
-      if (error instanceof Error && error.message === "Purchase intent is no longer pending") {
+      if (error instanceof Error && error.message === 'Purchase intent is no longer pending') {
         return NextResponse.json(
-          { error: "Purchase intent already processed. Refresh and try again." },
+          { error: 'Purchase intent already processed. Refresh and try again.' },
           { status: 409 }
         );
       }
@@ -314,7 +304,7 @@ export async function POST(request: NextRequest) {
       tokensAdded,
       newBalance,
       idempotent,
-      subscriptionStatus: user?.subscriptionStatus || "none",
+      subscriptionStatus: user?.subscriptionStatus || 'none',
       subscriptionExpiresAt: user?.subscriptionExpiresAt?.toISOString() || null,
     });
   } catch (error) {

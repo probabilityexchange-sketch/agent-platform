@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
-import { prisma } from "@/lib/db/prisma";
-import { getContainerLogs } from "@/lib/docker/lifecycle";
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth, handleAuthError } from '@/lib/auth/middleware';
+import { prisma } from '@/lib/db/prisma';
+import { getContainerLogs } from '@/lib/docker/lifecycle';
 
 export async function GET(
   request: NextRequest,
@@ -16,14 +16,14 @@ export async function GET(
     });
 
     if (!container || container.userId !== auth.userId) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
     if (!container.dockerId) {
-      return NextResponse.json({ error: "Container not provisioned" }, { status: 400 });
+      return NextResponse.json({ error: 'Container not provisioned' }, { status: 400 });
     }
 
-    const tail = Number(request.nextUrl.searchParams.get("tail")) || 100;
+    const tail = Number(request.nextUrl.searchParams.get('tail')) || 100;
     const logs = await getContainerLogs(container.dockerId, Math.min(tail, 500));
 
     return NextResponse.json({ logs });

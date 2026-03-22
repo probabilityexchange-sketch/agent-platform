@@ -160,11 +160,11 @@ Machine-readable schedule fields relevant to UX:
 
 ### Workflow states
 
-| Entity | State | How it is set | Meaning in backend |
-| --- | --- | --- | --- |
-| Workflow | `draft` | `determineRunnableStatus()` when financial, approval-required, or open-question conditions exist | Saved but not runnable |
-| Workflow | `ready` | `determineRunnableStatus()` when no blocking draft conditions remain | Runnable from backend perspective |
-| Workflow | `archived` | Schema supports it; current save/list flows do not expose an archive API here | Non-runnable archived record |
+| Entity   | State      | How it is set                                                                                    | Meaning in backend                |
+| -------- | ---------- | ------------------------------------------------------------------------------------------------ | --------------------------------- |
+| Workflow | `draft`    | `determineRunnableStatus()` when financial, approval-required, or open-question conditions exist | Saved but not runnable            |
+| Workflow | `ready`    | `determineRunnableStatus()` when no blocking draft conditions remain                             | Runnable from backend perspective |
+| Workflow | `archived` | Schema supports it; current save/list flows do not expose an archive API here                    | Non-runnable archived record      |
 
 Important implementation detail:
 
@@ -173,23 +173,23 @@ Important implementation detail:
 
 ### Workflow run states
 
-| Entity | State | How it is set | Meaning in backend |
-| --- | --- | --- | --- |
-| WorkflowRun | `pending` | `createWorkflowRun()` when policy and run checks allow creation | Run record created and eligible for later execution |
-| WorkflowRun | `blocked` | `createWorkflowRun()` when policy says `approve`, `simulate`, or `deny`, or when run preconditions fail | Run cannot proceed |
-| WorkflowRun | `running` | `updateWorkflowRunStatus()` | Execution started |
-| WorkflowRun | `failed` | `updateWorkflowRunStatus()` | Execution failed |
-| WorkflowRun | `completed` | `updateWorkflowRunStatus()` | Execution completed successfully |
-| WorkflowRun | `cancelled` | `updateWorkflowRunStatus()` | Execution cancelled |
-| WorkflowRun | `ready` | Schema-only in current observed flow | Exists in schema, not currently emitted by run creation |
+| Entity      | State       | How it is set                                                                                           | Meaning in backend                                      |
+| ----------- | ----------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| WorkflowRun | `pending`   | `createWorkflowRun()` when policy and run checks allow creation                                         | Run record created and eligible for later execution     |
+| WorkflowRun | `blocked`   | `createWorkflowRun()` when policy says `approve`, `simulate`, or `deny`, or when run preconditions fail | Run cannot proceed                                      |
+| WorkflowRun | `running`   | `updateWorkflowRunStatus()`                                                                             | Execution started                                       |
+| WorkflowRun | `failed`    | `updateWorkflowRunStatus()`                                                                             | Execution failed                                        |
+| WorkflowRun | `completed` | `updateWorkflowRunStatus()`                                                                             | Execution completed successfully                        |
+| WorkflowRun | `cancelled` | `updateWorkflowRunStatus()`                                                                             | Execution cancelled                                     |
+| WorkflowRun | `ready`     | Schema-only in current observed flow                                                                    | Exists in schema, not currently emitted by run creation |
 
 ### Approval request states
 
-| Entity | State | How it is set | Meaning in backend |
-| --- | --- | --- | --- |
-| ApprovalRequest | `pending` | Created by policy/service when approval is needed | Waiting on user decision |
+| Entity          | State      | How it is set                                                      | Meaning in backend                                                  |
+| --------------- | ---------- | ------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| ApprovalRequest | `pending`  | Created by policy/service when approval is needed                  | Waiting on user decision                                            |
 | ApprovalRequest | `approved` | `src/app/api/chat/approve/route.ts` via `resolveApprovalRequest()` | Approved record only; follow-up execution semantics remain separate |
-| ApprovalRequest | `rejected` | `src/app/api/chat/approve/route.ts` via `resolveApprovalRequest()` | Explicit rejection |
+| ApprovalRequest | `rejected` | `src/app/api/chat/approve/route.ts` via `resolveApprovalRequest()` | Explicit rejection                                                  |
 
 Important implementation detail:
 
@@ -199,30 +199,30 @@ Important implementation detail:
 
 ### Policy decision states
 
-| Entity | State | Meaning in backend |
-| --- | --- | --- |
-| PolicyDecision | `allow` | Action may proceed automatically |
-| PolicyDecision | `approve` | Action requires explicit approval before execution |
-| PolicyDecision | `deny` | Action is blocked |
+| Entity         | State      | Meaning in backend                                                         |
+| -------------- | ---------- | -------------------------------------------------------------------------- |
+| PolicyDecision | `allow`    | Action may proceed automatically                                           |
+| PolicyDecision | `approve`  | Action requires explicit approval before execution                         |
+| PolicyDecision | `deny`     | Action is blocked                                                          |
 | PolicyDecision | `simulate` | Action is intentionally not live-executable; show as dry-run/simulate-only |
 
 ### Crypto guardrail states
 
-| Dimension | State | Meaning in backend |
-| --- | --- | --- |
-| Crypto decision | `allow` | Non-crypto or read-only crypto action may proceed |
-| Crypto decision | `approve` | Crypto action still requires explicit approval; auto-execution is blocked |
-| Crypto decision | `deny` | Crypto action is blocked |
-| Crypto decision | `simulate` | Crypto action remains simulate-only |
-| Cap status | `not_applicable` | No cap evaluation needed |
-| Cap status | `within_cap` | Per-transaction cap check passed |
-| Cap status | `over_cap` | Hard cap exceeded |
-| Cap status | `missing_amount` | Amount too unclear to enforce safely |
-| Cap status | `missing_config` | No crypto config available |
-| Allowlist status | `not_applicable` | No allowlist check needed |
-| Allowlist status | `allowlisted` | Destination passed allowlist check |
-| Allowlist status | `not_allowlisted` | Destination not on allowlist |
-| Allowlist status | `missing_destination` | Destination too unclear to evaluate safely |
+| Dimension        | State                 | Meaning in backend                                                        |
+| ---------------- | --------------------- | ------------------------------------------------------------------------- |
+| Crypto decision  | `allow`               | Non-crypto or read-only crypto action may proceed                         |
+| Crypto decision  | `approve`             | Crypto action still requires explicit approval; auto-execution is blocked |
+| Crypto decision  | `deny`                | Crypto action is blocked                                                  |
+| Crypto decision  | `simulate`            | Crypto action remains simulate-only                                       |
+| Cap status       | `not_applicable`      | No cap evaluation needed                                                  |
+| Cap status       | `within_cap`          | Per-transaction cap check passed                                          |
+| Cap status       | `over_cap`            | Hard cap exceeded                                                         |
+| Cap status       | `missing_amount`      | Amount too unclear to enforce safely                                      |
+| Cap status       | `missing_config`      | No crypto config available                                                |
+| Allowlist status | `not_applicable`      | No allowlist check needed                                                 |
+| Allowlist status | `allowlisted`         | Destination passed allowlist check                                        |
+| Allowlist status | `not_allowlisted`     | Destination not on allowlist                                              |
+| Allowlist status | `missing_destination` | Destination too unclear to evaluate safely                                |
 
 Important implementation detail:
 
@@ -231,21 +231,21 @@ Important implementation detail:
 
 ### Schedule states
 
-| Entity | State | How it is set | Meaning in backend |
-| --- | --- | --- | --- |
-| WorkflowSchedule | `active` | `getScheduleActivationOutcome()` when workflow is ready, target is GitHub Actions, and policy decision is `allow` | Schedule is considered active in app state |
-| WorkflowSchedule | `blocked` | `getScheduleActivationOutcome()` or workflow-change invalidation | Schedule may not dispatch recurring runs |
-| WorkflowSchedule | `paused` | `pauseWorkflowSchedule()` | User paused schedule |
-| WorkflowSchedule | `draft` | Schema supports it; current upsert path typically creates `active` or `blocked` | Schedule exists but not yet activated |
+| Entity           | State     | How it is set                                                                                                     | Meaning in backend                         |
+| ---------------- | --------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| WorkflowSchedule | `active`  | `getScheduleActivationOutcome()` when workflow is ready, target is GitHub Actions, and policy decision is `allow` | Schedule is considered active in app state |
+| WorkflowSchedule | `blocked` | `getScheduleActivationOutcome()` or workflow-change invalidation                                                  | Schedule may not dispatch recurring runs   |
+| WorkflowSchedule | `paused`  | `pauseWorkflowSchedule()`                                                                                         | User paused schedule                       |
+| WorkflowSchedule | `draft`   | Schema supports it; current upsert path typically creates `active` or `blocked`                                   | Schedule exists but not yet activated      |
 
 ### Schedule deployment states
 
-| Entity | State | How it is set | Meaning in backend |
-| --- | --- | --- | --- |
-| WorkflowSchedule.deploymentState | `pending_manual_sync` | New active schedule or paused schedule | Backend has generated GitHub Actions bundle, but repo sync is manual and not verified |
-| WorkflowSchedule.deploymentState | `synced` | Schema supports it; current service code shown here does not set it | Intended synced state, but not currently proven by this code path |
-| WorkflowSchedule.deploymentState | `needs_resync` | Workflow changes after schedule exists | User must re-sync GitHub Actions workflow file and secrets |
-| WorkflowSchedule.deploymentState | `blocked` | Activation is blocked | Schedule cannot be activated safely |
+| Entity                           | State                 | How it is set                                                       | Meaning in backend                                                                    |
+| -------------------------------- | --------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| WorkflowSchedule.deploymentState | `pending_manual_sync` | New active schedule or paused schedule                              | Backend has generated GitHub Actions bundle, but repo sync is manual and not verified |
+| WorkflowSchedule.deploymentState | `synced`              | Schema supports it; current service code shown here does not set it | Intended synced state, but not currently proven by this code path                     |
+| WorkflowSchedule.deploymentState | `needs_resync`        | Workflow changes after schedule exists                              | User must re-sync GitHub Actions workflow file and secrets                            |
+| WorkflowSchedule.deploymentState | `blocked`             | Activation is blocked                                               | Schedule cannot be activated safely                                                   |
 
 ## 3. User-Facing Meaning Per State
 
@@ -442,32 +442,39 @@ Critical UX rule:
 WP9 can proceed, but it should treat these as required contract rules:
 
 1. Distinguish save state from runnability
+
 - A workflow card/detail must separately show:
   - saved status
   - runnability status
   - approval/guardrail reasons
 
 2. Distinguish policy result from execution result
+
 - Approval and policy decisions should not be merged into run outcome language.
 - "Approved", "blocked", "simulate-only", and "completed" must remain separate concepts.
 
 3. Normalize approval entity presentation
+
 - WP9 should present a single approval UX model even though backend currently has both `ApprovalRequest` and legacy `ToolApproval`.
 
 4. Treat crypto `approve` as still blocked from auto-execution
+
 - For crypto UX, `approve` means manual approval required, not safe auto-run.
 - `within_cap` and `allowlisted` should be shown as subconditions, not final permission.
 
 5. Treat schedule deployment and schedule activation as separate concepts
+
 - WP9 must separately surface:
   - schedule enabled/disabled state
   - GitHub Actions sync state
   - last trigger/result visibility
 
 6. Use exact backend reasons where possible
+
 - `blockedReason`, `deploymentReason`, policy `reason`, and crypto `reason` should be primary explanatory copy inputs.
 
 7. Avoid exposing schema-only states as active product claims
+
 - Avoid promising `WorkflowRun.ready` or `WorkflowSchedule.synced` behavior unless runtime paths are verified.
 
 ## 7. Recommended UI Priorities

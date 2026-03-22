@@ -1,20 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { requireAuth, handleAuthError } from '@/lib/auth/middleware';
 import {
   getWorkflowScheduleByWorkflowId,
   pauseWorkflowSchedule,
   upsertWorkflowSchedule,
-} from "@/lib/workflows/service";
+} from '@/lib/workflows/service';
 
 const upsertScheduleSchema = z.object({
   cronExpression: z.string().min(1),
-  timezone: z.string().min(1).default("UTC"),
+  timezone: z.string().min(1).default('UTC'),
 });
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ workflowId: string }> },
+  { params }: { params: Promise<{ workflowId: string }> }
 ) {
   try {
     const auth = await requireAuth();
@@ -28,7 +28,7 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ workflowId: string }> },
+  { params }: { params: Promise<{ workflowId: string }> }
 ) {
   try {
     const auth = await requireAuth();
@@ -49,11 +49,11 @@ export async function PUT(
 
     return NextResponse.json(result);
   } catch (error) {
-    if (error instanceof Error && error.message === "WORKFLOW_NOT_FOUND") {
-      return NextResponse.json({ error: "Workflow not found" }, { status: 404 });
+    if (error instanceof Error && error.message === 'WORKFLOW_NOT_FOUND') {
+      return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
     }
-    if (error instanceof Error && error.message === "INVALID_CRON_EXPRESSION") {
-      return NextResponse.json({ error: "Invalid cron expression" }, { status: 400 });
+    if (error instanceof Error && error.message === 'INVALID_CRON_EXPRESSION') {
+      return NextResponse.json({ error: 'Invalid cron expression' }, { status: 400 });
     }
     return handleAuthError(error);
   }
@@ -61,7 +61,7 @@ export async function PUT(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: Promise<{ workflowId: string }> },
+  { params }: { params: Promise<{ workflowId: string }> }
 ) {
   try {
     const auth = await requireAuth();
@@ -73,8 +73,8 @@ export async function DELETE(
 
     return NextResponse.json({ schedule });
   } catch (error) {
-    if (error instanceof Error && error.message === "WORKFLOW_SCHEDULE_NOT_FOUND") {
-      return NextResponse.json({ error: "Workflow schedule not found" }, { status: 404 });
+    if (error instanceof Error && error.message === 'WORKFLOW_SCHEDULE_NOT_FOUND') {
+      return NextResponse.json({ error: 'Workflow schedule not found' }, { status: 404 });
     }
     return handleAuthError(error);
   }

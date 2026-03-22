@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
-import { prisma } from "@/lib/db/prisma";
-import { extendContainer } from "@/lib/docker/lifecycle";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { requireAuth, handleAuthError } from '@/lib/auth/middleware';
+import { prisma } from '@/lib/db/prisma';
+import { extendContainer } from '@/lib/docker/lifecycle';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/utils/rate-limit';
 
 const schema = z.object({
   hours: z.number().int().min(1).max(72),
@@ -16,9 +16,12 @@ export async function POST(
   try {
     const auth = await requireAuth();
 
-    const { allowed } = await checkRateLimit(`containers-extend:${auth.userId}`, RATE_LIMITS.provision);
+    const { allowed } = await checkRateLimit(
+      `containers-extend:${auth.userId}`,
+      RATE_LIMITS.provision
+    );
     if (!allowed) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     const { containerId } = await params;
@@ -28,16 +31,13 @@ export async function POST(
     });
 
     if (!container || container.userId !== auth.userId) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
     const body = await request.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0].message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
 
     const result = await extendContainer(containerId, parsed.data.hours);
@@ -47,7 +47,7 @@ export async function POST(
       tokensCharged: result.tokensCharged,
     });
   } catch (error) {
-    if (error instanceof Error && error.message === "Insufficient tokens") {
+    if (error instanceof Error && error.message === 'Insufficient tokens') {
       return NextResponse.json({ error: error.message }, { status: 402 });
     }
     return handleAuthError(error);

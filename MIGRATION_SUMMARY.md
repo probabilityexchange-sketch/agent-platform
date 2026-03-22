@@ -1,6 +1,7 @@
 # Agent Platform Migration Summary
 
 ## Overview
+
 Successfully migrated from **Solana Wallet + Docker Container** architecture to **Privy x402 + Integrated Chat** architecture.
 
 ---
@@ -8,6 +9,7 @@ Successfully migrated from **Solana Wallet + Docker Container** architecture to 
 ## 🔄 Major Changes
 
 ### Authentication
+
 - **Before**: Solana wallet (Phantom) with JWT sessions
 - **After**: Privy authentication supporting social logins, wallets, and smart wallets
 - **Files Changed**:
@@ -18,6 +20,7 @@ Successfully migrated from **Solana Wallet + Docker Container** architecture to 
   - Updated: `src/components/layout/Header.tsx` (Privy auth state)
 
 ### Agent Architecture
+
 - **Before**: Docker containers provisioned per user with Traefik routing
 - **After**: Integrated chat interface with Composio tool integrations and OpenRouter LLMs
 - **Files Changed**:
@@ -27,6 +30,7 @@ Successfully migrated from **Solana Wallet + Docker Container** architecture to 
   - Updated: `prisma/seed.ts` (new agent configurations)
 
 ### UI Components
+
 - **Before**: Container management UI with provisioning forms
 - **After**: Chat-centric UI with agent selection and conversation history
 - **Files Created**:
@@ -37,6 +41,7 @@ Successfully migrated from **Solana Wallet + Docker Container** architecture to 
   - `src/app/(dashboard)/chat/[sessionId]/page.tsx` (Chat Session)
 
 ### API Endpoints
+
 - **Created**:
   - `POST /api/chat` - Main chat endpoint with OpenRouter integration
   - `GET /api/chat/sessions` - List user's chat sessions
@@ -45,6 +50,7 @@ Successfully migrated from **Solana Wallet + Docker Container** architecture to 
   - Updated: `GET /api/agents` - Added defaultModel field
 
 ### Design System
+
 - **Added**: Glassmorphism utilities in `globals.css`
 - **Updated**: Landing page with new messaging and reduced dead space
 - **Updated**: Dashboard to show recent chats instead of containers
@@ -55,11 +61,13 @@ Successfully migrated from **Solana Wallet + Docker Container** architecture to 
 ## 📦 Dependencies
 
 ### Added
+
 - `@privy-io/react-auth` - Authentication
 - `@composio/core` - Tool integrations
 - `openai` - OpenRouter API client
 
 ### Removed
+
 - `@solana/wallet-adapter-*` - All Solana wallet adapters
 - `@solana/spl-token` - SPL token handling
 - `@solana/web3.js` - Solana blockchain interaction
@@ -69,6 +77,7 @@ Successfully migrated from **Solana Wallet + Docker Container** architecture to 
 ## 🗄️ Database Schema
 
 ### New Models
+
 ```prisma
 model ChatSession {
   id        String   @id @default(cuid())
@@ -90,6 +99,7 @@ model ChatMessage {
 ```
 
 ### Updated Models
+
 - `AgentConfig`: Added `systemPrompt`, `tools`, `defaultModel` fields
 - `User`: Added `chatSessions` relation
 
@@ -98,11 +108,13 @@ model ChatMessage {
 ## 🎯 Model Tier Strategy
 
 ### Free Tier (0 Credits)
+
 - `meta-llama/llama-3.3-70b-instruct:free`
 - `google/gemini-2.0-flash-exp:free`
 - `deepseek/deepseek-r1:free`
 
 ### Paid Tier (x402 Protocol)
+
 - `anthropic/claude-sonnet-4`
 - `openai/gpt-4o`
 - Other premium models
@@ -118,12 +130,14 @@ model ChatMessage {
    - Copy App Secret to `.env` as `PRIVY_APP_SECRET`
 
 2. **Run Database Migrations**:
+
    ```bash
    npm run db:push
    npm run db:seed
    ```
 
 3. **Start Development Server**:
+
    ```bash
    npm run dev
    ```
@@ -141,6 +155,7 @@ model ChatMessage {
 ## 🔧 Environment Variables
 
 ### Required
+
 ```env
 NEXT_PUBLIC_PRIVY_APP_ID="your-privy-app-id"
 PRIVY_APP_SECRET="your-privy-secret"
@@ -150,6 +165,7 @@ DATABASE_URL="file:./dev.db"
 ```
 
 ### Optional
+
 ```env
 OPENROUTER_DEFAULT_MODEL="meta-llama/llama-3.3-70b-instruct:free"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"

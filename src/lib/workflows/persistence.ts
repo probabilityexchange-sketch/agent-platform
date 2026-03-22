@@ -15,14 +15,14 @@ import {
   type WorkflowRunStatus,
   type WorkflowSafetyMetadata,
   type WorkflowStoredStatus,
-} from "@/lib/workflows/schema";
+} from '@/lib/workflows/schema';
 import {
   type CryptoDestinationAllowlistEntry,
   type CryptoGuardrailConfig,
-} from "@/lib/crypto/schema";
-import { evaluatePolicy } from "@/lib/policy/engine";
+} from '@/lib/crypto/schema';
+import { evaluatePolicy } from '@/lib/policy/engine';
 
-export type WorkflowTriggerSource = "manual" | "api" | "schedule" | "event" | "system";
+export type WorkflowTriggerSource = 'manual' | 'api' | 'schedule' | 'event' | 'system';
 
 export interface WorkflowPersistenceRecord {
   id: string;
@@ -141,31 +141,32 @@ const CRYPTO_READ_ONLY_PATTERNS: RegExp[] = [
 ];
 
 function isCryptoTool(toolName: string): boolean {
-  return CRYPTO_TOOL_PATTERNS.some((pattern) => pattern.test(toolName));
+  return CRYPTO_TOOL_PATTERNS.some(pattern => pattern.test(toolName));
 }
 
 function isCryptoWriteTool(toolName: string): boolean {
   if (!isCryptoTool(toolName)) return false;
-  const isReadOnly = CRYPTO_READ_ONLY_PATTERNS.some((pattern) => pattern.test(toolName));
+  const isReadOnly = CRYPTO_READ_ONLY_PATTERNS.some(pattern => pattern.test(toolName));
   return !isReadOnly;
 }
 
 export function deriveWorkflowSafety(plan: WorkflowPlan): WorkflowSafetyMetadata {
-  const hasFinancialStep = plan.steps.some((step) => step.kind === "financial");
-  const hasCryptoWriteTool = plan.steps.some((step) =>
-    step.toolHints.some((tool) => isCryptoWriteTool(tool)),
+  const hasFinancialStep = plan.steps.some(step => step.kind === 'financial');
+  const hasCryptoWriteTool = plan.steps.some(step =>
+    step.toolHints.some(tool => isCryptoWriteTool(tool))
   );
 
   const containsFinancialSteps = hasFinancialStep || hasCryptoWriteTool;
 
-  const scopes = plan.steps.flatMap((step) => {
-    const isFinancial = step.kind === "financial" || step.toolHints.some((tool) => isCryptoWriteTool(tool));
-    const mode: "read" | "write" = isFinancial || step.requiresApproval ? "write" : "read";
+  const scopes = plan.steps.flatMap(step => {
+    const isFinancial =
+      step.kind === 'financial' || step.toolHints.some(tool => isCryptoWriteTool(tool));
+    const mode: 'read' | 'write' = isFinancial || step.requiresApproval ? 'write' : 'read';
 
     if (step.toolHints.length === 0) {
       return [
         {
-          tool: "unassigned",
+          tool: 'unassigned',
           mode,
           resources: [],
           reason: `Workflow step ${step.id} requires explicit scope assignment before execution.`,
@@ -173,7 +174,7 @@ export function deriveWorkflowSafety(plan: WorkflowPlan): WorkflowSafetyMetadata
       ];
     }
 
-    return step.toolHints.map((tool) => ({
+    return step.toolHints.map(tool => ({
       tool,
       mode,
       resources: [],
@@ -182,10 +183,10 @@ export function deriveWorkflowSafety(plan: WorkflowPlan): WorkflowSafetyMetadata
   });
 
   const riskLevel = containsFinancialSteps
-    ? "high"
-    : plan.guardrails.requiresExplicitApproval || plan.steps.some((step) => step.requiresApproval)
-      ? "medium"
-      : "low";
+    ? 'high'
+    : plan.guardrails.requiresExplicitApproval || plan.steps.some(step => step.requiresApproval)
+      ? 'medium'
+      : 'low';
 
   return {
     containsFinancialSteps,
@@ -194,25 +195,29 @@ export function deriveWorkflowSafety(plan: WorkflowPlan): WorkflowSafetyMetadata
     requiresAuditLog: plan.guardrails.requiresAuditLog,
     simulateOnlyByDefault: plan.guardrails.simulateOnlyByDefault,
     riskLevel,
-    approvalState: containsFinancialSteps || plan.readiness === "needs_policy_confirmation"
-      ? "required"
-      : "not_required",
+    approvalState:
+      containsFinancialSteps || plan.readiness === 'needs_policy_confirmation'
+        ? 'required'
+        : 'not_required',
     explicitScopesRequired: plan.guardrails.requiresExplicitScopes,
     scopes,
     schedulePreference: plan.guardrails.schedulingPreference,
   };
 }
 
-export function determineRunnableStatus(plan: WorkflowPlan, safety: WorkflowSafetyMetadata): WorkflowStoredStatus {
-  if (safety.containsFinancialSteps || safety.approvalState === "required") {
-    return "draft";
+export function determineRunnableStatus(
+  plan: WorkflowPlan,
+  safety: WorkflowSafetyMetadata
+): WorkflowStoredStatus {
+  if (safety.containsFinancialSteps || safety.approvalState === 'required') {
+    return 'draft';
   }
 
   if (plan.openQuestions.length > 0) {
-    return "draft";
+    return 'draft';
   }
 
-  return "ready";
+  return 'ready';
 }
 
 export function serializeWorkflowPlan(plan: WorkflowPlan): string {
@@ -241,7 +246,7 @@ export function deserializeWorkflowError(value: string | null): WorkflowRunError
 }
 
 export function serializeWorkflowRetryHistory(retries: WorkflowRunRetry[]): string {
-  return JSON.stringify(retries.map((entry) => workflowRunRetrySchema.parse(entry)));
+  return JSON.stringify(retries.map(entry => workflowRunRetrySchema.parse(entry)));
 }
 
 export function deserializeWorkflowRetryHistory(value: string | null): WorkflowRunRetry[] {
@@ -249,38 +254,41 @@ export function deserializeWorkflowRetryHistory(value: string | null): WorkflowR
   return workflowRunRetrySchema.array().parse(JSON.parse(value));
 }
 
-export function canStartWorkflowRun(input: { workflowStatus: WorkflowStoredStatus; safety: WorkflowSafetyMetadata }): {
+export function canStartWorkflowRun(input: {
+  workflowStatus: WorkflowStoredStatus;
+  safety: WorkflowSafetyMetadata;
+}): {
   allowed: boolean;
   status: WorkflowRunStatus;
   blockedReason: string | null;
 } {
-  if (input.workflowStatus === "archived") {
+  if (input.workflowStatus === 'archived') {
     return {
       allowed: false,
-      status: "blocked",
-      blockedReason: "Archived workflows cannot be started.",
+      status: 'blocked',
+      blockedReason: 'Archived workflows cannot be started.',
     };
   }
 
-  if (input.safety.approvalState === "required") {
+  if (input.safety.approvalState === 'required') {
     return {
       allowed: false,
-      status: "blocked",
-      blockedReason: "Workflow requires explicit approval before a run can proceed.",
+      status: 'blocked',
+      blockedReason: 'Workflow requires explicit approval before a run can proceed.',
     };
   }
 
-  if (input.workflowStatus !== "ready") {
+  if (input.workflowStatus !== 'ready') {
     return {
       allowed: false,
-      status: "blocked",
-      blockedReason: "Workflow draft is not runnable yet.",
+      status: 'blocked',
+      blockedReason: 'Workflow draft is not runnable yet.',
     };
   }
 
   return {
     allowed: true,
-    status: "pending",
+    status: 'pending',
     blockedReason: null,
   };
 }
@@ -298,7 +306,7 @@ export function evaluateWorkflowRunPolicy(input: {
   };
 }) {
   return evaluatePolicy({
-    subjectType: "workflow_run",
+    subjectType: 'workflow_run',
     actor: { userId: input.userId },
     triggerSource: input.triggerSource,
     workflowId: input.workflowId,
@@ -315,10 +323,18 @@ export function normalizeWorkflowRecord(record: WorkflowPersistenceRecord) {
     userId: record.userId,
     title: record.title,
     status: workflowStoredStatusSchema.parse(record.status),
-    plan: typeof record.plan === "string" ? deserializeWorkflowPlan(record.plan) : workflowPlanSchema.parse(record.plan),
-    safety: typeof record.safety === "string" ? deserializeWorkflowSafety(record.safety) : workflowSafetyMetadataSchema.parse(record.safety),
+    plan:
+      typeof record.plan === 'string'
+        ? deserializeWorkflowPlan(record.plan)
+        : workflowPlanSchema.parse(record.plan),
+    safety:
+      typeof record.safety === 'string'
+        ? deserializeWorkflowSafety(record.safety)
+        : workflowSafetyMetadataSchema.parse(record.safety),
     schedule: record.schedule ? normalizeWorkflowScheduleRecord(record.schedule) : null,
-    latestRunStatus: record.latestRunStatus ? workflowRunStatusSchema.parse(record.latestRunStatus) : null,
+    latestRunStatus: record.latestRunStatus
+      ? workflowRunStatusSchema.parse(record.latestRunStatus)
+      : null,
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
   });
@@ -350,12 +366,14 @@ export function normalizeWorkflowRunRecord(record: WorkflowRunPersistenceRecord)
     blockedReason: record.blockedReason,
     startedAt: record.startedAt?.toISOString() ?? null,
     finishedAt: record.finishedAt?.toISOString() ?? null,
-    lastError: typeof record.lastError === "string"
-      ? deserializeWorkflowError(record.lastError)
-      : workflowRunErrorSchema.nullable().parse(record.lastError ?? null),
-    retryHistory: typeof record.retryHistory === "string"
-      ? deserializeWorkflowRetryHistory(record.retryHistory)
-      : workflowRunRetrySchema.array().parse(record.retryHistory ?? []),
+    lastError:
+      typeof record.lastError === 'string'
+        ? deserializeWorkflowError(record.lastError)
+        : workflowRunErrorSchema.nullable().parse(record.lastError ?? null),
+    retryHistory:
+      typeof record.retryHistory === 'string'
+        ? deserializeWorkflowRetryHistory(record.retryHistory)
+        : workflowRunRetrySchema.array().parse(record.retryHistory ?? []),
     estimatedTokens: record.estimatedTokens,
     actualTokens: record.actualTokens,
     costAttributionMethod: record.costAttributionMethod as any,

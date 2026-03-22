@@ -16,6 +16,7 @@ This skill enables the Randi agent to perform self-analysis and self-improvement
 ## When to Use
 
 Use this skill when you want the agent to:
+
 - Improve its own code quality
 - Fix formatting and linting issues
 - Increase test coverage
@@ -26,6 +27,7 @@ Use this skill when you want the agent to:
 ## How to Invoke
 
 Trigger this skill by asking the agent to perform self-maintenance, for example:
+
 - "Run self-maintenance on the codebase"
 - "Analyze and fix linting errors in src/lib"
 - "Generate a plan to improve test coverage for the credits module"
@@ -34,18 +36,21 @@ Trigger this skill by asking the agent to perform self-maintenance, for example:
 ## Skill Capabilities
 
 ### Code Analysis
+
 - Runs ESLint, Prettier, and Vitest coverage on specified paths
 - Identifies violations of coding standards
 - Detects missing or outdated documentation
 - Finds test coverage gaps
 
 ### Improvement Generation
+
 - Creates specific, actionable improvement tasks
 - Formats changes according to project conventions
 - Generates pull request descriptions with rationale
 - Estimates effort and risk for each task
 
 ### Safe Execution
+
 - Executes changes in isolated Docker containers (when available)
 - Respects the approval system:
   - Auto-execute: formatting, lint fixes
@@ -56,16 +61,19 @@ Trigger this skill by asking the agent to perform self-maintenance, for example:
 ## Examples
 
 ### Example 1: Fix Linting Issues
+
 ```
 Please run self-maintenance to fix all linting errors in the src/lib directory.
 ```
 
 ### Example 2: Improve Test Coverage
+
 ```
 Analyze test coverage for the credits module and generate a plan to reach 80% coverage.
 ```
 
 ### Example 3: Documentation Audit
+
 ```
 Check the docs directory for inconsistencies with the current implementation and suggest updates.
 ```

@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
+import { describe, it, expect } from 'vitest';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/utils/rate-limit';
 
-describe("checkRateLimit", () => {
-  it("allows requests within limit", async () => {
+describe('checkRateLimit', () => {
+  it('allows requests within limit', async () => {
     const result = await checkRateLimit(`test:${Date.now()}:allow`, {
       maxRequests: 10,
       windowMs: 60 * 1000,
@@ -12,7 +12,7 @@ describe("checkRateLimit", () => {
     expect(result.remaining).toBe(9);
   });
 
-  it("blocks requests over limit", async () => {
+  it('blocks requests over limit', async () => {
     const key = `test:${Date.now()}:block`;
     const config = { maxRequests: 2, windowMs: 60 * 1000 };
 
@@ -27,7 +27,7 @@ describe("checkRateLimit", () => {
     expect(third.remaining).toBe(0);
   });
 
-  it("uses independent limits per key", async () => {
+  it('uses independent limits per key', async () => {
     const config = { maxRequests: 1, windowMs: 60 * 1000 };
 
     const resultA = await checkRateLimit(`test:key-a:${Date.now()}`, config);
@@ -38,8 +38,8 @@ describe("checkRateLimit", () => {
   });
 });
 
-describe("RATE_LIMITS constants", () => {
-  it("defines all expected rate limit tiers", () => {
+describe('RATE_LIMITS constants', () => {
+  it('defines all expected rate limit tiers', () => {
     expect(RATE_LIMITS.general.maxRequests).toBeGreaterThan(0);
     expect(RATE_LIMITS.purchase.maxRequests).toBeGreaterThan(0);
     expect(RATE_LIMITS.chat.maxRequests).toBeGreaterThan(0);

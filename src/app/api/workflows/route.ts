@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
-import { workflowPlanSchema } from "@/lib/workflows/schema";
-import { listWorkflows, saveWorkflowDraft } from "@/lib/workflows/service";
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { requireAuth, handleAuthError } from '@/lib/auth/middleware';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/utils/rate-limit';
+import { workflowPlanSchema } from '@/lib/workflows/schema';
+import { listWorkflows, saveWorkflowDraft } from '@/lib/workflows/service';
 
 const createWorkflowSchema = z.object({
   plan: workflowPlanSchema,
@@ -16,7 +16,7 @@ export async function GET() {
 
     const { allowed } = await checkRateLimit(`workflows:${auth.userId}`, RATE_LIMITS.general);
     if (!allowed) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     const workflows = await listWorkflows(auth.userId);
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
     const { allowed } = await checkRateLimit(`workflows:${auth.userId}`, RATE_LIMITS.general);
     if (!allowed) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     const body = await req.json();

@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useCredits } from "@/hooks/useCredits";
-import { PurchaseForm } from "@/components/credits/PurchaseForm";
-import { useTokenPrice } from "@/hooks/useTokenPrice";
+import { useCredits } from '@/hooks/useCredits';
+import { PurchaseForm } from '@/components/credits/PurchaseForm';
+import { useTokenPrice } from '@/hooks/useTokenPrice';
 
-const solanaNetwork = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "mainnet-beta").toLowerCase();
+const solanaNetwork = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'mainnet-beta').toLowerCase();
 
 function getSolscanTxUrl(signature: string): string {
   const cluster =
-    solanaNetwork === "mainnet" || solanaNetwork === "mainnet-beta"
-      ? ""
+    solanaNetwork === 'mainnet' || solanaNetwork === 'mainnet-beta'
+      ? ''
       : `?cluster=${encodeURIComponent(solanaNetwork)}`;
 
   return `https://solscan.io/tx/${signature}${cluster}`;
@@ -64,10 +64,15 @@ export default function CreditsPage() {
             <span className="text-2xl">✨</span>
           </div>
           <div>
-            <p className="font-black text-success italic uppercase tracking-widest text-sm">Active Pro Subscription</p>
+            <p className="font-black text-success italic uppercase tracking-widest text-sm">
+              Active Pro Subscription
+            </p>
             <p className="text-xs text-muted-foreground font-bold mt-0.5">
-              Renewal Date: {new Date(subscription.expiresAt).toLocaleDateString("en-US", {
-                month: "long", day: "numeric", year: "numeric",
+              Renewal Date:{' '}
+              {new Date(subscription.expiresAt).toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
               })}
             </p>
           </div>
@@ -84,24 +89,35 @@ export default function CreditsPage() {
             <h2 className="font-black italic text-sm tracking-widest">TRANSACTION LOG</h2>
           </div>
           <div className="divide-y divide-border max-h-80 overflow-y-auto no-scrollbar">
-            {transactions.map((tx) => (
-              <div key={tx.id} className="px-5 py-4 flex items-center justify-between group hover:bg-white/5 transition-colors">
+            {transactions.map(tx => (
+              <div
+                key={tx.id}
+                className="px-5 py-4 flex items-center justify-between group hover:bg-white/5 transition-colors"
+              >
                 <div>
-                  <p className="font-bold text-sm group-hover:text-primary transition-colors">{tx.description || tx.type}</p>
+                  <p className="font-bold text-sm group-hover:text-primary transition-colors">
+                    {tx.description || tx.type}
+                  </p>
                   <p className="text-[10px] text-muted-foreground font-bold uppercase mt-0.5">
-                    {new Date(tx.createdAt).toLocaleDateString("en-US", {
-                      month: "short", day: "numeric", year: "numeric",
-                      hour: "2-digit", minute: "2-digit",
+                    {new Date(tx.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
                     })}
                   </p>
                 </div>
                 <div className="text-right">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-black italic uppercase ${tx.status === "CONFIRMED"
-                    ? "bg-success/20 text-success"
-                    : tx.status === "PENDING"
-                      ? "bg-warning/20 text-warning"
-                      : "bg-red-500/20 text-red-400"
-                    }`}>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-black italic uppercase ${
+                      tx.status === 'CONFIRMED'
+                        ? 'bg-success/20 text-success'
+                        : tx.status === 'PENDING'
+                          ? 'bg-warning/20 text-warning'
+                          : 'bg-red-500/20 text-red-400'
+                    }`}
+                  >
                     {tx.status}
                   </span>
                   {tx.txSignature && (

@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
-import { formatStorageSize } from "@/types/storage";
+import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
+import { formatStorageSize } from '@/types/storage';
 
 interface StorageVolume {
   id: string;
@@ -22,7 +22,7 @@ interface ApiResponse {
 
 export default function StorageManagementPage() {
   const [storageVolumes, setStorageVolumes] = useState<StorageVolume[]>([]);
-  const [totalSizeBytes, setTotalSizeBytes] = useState<string>("0");
+  const [totalSizeBytes, setTotalSizeBytes] = useState<string>('0');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Set<string>>(new Set());
@@ -31,15 +31,15 @@ export default function StorageManagementPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/storage/volumes");
+      const res = await fetch('/api/storage/volumes');
       if (!res.ok) {
-        throw new Error("Failed to fetch storage volumes");
+        throw new Error('Failed to fetch storage volumes');
       }
       const data: ApiResponse = await res.json();
       setStorageVolumes(data.storageVolumes);
       setTotalSizeBytes(data.totalSizeBytes);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unknown error occurred");
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setLoading(false);
     }
@@ -53,17 +53,17 @@ export default function StorageManagementPage() {
     setDeleting(prev => new Set(prev).add(id));
     try {
       const res = await fetch(`/api/storage/volumes/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
       if (!res.ok) {
-        throw new Error("Failed to delete storage volume");
+        throw new Error('Failed to delete storage volume');
       }
       // Remove from list
       setStorageVolumes(prev => prev.filter(vol => vol.id !== id));
       // Recalculate total (simplified - in reality we'd refetch)
-      setTotalSizeBytes("0"); // Refetch would be better
+      setTotalSizeBytes('0'); // Refetch would be better
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete");
+      setError(err instanceof Error ? err.message : 'Failed to delete');
     } finally {
       setDeleting(prev => new Set([...prev].filter(vid => vid !== id)));
     }
@@ -110,22 +110,22 @@ export default function StorageManagementPage() {
           <div>
             <p className="text-xs text-muted-foreground mb-1">Total Usage</p>
             <p className="text-2xl font-bold">
-              {totalSizeBytes !== "0" ? formatStorageSize(BigInt(totalSizeBytes)) : "0 B"}
+              {totalSizeBytes !== '0' ? formatStorageSize(BigInt(totalSizeBytes)) : '0 B'}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">Average Size</p>
             <p className="text-2xl font-bold">
-              {storageVolumes.length > 0 && totalSizeBytes !== "0"
-                ? formatStorageSize(BigInt(Math.floor(Number(totalSizeBytes) / storageVolumes.length)))
-                : "0 B"}
+              {storageVolumes.length > 0 && totalSizeBytes !== '0'
+                ? formatStorageSize(
+                    BigInt(Math.floor(Number(totalSizeBytes) / storageVolumes.length))
+                  )
+                : '0 B'}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">Last Updated</p>
-            <p className="text-sm font-medium">
-              {new Date().toLocaleTimeString()}
-            </p>
+            <p className="text-sm font-medium">{new Date().toLocaleTimeString()}</p>
           </div>
         </div>
       </div>
@@ -164,20 +164,18 @@ interface StorageVolumeCardProps {
 }
 
 function StorageVolumeCard({ volume, onDelete, deleting }: StorageVolumeCardProps) {
-  const hasSnapshot = Boolean(volume.sizeBytes && volume.sizeBytes !== "0" && volume.sizeBytes !== null);
+  const hasSnapshot = Boolean(
+    volume.sizeBytes && volume.sizeBytes !== '0' && volume.sizeBytes !== null
+  );
   const lastSync = volume.lastSyncAt ? new Date(volume.lastSyncAt) : null;
-  const syncAgo = lastSync
-    ? Math.floor((Date.now() - lastSync.getTime()) / (1000 * 60))
-    : null;
+  const syncAgo = lastSync ? Math.floor((Date.now() - lastSync.getTime()) / (1000 * 60)) : null;
 
   return (
     <div className="bg-card border border-border rounded-xl p-6">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <h3 className="font-medium">{volume.agentSlug}</h3>
-          <p className="text-sm text-muted-foreground">
-            Storage Key: {volume.storageKey}
-          </p>
+          <p className="text-sm text-muted-foreground">Storage Key: {volume.storageKey}</p>
         </div>
         {deleting ? (
           <button
@@ -201,9 +199,7 @@ function StorageVolumeCard({ volume, onDelete, deleting }: StorageVolumeCardProp
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Size</span>
-              <span className="font-mono">
-                {formatStorageSize(BigInt(volume.sizeBytes ?? 0))}
-              </span>
+              <span className="font-mono">{formatStorageSize(BigInt(volume.sizeBytes ?? 0))}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Last Sync</span>
@@ -212,13 +208,13 @@ function StorageVolumeCard({ volume, onDelete, deleting }: StorageVolumeCardProp
                   ? syncAgo < 60
                     ? `${syncAgo}m ago`
                     : `${Math.floor(syncAgo / 60)}h ago`
-                  : "Never"}
+                  : 'Never'}
               </span>
             </div>
             <div className="flex justify-between text-sm text-xs">
               <span className="text-muted-foreground">Snapshot Path</span>
               <span className="break-all text-muted-foreground">
-                {volume.snapshotPath || "N/A"}
+                {volume.snapshotPath || 'N/A'}
               </span>
             </div>
           </div>

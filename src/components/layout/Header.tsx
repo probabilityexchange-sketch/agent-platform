@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useAuth } from "@/hooks/useAuth";
-import { RandiLogo } from "@/components/branding/RandiLogo";
+import { useAuth } from '@/hooks/useAuth';
+import { RandiLogo } from '@/components/branding/RandiLogo';
 
 export function Header() {
   const { user, signIn, signOut, isAuthenticated } = useAuth();
@@ -14,7 +14,9 @@ export function Header() {
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
               <span className="text-xs text-muted-foreground hidden sm:inline">
-                {user?.walletAddress ? `${user.walletAddress.slice(0, 4)}...${user.walletAddress.slice(-4)}` : "Authenticated"}
+                {user?.walletAddress
+                  ? `${user.walletAddress.slice(0, 4)}...${user.walletAddress.slice(-4)}`
+                  : 'Authenticated'}
               </span>
               <button
                 onClick={() => signOut()}

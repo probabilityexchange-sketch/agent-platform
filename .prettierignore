@@ -9,3 +9,4 @@ coverage/
 *.png
 *.pdf
 *.ico
+src/skills/anthropic-repo/THIRD_PARTY_NOTICES.md

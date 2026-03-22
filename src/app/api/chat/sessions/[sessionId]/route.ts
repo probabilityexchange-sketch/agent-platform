@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db/prisma";
-import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db/prisma';
+import { requireAuth, handleAuthError } from '@/lib/auth/middleware';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/utils/rate-limit';
 
 export async function GET(
   _req: NextRequest,
@@ -12,14 +12,14 @@ export async function GET(
 
     const { allowed } = await checkRateLimit(`chat-session:${auth.userId}`, RATE_LIMITS.general);
     if (!allowed) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     const { sessionId } = await params;
 
     const { searchParams } = new URL(_req.url);
-    const cursor = searchParams.get("cursor");
-    const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
+    const cursor = searchParams.get('cursor');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
 
     const session = await prisma.chatSession.findUnique({
       where: { id: sessionId },
@@ -31,7 +31,7 @@ export async function GET(
     });
 
     if (!session || session.userId !== auth.userId) {
-      return NextResponse.json({ error: "Session not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
     const messages = await prisma.chatMessage.findMany({
@@ -39,7 +39,7 @@ export async function GET(
       take: limit,
       skip: cursor ? 1 : 0,
       cursor: cursor ? { id: cursor } : undefined,
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: 'asc' },
     });
 
     return NextResponse.json({

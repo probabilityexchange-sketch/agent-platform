@@ -3,13 +3,13 @@ import {
   TransactionMessage,
   VersionedTransaction,
   TransactionInstruction,
-} from "@solana/web3.js";
+} from '@solana/web3.js';
 import {
   createTransferCheckedInstruction,
   getAssociatedTokenAddress,
   TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
-import { connection } from "./connection";
+} from '@solana/spl-token';
+import { connection } from './connection';
 
 export interface SPLTransferParams {
   fromWallet: PublicKey;
@@ -41,8 +41,8 @@ export async function buildSPLTransferTransaction(
 
   const memoIx = new TransactionInstruction({
     keys: [{ pubkey: fromWallet, isSigner: true, isWritable: false }],
-    programId: new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"),
-    data: Buffer.from(memo, "utf-8"),
+    programId: new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'),
+    data: Buffer.from(memo, 'utf-8'),
   });
 
   const { blockhash } = await connection.getLatestBlockhash();

@@ -1,16 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Header } from "@/components/layout/Header";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Header } from '@/components/layout/Header';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { useAuth } from '@/hooks/useAuth';
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { loading, isAuthenticated, sessionReady } = useAuth();
   const router = useRouter();
 
@@ -18,7 +14,7 @@ export default function DashboardLayout({
     // Client-side auth guard: if the middleware let us through (e.g. during
     // the login→dashboard cookie race) but auth actually failed, redirect.
     if (!loading && !isAuthenticated) {
-      router.replace("/login");
+      router.replace('/login');
     }
   }, [loading, isAuthenticated, router]);
 

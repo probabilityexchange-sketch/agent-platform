@@ -1,7 +1,7 @@
 name: Integration issue
 description: Report toolkit connection or tool execution issues.
-title: "[Integration] "
-labels: ["integrations", "triage"]
+title: '[Integration] '
+labels: ['integrations', 'triage']
 body:
   - type: dropdown
     id: toolkit

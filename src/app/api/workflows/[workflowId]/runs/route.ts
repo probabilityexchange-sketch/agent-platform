@@ -1,23 +1,23 @@
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
-import { createWorkflowRun, listWorkflowRuns } from "@/lib/workflows/service";
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { requireAuth, handleAuthError } from '@/lib/auth/middleware';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/utils/rate-limit';
+import { createWorkflowRun, listWorkflowRuns } from '@/lib/workflows/service';
 
 const createRunSchema = z.object({
-  triggerSource: z.enum(["manual", "api", "schedule", "event", "system"]).default("manual"),
+  triggerSource: z.enum(['manual', 'api', 'schedule', 'event', 'system']).default('manual'),
 });
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ workflowId: string }> },
+  { params }: { params: Promise<{ workflowId: string }> }
 ) {
   try {
     const auth = await requireAuth();
 
     const { allowed } = await checkRateLimit(`workflow-runs:${auth.userId}`, RATE_LIMITS.general);
     if (!allowed) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     const { workflowId } = await params;
@@ -30,14 +30,14 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ workflowId: string }> },
+  { params }: { params: Promise<{ workflowId: string }> }
 ) {
   try {
     const auth = await requireAuth();
 
     const { allowed } = await checkRateLimit(`workflow-runs:${auth.userId}`, RATE_LIMITS.general);
     if (!allowed) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     const { workflowId } = await params;
@@ -56,8 +56,8 @@ export async function POST(
 
     return NextResponse.json({ run }, { status: 201 });
   } catch (error) {
-    if (error instanceof Error && error.message === "WORKFLOW_NOT_FOUND") {
-      return NextResponse.json({ error: "Workflow not found" }, { status: 404 });
+    if (error instanceof Error && error.message === 'WORKFLOW_NOT_FOUND') {
+      return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
     }
     return handleAuthError(error);
   }

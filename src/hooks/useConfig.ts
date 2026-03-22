@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 
 interface PlatformConfig {
   tokenMint: string;
@@ -19,15 +19,15 @@ export function useConfig() {
   useEffect(() => {
     if (cachedConfig) return;
 
-    fetch("/api/config")
-      .then((res) => res.json())
-      .then((data) => {
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(data => {
         cachedConfig = data;
         setConfig(data);
       })
-      .catch((err) => {
-        console.error("Failed to load platform config:", err);
-        setError(err instanceof Error ? err.message : "Failed to load config");
+      .catch(err => {
+        console.error('Failed to load platform config:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load config');
       })
       .finally(() => setLoading(false));
   }, []);

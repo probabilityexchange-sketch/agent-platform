@@ -13,16 +13,16 @@ We have identified **one critical vulnerability**, several high-risk security ga
 
 ### Key Findings
 
-| Category | Finding | Severity |
-| :--- | :--- | :--- |
-| **Tokenomics** | **Critical Burn Discrepancy** | **CRITICAL** |
-| **Security** | Hardcoded Treasury Wallet Fallback | **HIGH** |
-| **Security** | Missing Auth on Public-Facing APIs | **HIGH** |
-| **Security** | Missing Global Rate Limiting | **HIGH** |
-| **Security** | Unauthenticated Solana RPC Proxy | **MEDIUM** |
-| **Security** | Missing Input Validation (Zod) | **MEDIUM** |
-| **Performance** | Potential N+1 Query in Prisma | **LOW** |
-| **UX** | Generic Frontend Error Messages | **LOW** |
+| Category        | Finding                            | Severity     |
+| :-------------- | :--------------------------------- | :----------- |
+| **Tokenomics**  | **Critical Burn Discrepancy**      | **CRITICAL** |
+| **Security**    | Hardcoded Treasury Wallet Fallback | **HIGH**     |
+| **Security**    | Missing Auth on Public-Facing APIs | **HIGH**     |
+| **Security**    | Missing Global Rate Limiting       | **HIGH**     |
+| **Security**    | Unauthenticated Solana RPC Proxy   | **MEDIUM**   |
+| **Security**    | Missing Input Validation (Zod)     | **MEDIUM**   |
+| **Performance** | Potential N+1 Query in Prisma      | **LOW**      |
+| **UX**          | Generic Frontend Error Messages    | **LOW**      |
 
 This report details each finding, provides specific code snippets for context, and offers actionable recommendations for remediation.
 
@@ -37,9 +37,11 @@ The security audit revealed several areas for improvement, ranging from missing 
 **Finding:** Multiple API routes (`credits/purchase`, `credits/verify`, `cron/scan-debug`) contain a hardcoded fallback to a specific treasury wallet address if the `TREASURY_WALLET` environment variable is not set. This creates a significant security risk if the environment variable is misconfigured or fails to load, as funds would be directed to an uncontrolled address.
 
 **Evidence:**
+
 ```typescript
 // File: src/app/api/credits/purchase/route.ts:71
-const treasuryWallet = process.env.TREASURY_WALLET || "2Hnkz9D72u7xcoA18tMdFLSRanAkj4eWcGB7iFH296N7";
+const treasuryWallet =
+  process.env.TREASURY_WALLET || '2Hnkz9D72u7xcoA18tMdFLSRanAkj4eWcGB7iFH296N7';
 ```
 
 **Recommendation:** Remove the hardcoded fallback address immediately. The application should fail loudly (throw an error) if the `TREASURY_WALLET` environment variable is not available, preventing any transactions from being processed with an incorrect destination.
@@ -48,7 +50,7 @@ const treasuryWallet = process.env.TREASURY_WALLET || "2Hnkz9D72u7xcoA18tMdFLSRa
 // RECOMMENDED CHANGE
 const treasuryWallet = process.env.TREASURY_WALLET;
 if (!treasuryWallet) {
-  throw new Error("CRITICAL: TREASURY_WALLET environment variable is not set.");
+  throw new Error('CRITICAL: TREASURY_WALLET environment variable is not set.');
 }
 ```
 
@@ -57,6 +59,7 @@ if (!treasuryWallet) {
 **Finding:** Eleven API routes lack any form of authentication or authorization checks. While some are intended to be public (e.g., fetching agent configs, token prices), others expose sensitive information or actions that should be protected.
 
 **Affected Routes:**
+
 - `src/app/api/agents/[id]/route.ts`
 - `src/app/api/agents/route.ts`
 - `src/app/api/auth/logout/route.ts`
@@ -87,6 +90,7 @@ if (!treasuryWallet) {
 **Finding:** Three API routes that process `POST` request bodies lack strict input validation using a library like Zod. This can lead to unexpected errors, crashes, or potential security vulnerabilities if malformed data is processed.
 
 **Affected Routes:**
+
 - `src/app/api/containers/[containerId]/snapshot/route.ts`
 - `src/app/api/fleet/stats/route.ts`
 - `src/app/api/storage/snapshot/route.ts`
@@ -102,30 +106,34 @@ if (!treasuryWallet) {
 **Finding:** There is a critical contradiction in how the token burn rate (`BURN_BPS`) is determined. The `tokenomics.ts` file correctly defines the burn rate based on the `BURN_SCHEDULE.md` (currently 70% for Phase 1). However, `token-pricing.ts` contains a function `parseBurnBps` that defaults to a hardcoded `1000` (10%) if the `PAYMENT_BURN_BPS` environment variable is not set. This 10% value is being used in some parts of the code instead of the correct 70% value from the official tokenomics schedule.
 
 **Evidence 1: Correct Implementation (tokenomics.ts)**
+
 ```typescript
 // src/lib/tokenomics.ts
 export const BURN_SCHEDULE = {
-    PHASE_1_IGNITION: { threshold: 100, burnBps: 7_000, label: "Phase 1: Ignition" },
-    // ... other phases
+  PHASE_1_IGNITION: { threshold: 100, burnBps: 7_000, label: 'Phase 1: Ignition' },
+  // ... other phases
 };
-export const CURRENT_PHASE = "PHASE_1_IGNITION";
+export const CURRENT_PHASE = 'PHASE_1_IGNITION';
 export const BURN_BPS = BURN_SCHEDULE[CURRENT_PHASE].burnBps; // Correctly resolves to 7000
 ```
 
 **Evidence 2: Incorrect Fallback (token-pricing.ts)**
+
 ```typescript
 // src/lib/payments/token-pricing.ts
 function parseBurnBps(): number {
-  const raw = process.env.PAYMENT_BURN_BPS || "1000"; // DANGEROUS: Defaults to 10% burn
+  const raw = process.env.PAYMENT_BURN_BPS || '1000'; // DANGEROUS: Defaults to 10% burn
   // ... parsing logic
 }
 ```
 
 **Evidence 3: Inconsistent Usage**
+
 - **Correct (70%):** Agent usage in `api/containers/route.ts` correctly hardcodes `7000`.
 - **Incorrect (0% or 70%):** Credit purchases in `api/credits/purchase/route.ts` use a `burnBps` of `7000` for subscriptions but `0` for one-time deposits, which seems inconsistent with a universal burn mechanism.
 
 **Recommendation:** This is the most critical issue found in the audit. The logic must be unified immediately.
+
 1.  **Remove `parseBurnBps`:** Delete the `parseBurnBps` function from `token-pricing.ts`.
 2.  **Centralize `BURN_BPS`:** All parts of the application must import `BURN_BPS` directly from `src/lib/tokenomics.ts`. There should be no other source for this value.
 3.  **Fix Inconsistent Logic:** The burn logic in `api/credits/purchase/route.ts` must be reviewed. If all payments are subject to the burn, the logic should apply `BURN_BPS` universally, not just for subscriptions.
@@ -147,9 +155,10 @@ function parseBurnBps(): number {
 2.  **Vercel Cron Job Configuration:** `vercel.json` has been updated to run this job hourly.
 
 **Code Snippet (`expire-pending/route.ts`):**
+
 ```typescript
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db/prisma";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db/prisma';
 
 // ... isAuthorized boilerplate ...
 
@@ -157,18 +166,18 @@ const PENDING_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 async function handleExpiry(request: NextRequest) {
   if (!isAuthorized(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const cutoff = new Date(Date.now() - PENDING_EXPIRY_MS);
 
   const expired = await prisma.tokenTransaction.updateMany({
     where: {
-      status: "PENDING",
+      status: 'PENDING',
       createdAt: { lt: cutoff },
     },
     data: {
-      status: "EXPIRED",
+      status: 'EXPIRED',
       updatedAt: new Date(),
     },
   });
@@ -192,6 +201,7 @@ async function handleExpiry(request: NextRequest) {
 **Finding:** A potential N+1 query pattern was identified in `src/lib/payments/scanner.ts`. The code iterates through a list of pending transactions and then makes a database call inside the loop to fetch transaction details. If many transactions are processed at once, this could lead to a high number of database queries.
 
 **Evidence:**
+
 ```typescript
 // src/lib/payments/scanner.ts:40
 for (const tx of pendingTxs) {
@@ -236,6 +246,5 @@ Based on this audit, we recommend the following actions, prioritized by severity
 3.  **High Priority:** Implement a global rate-limiting strategy and apply `requireAuth` middleware to all sensitive API routes.
 4.  **Medium Priority:** Add Zod validation to all `POST`/`PUT` endpoints and refactor the potential N+1 query in the payment scanner.
 5.  **Low Priority:** Improve frontend error message specificity and apply React memoization (`useCallback`/`useMemo`) in complex components.
-
 
 This audit provides a clear roadmap for significantly improving the security, robustness, and maintainability of the Randi Agent Platform. I am ready to begin implementing these fixes upon your approval.

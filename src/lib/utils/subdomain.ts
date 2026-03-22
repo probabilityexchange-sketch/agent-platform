@@ -1,38 +1,38 @@
-import { nanoid } from "nanoid";
+import { nanoid } from 'nanoid';
 
 const RESERVED_WORDS = new Set([
-  "www",
-  "api",
-  "app",
-  "admin",
-  "mail",
-  "smtp",
-  "ftp",
-  "ssh",
-  "dns",
-  "ns1",
-  "ns2",
-  "cdn",
-  "static",
-  "assets",
-  "media",
-  "blog",
-  "status",
-  "help",
-  "support",
-  "docs",
-  "dashboard",
-  "login",
-  "auth",
-  "traefik",
+  'www',
+  'api',
+  'app',
+  'admin',
+  'mail',
+  'smtp',
+  'ftp',
+  'ssh',
+  'dns',
+  'ns1',
+  'ns2',
+  'cdn',
+  'static',
+  'assets',
+  'media',
+  'blog',
+  'status',
+  'help',
+  'support',
+  'docs',
+  'dashboard',
+  'login',
+  'auth',
+  'traefik',
 ]);
 
 export function sanitizeUsername(input: string): string {
   return input
     .toLowerCase()
-    .replace(/[^a-z0-9-]/g, "")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
     .slice(0, 20);
 }
 

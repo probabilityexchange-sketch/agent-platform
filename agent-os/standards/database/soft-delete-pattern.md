@@ -41,13 +41,14 @@ export class User {
 }
 ```
 
-- **Status Values:** 
+- **Status Values:**
   - `active`: Record is fully operational
   - `inactive`: Record is temporarily disabled but may be reactivated
   - `deleted`: Record is soft deleted and should be excluded from normal queries
 - **Querying:** Always filter by status in queries (e.g., `WHERE status = 'active'`)
 - **Indexing:** Index the status field for efficient filtering
 - **Alternative Approach:** Use a `deletedAt` timestamp field (NULL means active, timestamp means deleted)
+
   ```typescript
   // Prisma with deletedAt
   model User {
@@ -61,7 +62,8 @@ export class User {
     @@index([deletedAt])
   }
   ```
-- **Implementation:** 
+
+- **Implementation:**
   - In application code, automatically apply status filters to exclude deleted/inactive records
   - Provide explicit methods to view or restore soft-deleted records when needed
   - Consider hard deletion only for temporary data or when legally required

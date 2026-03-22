@@ -6,7 +6,7 @@ services:
     container_name: hummingbot-api
     image: hummingbot/hummingbot-api:dev
     ports:
-      - "8000:8000"
+      - '8000:8000'
     volumes:
       - ./bots:/hummingbot-api/bots
       - /var/run/docker.sock:/var/run/docker.sock
@@ -18,7 +18,7 @@ services:
       - DATABASE_URL=postgresql+asyncpg://hbot:hummingbot-api@postgres:5432/hummingbot_api
       - GATEWAY_URL=http://host.docker.internal:15888
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - 'host.docker.internal:host-gateway'
     networks:
       - emqx-bridge
     depends_on:
@@ -38,19 +38,19 @@ services:
       - emqx-log:/opt/emqx/log
       - emqx-etc:/opt/emqx/etc
     ports:
-      - "1883:1883"
-      - "8883:8883"
-      - "8083:8083"
-      - "8084:8084"
-      - "8081:8081"
-      - "18083:18083"
-      - "61613:61613"
+      - '1883:1883'
+      - '8883:8883'
+      - '8083:8083'
+      - '8084:8084'
+      - '8081:8081'
+      - '18083:18083'
+      - '61613:61613'
     networks:
       emqx-bridge:
         aliases:
           - node1.emqx.local
     healthcheck:
-      test: [ "CMD", "/opt/emqx/bin/emqx_ctl", "status" ]
+      test: ['CMD', '/opt/emqx/bin/emqx_ctl', 'status']
       interval: 5s
       timeout: 25s
       retries: 5
@@ -67,11 +67,11 @@ services:
       - postgres-data:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     ports:
-      - "5432:5432"
+      - '5432:5432'
     networks:
       - emqx-bridge
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hbot -d hummingbot_api"]
+      test: ['CMD-SHELL', 'pg_isready -U hbot -d hummingbot_api']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -81,7 +81,7 @@ networks:
     driver: bridge
 
 volumes:
-  emqx-data: { }
-  emqx-log: { }
-  emqx-etc: { }
-  postgres-data: { }
+  emqx-data: {}
+  emqx-log: {}
+  emqx-etc: {}
+  postgres-data: {}

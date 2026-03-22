@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import { LaunchDialog } from "@/components/agents/LaunchDialog";
-import { useContainers } from "@/hooks/useContainers";
-import { useCredits } from "@/hooks/useCredits";
-import type { AgentCatalogItem } from "@/types/agent";
+import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { LaunchDialog } from '@/components/agents/LaunchDialog';
+import { useContainers } from '@/hooks/useContainers';
+import { useCredits } from '@/hooks/useCredits';
+import type { AgentCatalogItem } from '@/types/agent';
 
 export default function AgentDetailPage() {
   const params = useParams();
@@ -17,15 +17,13 @@ export default function AgentDetailPage() {
   const { balance } = useCredits();
 
   useEffect(() => {
-    fetch("/api/agents")
-      .then((res) => res.json())
-      .then((data) => {
-        const found = (data.agents || []).find(
-          (a: AgentCatalogItem) => a.id === params.agentId
-        );
+    fetch('/api/agents')
+      .then(res => res.json())
+      .then(data => {
+        const found = (data.agents || []).find((a: AgentCatalogItem) => a.id === params.agentId);
         setAgent(found || null);
       })
-      .catch(() => { })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [params.agentId]);
 
@@ -65,7 +63,7 @@ export default function AgentDetailPage() {
           agent={agent}
           onConfirm={async (agentId, hours) => {
             await launchContainer(agentId, hours);
-            router.push("/containers");
+            router.push('/containers');
           }}
           onClose={() => setShowLaunch(false)}
           balance={balance}

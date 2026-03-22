@@ -5,6 +5,7 @@ Thank you for your interest in contributing! This guide will help you get starte
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 20+
 - Docker (running)
 - Git
@@ -12,23 +13,27 @@ Thank you for your interest in contributing! This guide will help you get starte
 ### Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/Randi-Agent/agent-platform.git
    cd agent-platform
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
+
    ```bash
    cp .env.example .env.local
    # Edit .env.local with your credentials
    ```
 
 4. **Initialize the database**
+
    ```bash
    npm run db:push
    ```
@@ -58,6 +63,7 @@ npm run test
 ### Pre-commit Hooks
 
 Pre-commit hooks are configured to automatically:
+
 - Format staged files with Prettier
 - Lint staged files with ESLint
 
@@ -66,6 +72,7 @@ If a hook fails, fix the issues and re-stage your files.
 ### Branch Naming
 
 Use descriptive branch names:
+
 - `feature/add-new-feature`
 - `fix/resolve-bug-description`
 - `docs/update-readme`
@@ -74,6 +81,7 @@ Use descriptive branch names:
 ### Commit Messages
 
 Follow conventional commits:
+
 ```
 feat: add new payment integration
 fix: resolve wallet connection timeout

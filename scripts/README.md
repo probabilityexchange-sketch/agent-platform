@@ -11,6 +11,7 @@ npm run tsx scripts/validate-skills.ts
 ```
 
 ### What it checks:
+
 - Each skill directory contains a SKILL.md file
 - SKILL.md has required frontmatter (name, description)
 - Skill names follow naming conventions (lowercase with hyphens)

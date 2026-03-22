@@ -11,13 +11,13 @@ export function isCronAuthorized(request: {
 }): boolean {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
-    return process.env.NODE_ENV !== "production";
+    return process.env.NODE_ENV !== 'production';
   }
 
-  const authHeader = request.headers.get("authorization");
+  const authHeader = request.headers.get('authorization');
   if (authHeader === `Bearer ${cronSecret}`) return true;
 
-  const legacyHeader = request.headers.get("x-cron-secret");
+  const legacyHeader = request.headers.get('x-cron-secret');
   if (legacyHeader === cronSecret) return true;
 
   return false;

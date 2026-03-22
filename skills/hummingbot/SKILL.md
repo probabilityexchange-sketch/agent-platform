@@ -71,15 +71,15 @@ trading workflows you know from Hummingbot to AI agents.
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `connect` | List available exchanges and add API keys |
+| Command   | Description                                       |
+| --------- | ------------------------------------------------- |
+| `connect` | List available exchanges and add API keys         |
 | `balance` | Display asset balances across connected exchanges |
-| `create` | Create a new bot configuration |
-| `start` | Start a bot with a V2 strategy |
-| `stop` | Stop a running bot |
-| `status` | Display bot status |
-| `history` | Display bot trading history |
+| `create`  | Create a new bot configuration                    |
+| `start`   | Start a bot with a V2 strategy                    |
+| `stop`    | Stop a running bot                                |
+| `status`  | Display bot status                                |
+| `history` | Display bot trading history                       |
 
 ## Prerequisites
 
@@ -89,6 +89,7 @@ trading workflows you know from Hummingbot to AI agents.
 ## Auth & Config
 
 Scripts read credentials from these sources in order:
+
 1. `./hummingbot-api/.env` — created during `make setup`
 2. `~/.hummingbot/.env`
 3. Environment variables: `HUMMINGBOT_API_URL`, `API_USER`, `API_PASS`
@@ -118,6 +119,7 @@ python scripts/connect.py binance --remove
 ```
 
 **Common credential fields by exchange:**
+
 - Binance: `--api-key`, `--secret-key`
 - KuCoin: `--api-key`, `--secret-key`, `--passphrase`
 - Gate.io: `--api-key`, `--secret-key`
@@ -144,6 +146,7 @@ python scripts/balance.py --non-zero
 ```
 
 **Output columns:**
+
 - Exchange/Connector name
 - Asset symbol
 - Total balance
@@ -172,9 +175,9 @@ python scripts/create.py controller my_mm_config --template pmm_v1
 
 ### Recommended Market Making Controllers
 
-| Controller | Best For | Key Features |
-|------------|----------|--------------|
-| **pmm_v1** | CEX spot trading | Multi-level spreads, inventory skew, order refresh, price bands |
+| Controller     | Best For          | Key Features                                                                 |
+| -------------- | ----------------- | ---------------------------------------------------------------------------- |
+| **pmm_v1**     | CEX spot trading  | Multi-level spreads, inventory skew, order refresh, price bands              |
 | **pmm_mister** | Spot & perpetuals | Position tracking, leverage, cooldowns, profit protection, hanging executors |
 
 **pmm_v1**: Faithful clone of the legacy Pure Market Making strategy. Configure `buy_spreads`, `sell_spreads`, `order_amount`, and enable `inventory_skew` to maintain balance.
@@ -205,6 +208,7 @@ python scripts/start.py --list
 ```
 
 **V2 Strategy Types:**
+
 - `--controller` — Deploy a V2 controller config (market making, arbitrage, etc.)
 - `--script` — Deploy a V2 script (e.g., `v2_with_controllers`)
 
@@ -254,6 +258,7 @@ python scripts/status.py <bot_name> --live
 **Status values:** `running`, `stopped`, `error`, `starting`
 
 **Performance metrics:**
+
 - Total trades
 - Profit/Loss (absolute and %)
 - Volume traded
@@ -274,6 +279,7 @@ python scripts/history.py <bot_name> --summary
 ```
 
 **History columns:**
+
 - Timestamp
 - Trading pair
 - Side (buy/sell)
@@ -316,12 +322,12 @@ python scripts/stop.py btc_bot
 
 ### Troubleshooting
 
-| Error | Cause | Fix |
-|-------|-------|-----|
-| `Cannot connect to API` | API not running | `cd ./hummingbot-api && make deploy` |
-| `401 Unauthorized` | Bad credentials | Check `./hummingbot-api/.env` |
-| `Connector not found` | Invalid exchange name | Run `python scripts/connect.py` to list valid names |
-| `No credentials` | Exchange not connected | Run `python scripts/connect.py <exchange> --api-key ...` |
+| Error                   | Cause                  | Fix                                                      |
+| ----------------------- | ---------------------- | -------------------------------------------------------- |
+| `Cannot connect to API` | API not running        | `cd ./hummingbot-api && make deploy`                     |
+| `401 Unauthorized`      | Bad credentials        | Check `./hummingbot-api/.env`                            |
+| `Connector not found`   | Invalid exchange name  | Run `python scripts/connect.py` to list valid names      |
+| `No credentials`        | Exchange not connected | Run `python scripts/connect.py <exchange> --api-key ...` |
 
 ---
 

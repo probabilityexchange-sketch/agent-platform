@@ -7,12 +7,14 @@ This guide will help you generate all the necessary favicon and metadata images 
 The following files need to be generated from `public/randi.png`:
 
 ### Favicons
+
 - `public/favicon.ico` - Standard favicon (16x16, 32x32, 48x48 multi-size)
 - `public/icon-192.png` - Android icon (192x192)
 - `public/icon-512.png` - Android icon (512x512)
 - `public/apple-touch-icon.png` - Apple touch icon (180x180)
 
 ### Social Media
+
 - `public/og-image.png` - Open Graph image (1200x630)
 
 ## Method 1: Using RealFaviconGenerator (Recommended)
@@ -36,11 +38,13 @@ The following files need to be generated from `public/randi.png`:
 ## Method 2: Using Online Tools
 
 ### For Favicons
+
 - Use https://favicon.io/favicon-converter/
   - Upload `public/randi.png`
   - Download and extract to `public/`
 
 ### For OG Image
+
 - Use Canva or Figma to create a 1200x630 image
 - Place the Randi logo centrally
 - Add tagline: "Launch AI Agents Instantly"

@@ -1,10 +1,10 @@
-import { randomBytes } from "crypto";
-import { prisma } from "@/lib/db/prisma";
+import { randomBytes } from 'crypto';
+import { prisma } from '@/lib/db/prisma';
 
 const NONCE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 
 export async function generateNonce(walletAddress: string): Promise<string> {
-  const nonce = randomBytes(32).toString("hex");
+  const nonce = randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + NONCE_EXPIRY_MS);
 
   await prisma.user.upsert({
@@ -16,10 +16,7 @@ export async function generateNonce(walletAddress: string): Promise<string> {
   return nonce;
 }
 
-export async function consumeNonce(
-  walletAddress: string,
-  nonce: string
-): Promise<boolean> {
+export async function consumeNonce(walletAddress: string, nonce: string): Promise<boolean> {
   const user = await prisma.user.findUnique({
     where: { walletAddress },
     select: { nonce: true, nonceExpiresAt: true },

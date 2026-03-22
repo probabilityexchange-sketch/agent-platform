@@ -3,8 +3,8 @@ services:
     image: traefik:v3.2
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
@@ -15,7 +15,7 @@ services:
     networks:
       - traefik-net
     labels:
-      - "traefik.enable=false"
+      - 'traefik.enable=false'
 
   db:
     image: postgres:16
@@ -27,7 +27,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-agentplatform}
       POSTGRES_DB: ${DB_NAME:-agentplatform}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -86,11 +86,11 @@ services:
       - traefik-net
       - internal
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`${NEXT_PUBLIC_DOMAIN:-localhost}`)"
-      - "traefik.http.routers.app.entrypoints=web,websecure"
-      - "traefik.http.routers.app.tls.certresolver=letsencrypt"
-      - "traefik.http.services.app.loadbalancer.server.port=3000"
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.app.rule=Host(`${NEXT_PUBLIC_DOMAIN:-localhost}`)'
+      - 'traefik.http.routers.app.entrypoints=web,websecure'
+      - 'traefik.http.routers.app.tls.certresolver=letsencrypt'
+      - 'traefik.http.services.app.loadbalancer.server.port=3000'
 
 volumes:
   postgres_data:
@@ -100,7 +100,7 @@ networks:
     name: traefik-net
     driver: bridge
     driver_opts:
-      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.enable_icc: 'true'
   internal:
     name: internal
     internal: true

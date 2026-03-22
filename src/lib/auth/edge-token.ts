@@ -1,6 +1,6 @@
-import { jwtVerify } from "jose";
+import { jwtVerify } from 'jose';
 
-const JWT_ISSUER = "agent-platform";
+const JWT_ISSUER = 'agent-platform';
 
 function getJwtSecret(): Uint8Array | null {
   const secret = process.env.JWT_SECRET;

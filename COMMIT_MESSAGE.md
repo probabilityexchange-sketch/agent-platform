@@ -3,11 +3,13 @@
 ## 🚀 Major Changes
 
 ### Authentication & Payments
+
 - **Replaced**: Solana wallet authentication → Privy (social + wallet logins)
 - **Added**: x402 payment protocol support for premium AI models
 - **Removed**: All `@solana/wallet-adapter-*` dependencies
 
 ### Agent Architecture
+
 - **Replaced**: Docker container provisioning → Integrated chat interface
 - **Added**: Composio SDK for 1000+ tool integrations
 - **Added**: OpenRouter for LLM access (free + paid tiers)
@@ -17,11 +19,13 @@
   - Productivity Agent (Calendar, Slack, Notion)
 
 ### Database Schema
+
 - **Added**: `ChatSession` and `ChatMessage` models
 - **Updated**: `AgentConfig` with `systemPrompt`, `tools`, `defaultModel`
 - **Migrated**: PostgreSQL → SQLite for simpler development
 
 ### UI/UX Overhaul
+
 - **New Components**:
   - `ChatWindow` - Main chat interface with auto-scroll
   - `ChatInput` - Auto-resizing input with Enter-to-send
@@ -34,6 +38,7 @@
 - **Design System**: Added glassmorphic styling utilities
 
 ### API Endpoints
+
 - `POST /api/chat` - Main chat with OpenRouter integration
 - `GET /api/chat/sessions` - List user chat sessions
 - `GET /api/chat/sessions/[sessionId]` - Get session messages
@@ -41,12 +46,15 @@
 - Updated `/api/agents` - Added `defaultModel` field
 
 ### Dependencies
+
 **Added**:
+
 - `@privy-io/react-auth` ^2.0.0
 - `@composio/core` ^0.1.0
 - `openai` ^4.82.0
 
 **Removed**:
+
 - `@solana/wallet-adapter-base`
 - `@solana/wallet-adapter-phantom`
 - `@solana/wallet-adapter-react`
@@ -58,11 +66,13 @@
 ## 🎯 Model Tier Strategy
 
 ### Free Tier (0 Credits)
+
 - `meta-llama/llama-3.3-70b-instruct:free`
 - `google/gemini-2.0-flash-exp:free`
 - `deepseek/deepseek-r1:free`
 
 ### Paid Tier (x402 Protocol)
+
 - `anthropic/claude-sonnet-4`
 - `openai/gpt-4o`
 - Other premium OpenRouter models
@@ -70,6 +80,7 @@
 ## 📝 Environment Variables
 
 ### New Required Variables
+
 ```env
 NEXT_PUBLIC_PRIVY_APP_ID="your-privy-app-id"
 PRIVY_APP_SECRET="your-privy-secret"
@@ -79,6 +90,7 @@ DATABASE_URL="file:./dev.db"
 ```
 
 ### Deprecated Variables
+
 - All Solana-related variables (commented out in .env)
 - Docker/Traefik configuration (preserved for reference)
 

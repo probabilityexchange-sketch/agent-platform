@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-import { signToken } from "@/lib/auth/jwt";
-import { prisma } from "@/lib/db/prisma";
-import { resolvePrivyWallet } from "@/lib/auth/privy";
-import { ensureUserHasUsername } from "@/lib/utils/username";
-import { isValidSolanaAddress } from "@/lib/solana/validation";
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { signToken } from '@/lib/auth/jwt';
+import { prisma } from '@/lib/db/prisma';
+import { resolvePrivyWallet } from '@/lib/auth/privy';
+import { ensureUserHasUsername } from '@/lib/utils/username';
+import { isValidSolanaAddress } from '@/lib/solana/validation';
 
 const schema = z.object({
   wallet: z.string().optional(),
@@ -16,15 +16,15 @@ function isPrivyRateLimitError(error: unknown): boolean {
   }
 
   const message = error.message.toLowerCase();
-  return message.includes("status 429") || message.includes("too_many_requests");
+  return message.includes('status 429') || message.includes('too_many_requests');
 }
 
 function getBearerToken(request: NextRequest): string | null {
-  const authHeader = request.headers.get("authorization");
+  const authHeader = request.headers.get('authorization');
   if (!authHeader) return null;
 
-  const [scheme, token] = authHeader.split(" ");
-  if (scheme?.toLowerCase() !== "bearer" || !token) return null;
+  const [scheme, token] = authHeader.split(' ');
+  if (scheme?.toLowerCase() !== 'bearer' || !token) return null;
   return token;
 }
 
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
   const accessToken = getBearerToken(request);
   if (!accessToken) {
     return NextResponse.json(
-      { error: "Unauthorized", code: "missing_access_token" },
+      { error: 'Unauthorized', code: 'missing_access_token' },
       { status: 401 }
     );
   }
@@ -40,18 +40,15 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.issues[0].message },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
 
   const requestOrigin =
-    request.headers.get("origin") ||
+    request.headers.get('origin') ||
     request.nextUrl.origin ||
     process.env.NEXT_PUBLIC_APP_URL ||
     undefined;
-  const demoAuthBypassEnabled = process.env.DEMO_AUTH_BYPASS === "true";
+  const demoAuthBypassEnabled = process.env.DEMO_AUTH_BYPASS === 'true';
   const demoAuthBypassWallet = process.env.DEMO_AUTH_BYPASS_WALLET?.trim() || null;
 
   let wallet: string;
@@ -64,13 +61,13 @@ export async function POST(request: NextRequest) {
       wallet = await resolvePrivyWallet(accessToken, undefined, requestOrigin);
     } catch (fallbackError) {
       const primaryReason =
-        error instanceof Error ? error.message : "Unknown Privy verification error";
+        error instanceof Error ? error.message : 'Unknown Privy verification error';
       const fallbackReason =
         fallbackError instanceof Error
           ? fallbackError.message
-          : "Unknown fallback verification error";
+          : 'Unknown fallback verification error';
 
-      console.error("Privy session verification failed", {
+      console.error('Privy session verification failed', {
         primaryReason,
         fallbackReason,
         requestedWallet: parsed.data.wallet ?? null,
@@ -79,13 +76,13 @@ export async function POST(request: NextRequest) {
       if (isPrivyRateLimitError(error) || isPrivyRateLimitError(fallbackError)) {
         return NextResponse.json(
           {
-            error: "Authentication provider is rate limiting requests. Please retry shortly.",
-            code: "privy_rate_limited",
+            error: 'Authentication provider is rate limiting requests. Please retry shortly.',
+            code: 'privy_rate_limited',
           },
           {
             status: 429,
             headers: {
-              "Retry-After": "15",
+              'Retry-After': '15',
             },
           }
         );
@@ -93,20 +90,20 @@ export async function POST(request: NextRequest) {
 
       if (!demoAuthBypassEnabled) {
         if (
-          process.env.NODE_ENV === "development" &&
-          (primaryReason.includes("No linked Solana wallet") ||
-            fallbackReason.includes("No linked Solana wallet"))
+          process.env.NODE_ENV === 'development' &&
+          (primaryReason.includes('No linked Solana wallet') ||
+            fallbackReason.includes('No linked Solana wallet'))
         ) {
           console.warn(
-            "Dev Mode: User authenticated but no Solana wallet found. Using mock address for testing."
+            'Dev Mode: User authenticated but no Solana wallet found. Using mock address for testing.'
           );
-          wallet = demoAuthBypassWallet || "DevWallethE1pM8uW26x7pSxD9B5pXwYpZ6x7pSxD9B5p";
+          wallet = demoAuthBypassWallet || 'DevWallethE1pM8uW26x7pSxD9B5pXwYpZ6x7pSxD9B5p';
         } else {
           return NextResponse.json(
             {
               error:
-                "Unable to verify authenticated wallet. If using Email login, please ensure your embedded wallet is initialized.",
-              code: "wallet_verification_failed",
+                'Unable to verify authenticated wallet. If using Email login, please ensure your embedded wallet is initialized.',
+              code: 'wallet_verification_failed',
             },
             { status: 401 }
           );
@@ -117,8 +114,8 @@ export async function POST(request: NextRequest) {
           return NextResponse.json(
             {
               error:
-                "Demo auth bypass is enabled, but no valid wallet was provided for session creation.",
-              code: "demo_bypass_missing_wallet",
+                'Demo auth bypass is enabled, but no valid wallet was provided for session creation.',
+              code: 'demo_bypass_missing_wallet',
             },
             { status: 401 }
           );
@@ -127,14 +124,14 @@ export async function POST(request: NextRequest) {
         if (demoAuthBypassWallet && fallbackWallet !== demoAuthBypassWallet) {
           return NextResponse.json(
             {
-              error: "Wallet is not allowed for demo auth bypass.",
-              code: "demo_bypass_wallet_not_allowed",
+              error: 'Wallet is not allowed for demo auth bypass.',
+              code: 'demo_bypass_wallet_not_allowed',
             },
             { status: 401 }
           );
         }
 
-        console.warn("DEMO_AUTH_BYPASS used to issue auth session", {
+        console.warn('DEMO_AUTH_BYPASS used to issue auth session', {
           wallet: fallbackWallet,
         });
         wallet = fallbackWallet;
@@ -152,7 +149,9 @@ export async function POST(request: NextRequest) {
     const username = await ensureUserHasUsername(prisma, user.id, wallet);
 
     if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-      console.warn("CRITICAL: JWT_SECRET is not set or too short. Session creation will fail signature verification in middleware.");
+      console.warn(
+        'CRITICAL: JWT_SECRET is not set or too short. Session creation will fail signature verification in middleware.'
+      );
     }
 
     const token = await signToken(user.id, wallet);
@@ -167,31 +166,31 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const isProd = process.env.NODE_ENV === "production";
+    const isProd = process.env.NODE_ENV === 'production';
     const cookieOptions = {
       httpOnly: true,
       secure: isProd,
-      sameSite: "lax" as const,
+      sameSite: 'lax' as const,
       maxAge: 24 * 60 * 60,
-      path: "/",
+      path: '/',
     };
 
-    // We no longer lock the domain to ".randi.chat" to allow the app 
-    // to work across various Vercel deployments and custom domains 
+    // We no longer lock the domain to ".randi.chat" to allow the app
+    // to work across various Vercel deployments and custom domains
     // without triggering the "double sign-in" bug caused by cookie domain mismatches.
-    response.cookies.set("auth-token", token, cookieOptions);
+    response.cookies.set('auth-token', token, cookieOptions);
 
     return response;
   } catch (error: any) {
-    console.error("Critical error building server session:", {
+    console.error('Critical error building server session:', {
       message: error.message,
       code: error.code,
-      wallet
+      wallet,
     });
     return NextResponse.json(
       {
-        error: "Internal server error during session establishment",
-        code: "session_creation_failed",
+        error: 'Internal server error during session establishment',
+        code: 'session_creation_failed',
       },
       { status: 500 }
     );

@@ -36,7 +36,7 @@ export class User {
 
 - **createdAt:** Set to the time of record creation (immutable after creation)
 - **updatedAt:** Automatically updated to the current time whenever the record is modified
-- **Implementation:** 
+- **Implementation:**
   - In Prisma: Use `@default(now())` for `createdAt` and `@updatedAt` for `updatedAt`
   - In TypeORM: Use `@CreateDateColumn()` and `@UpdateDateColumn()` decorators
   - In raw SQL: Use `TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP` and triggers

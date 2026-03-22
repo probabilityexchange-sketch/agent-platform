@@ -1,6 +1,6 @@
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@/generated/prisma/client";
-import * as pg from "pg";
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@/generated/prisma/client';
+import * as pg from 'pg';
 
 const bigIntPrototype = BigInt.prototype as bigint & {
   toJSON?: () => string;
@@ -23,11 +23,11 @@ function normalizedEnv(name: string): string | null {
 }
 
 function isSupabasePooler(url: string): boolean {
-  return url.includes("pooler.supabase.com");
+  return url.includes('pooler.supabase.com');
 }
 
 function isSupabaseDirect(url: string): boolean {
-  return url.includes(".supabase.co:5432");
+  return url.includes('.supabase.co:5432');
 }
 
 function deriveSupabaseProjectRef(): string | null {
@@ -36,7 +36,7 @@ function deriveSupabaseProjectRef(): string | null {
   if (!supabaseUrl) return null;
   try {
     const host = new URL(supabaseUrl).hostname;
-    const first = host.split(".")[0]?.trim();
+    const first = host.split('.')[0]?.trim();
     return first || null;
   } catch {
     return null;
@@ -56,23 +56,23 @@ function patchSupabaseConnection(url: string): string {
     parsed.password = passwordFromEnv;
   }
 
-  const isPooler = parsed.hostname.includes("pooler.supabase.com");
+  const isPooler = parsed.hostname.includes('pooler.supabase.com');
   if (isPooler) {
     const projectRef = deriveSupabaseProjectRef();
     const username = parsed.username;
-    if (projectRef && username === "postgres") {
+    if (projectRef && username === 'postgres') {
       parsed.username = `postgres.${projectRef}`;
     }
 
     const params = parsed.searchParams;
-    if (!params.has("sslmode")) {
-      params.set("sslmode", "require");
+    if (!params.has('sslmode')) {
+      params.set('sslmode', 'require');
     }
-    if (!params.has("pgbouncer")) {
-      params.set("pgbouncer", "true");
+    if (!params.has('pgbouncer')) {
+      params.set('pgbouncer', 'true');
     }
-    if (!params.has("connection_limit")) {
-      params.set("connection_limit", "10");
+    if (!params.has('connection_limit')) {
+      params.set('connection_limit', '10');
     }
   }
 
@@ -80,18 +80,18 @@ function patchSupabaseConnection(url: string): string {
 }
 
 function selectDatabaseUrl(): { url: string | null; source: string | null } {
-  // ALWAYS prioritize DATABASE_URL and DIRECT_URL. 
-  // Vercel sometimes injects POSTGRES_PRISMA_URL automatically if an integration 
+  // ALWAYS prioritize DATABASE_URL and DIRECT_URL.
+  // Vercel sometimes injects POSTGRES_PRISMA_URL automatically if an integration
   // is linked, which can conflict with our manual Supabase setup.
   const orderedNames = [
-    "DATABASE_URL",
-    "DIRECT_URL",
-    "POSTGRES_URL",
-    "POSTGRES_PRISMA_URL",
-    "POSTGRES_URL_NON_POOLING",
+    'DATABASE_URL',
+    'DIRECT_URL',
+    'POSTGRES_URL',
+    'POSTGRES_PRISMA_URL',
+    'POSTGRES_URL_NON_POOLING',
   ];
 
-  const candidates = orderedNames.map((name) => {
+  const candidates = orderedNames.map(name => {
     const raw = normalizedEnv(name);
     return [name, raw ? patchSupabaseConnection(raw) : null] as const;
   });
@@ -107,9 +107,7 @@ function selectDatabaseUrl(): { url: string | null; source: string | null } {
   }
 
   // Otherwise use the first valid URL found in order
-  return valid[0]
-    ? { source: valid[0][0], url: valid[0][1] }
-    : { source: null, url: null };
+  return valid[0] ? { source: valid[0][0], url: valid[0][1] } : { source: null, url: null };
 }
 
 const selected = selectDatabaseUrl();
@@ -119,22 +117,22 @@ if (selected.url) {
 
 function createPrismaClient(): PrismaClient {
   if (!selected.url) {
-    throw new Error("DATABASE_URL is not configured for Prisma.");
+    throw new Error('DATABASE_URL is not configured for Prisma.');
   }
 
-  if (process.env.NODE_ENV !== "test") {
+  if (process.env.NODE_ENV !== 'test') {
     const safeHost = (() => {
       try {
         return new URL(selected.url).host;
       } catch {
-        return "invalid";
+        return 'invalid';
       }
     })();
-    console.log("Prisma datasource selection details:", {
+    console.log('Prisma datasource selection details:', {
       source: selected.source,
       host: safeHost,
       projectRef: deriveSupabaseProjectRef(),
-      env: process.env.VERCEL_ENV || "unknown",
+      env: process.env.VERCEL_ENV || 'unknown',
     });
   }
 
@@ -146,7 +144,7 @@ function createPrismaClient(): PrismaClient {
   let sanitizedUrl = selected.url;
   try {
     const u = new URL(sanitizedUrl);
-    u.searchParams.delete("sslmode");
+    u.searchParams.delete('sslmode');
     sanitizedUrl = u.toString();
   } catch {
     // leave URL as-is if unparseable
@@ -168,7 +166,7 @@ function getPrismaClient(): PrismaClient {
   }
 
   const client = createPrismaClient();
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== 'production') {
     globalForPrisma.prisma = client;
   }
   return client;
@@ -178,6 +176,6 @@ export const prisma = new Proxy({} as PrismaClient, {
   get(_target, prop, receiver) {
     const client = getPrismaClient();
     const value = Reflect.get(client, prop, receiver);
-    return typeof value === "function" ? value.bind(client) : value;
+    return typeof value === 'function' ? value.bind(client) : value;
   },
 });

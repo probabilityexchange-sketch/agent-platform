@@ -6,11 +6,13 @@ Opens positions within price bounds, monitors range status, tracks fees.
 ## When to Use
 
 **Use when:**
+
 - Providing liquidity on Solana DEXs
 - Want automated position monitoring and fee tracking
 - Earning trading fees from LP positions
 
 **Avoid when:**
+
 - Trading on CEX (use other executors)
 - Want directional exposure only
 - Not familiar with impermanent loss risks
@@ -21,38 +23,38 @@ Opens positions within price bounds, monitors range status, tracks fees.
 NOT_ACTIVE -> OPENING -> IN_RANGE <-> OUT_OF_RANGE -> CLOSING -> COMPLETE
 ```
 
-| State | Description |
-|-------|-------------|
-| `NOT_ACTIVE` | Initial state, no position yet |
-| `OPENING` | Transaction submitted to open position |
-| `IN_RANGE` | Position active, current price within bounds |
+| State          | Description                                               |
+| -------------- | --------------------------------------------------------- |
+| `NOT_ACTIVE`   | Initial state, no position yet                            |
+| `OPENING`      | Transaction submitted to open position                    |
+| `IN_RANGE`     | Position active, current price within bounds              |
 | `OUT_OF_RANGE` | Position active but price outside bounds (no fees earned) |
-| `CLOSING` | Transaction submitted to close position |
-| `COMPLETE` | Position closed, executor finished |
+| `CLOSING`      | Transaction submitted to close position                   |
+| `COMPLETE`     | Position closed, executor finished                        |
 
 ## Key Parameters
 
 ### Required
 
-| Parameter | Description |
-|-----------|-------------|
-| `connector_name` | CLMM connector in `connector/clmm` format (e.g., `meteora/clmm`, `raydiumclmm/clmm`). **IMPORTANT:** Must include the `/clmm` suffix - using just `meteora` will fail |
-| `trading_pair` | Token pair (e.g., `SOL-USDC`) |
-| `pool_address` | Pool contract address |
-| `lower_price` / `upper_price` | Price range bounds |
+| Parameter                     | Description                                                                                                                                                           |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `connector_name`              | CLMM connector in `connector/clmm` format (e.g., `meteora/clmm`, `raydiumclmm/clmm`). **IMPORTANT:** Must include the `/clmm` suffix - using just `meteora` will fail |
+| `trading_pair`                | Token pair (e.g., `SOL-USDC`)                                                                                                                                         |
+| `pool_address`                | Pool contract address                                                                                                                                                 |
+| `lower_price` / `upper_price` | Price range bounds                                                                                                                                                    |
 
 ### Liquidity
 
-| Parameter | Description |
-|-----------|-------------|
-| `base_amount` | Amount of base token to provide |
-| `quote_amount` | Amount of quote token to provide |
-| `side` | Position side: 0=BOTH, 1=BUY/quote-only, 2=SELL/base-only |
+| Parameter      | Description                                               |
+| -------------- | --------------------------------------------------------- |
+| `base_amount`  | Amount of base token to provide                           |
+| `quote_amount` | Amount of quote token to provide                          |
+| `side`         | Position side: 0=BOTH, 1=BUY/quote-only, 2=SELL/base-only |
 
 ### Auto-Close (Limit Range Orders)
 
-| Parameter | Description |
-|-----------|-------------|
+| Parameter                        | Description                                           |
+| -------------------------------- | ----------------------------------------------------- |
 | `auto_close_above_range_seconds` | Close when price >= upper_price for this many seconds |
 | `auto_close_below_range_seconds` | Close when price <= lower_price for this many seconds |
 
@@ -63,16 +65,19 @@ Set to `null` (default) to disable auto-close.
 ### Single-sided (one asset only)
 
 **Base token only** (e.g., 0.2 SOL): Creates a SELL position (`side=2`) with range ABOVE current price
+
 - Position starts out-of-range, enters range when price rises
 - SOL converts to USDC as price moves up through the range
 
 **Quote token only** (e.g., 50 USDC): Creates a BUY position (`side=1`) with range BELOW current price
+
 - Position starts out-of-range, enters range when price falls
 - USDC converts to SOL as price moves down through the range
 
 ### Double-sided (both assets)
 
 When user specifies both `base_amount` and `quote_amount`, options:
+
 1. **Centered range** around current price (±50% of position width above/below current price)
 2. **Custom range** (user specifies exact lower/upper bounds)
 
@@ -80,11 +85,11 @@ Set `side=0` (BOTH) for double-sided positions.
 
 ### Position Management
 
-| Parameter | Description |
-|-----------|-------------|
-| `keep_position=false` (default) | Close LP position when executor stops |
-| `keep_position=true` | Leave position open on-chain, stop monitoring only |
-| `position_offset_pct` | Offset from current price for single-sided positions (default: 0.01%) |
+| Parameter                       | Description                                                           |
+| ------------------------------- | --------------------------------------------------------------------- |
+| `keep_position=false` (default) | Close LP position when executor stops                                 |
+| `keep_position=true`            | Leave position open on-chain, stop monitoring only                    |
+| `position_offset_pct`           | Offset from current price for single-sided positions (default: 0.01%) |
 
 ## Limit Range Orders (Auto-Close Feature)
 
@@ -124,11 +129,11 @@ auto_close_below_range_seconds=60
 
 Set via `extra_params.strategyType`:
 
-| Type | Name | Description |
-|------|------|-------------|
-| `0` | Spot | Uniform liquidity across range |
-| `1` | Curve | Concentrated around current price |
-| `2` | Bid-Ask | Liquidity at range edges |
+| Type | Name    | Description                       |
+| ---- | ------- | --------------------------------- |
+| `0`  | Spot    | Uniform liquidity across range    |
+| `1`  | Curve   | Concentrated around current price |
+| `2`  | Bid-Ask | Liquidity at range edges          |
 
 ## Managing Positions
 

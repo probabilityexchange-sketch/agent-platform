@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db/prisma";
+import { prisma } from '@/lib/db/prisma';
 import {
   workflowPlanSchema,
   type WorkflowPlan,
@@ -6,7 +6,7 @@ import {
   type WorkflowRunStatus,
   type WorkflowScheduleDeploymentBundle,
   type WorkflowSchedulePreview,
-} from "@/lib/workflows/schema";
+} from '@/lib/workflows/schema';
 import {
   canStartWorkflowRun,
   deriveWorkflowSafety,
@@ -20,8 +20,8 @@ import {
   serializeWorkflowRetryHistory,
   serializeWorkflowSafety,
   type WorkflowTriggerSource,
-} from "@/lib/workflows/persistence";
-import { createApprovalRequestFromPolicy, evaluateAndRecordPolicy } from "@/lib/policy/service";
+} from '@/lib/workflows/persistence';
+import { createApprovalRequestFromPolicy, evaluateAndRecordPolicy } from '@/lib/policy/service';
 import {
   buildGitHubActionsSchedulePreview,
   buildWorkflowScheduleDeploymentBundle,
@@ -30,8 +30,8 @@ import {
   getWorkflowSchedulerTarget,
   hashWorkflowScheduleToken,
   isValidCronExpression,
-} from "@/lib/workflows/scheduling";
-import { estimateWorkflowRunCost, logWorkflowRunActualCost } from "@/lib/credits/estimator";
+} from '@/lib/workflows/scheduling';
+import { estimateWorkflowRunCost, logWorkflowRunActualCost } from '@/lib/credits/estimator';
 
 async function getWorkflowScheduleRowByWorkflowId(userId: string, workflowId: string) {
   return prisma.workflowSchedule.findFirst({
@@ -49,11 +49,11 @@ async function upsertWorkflowScheduleRow(params: {
   id: string;
   workflowId: string;
   userId: string;
-  status: "draft" | "active" | "paused" | "blocked";
+  status: 'draft' | 'active' | 'paused' | 'blocked';
   cronExpression: string;
   timezone: string;
   schedulerTarget: string;
-  deploymentState: "pending_manual_sync" | "synced" | "blocked" | "needs_resync";
+  deploymentState: 'pending_manual_sync' | 'synced' | 'blocked' | 'needs_resync';
   deploymentReason: string | null;
   githubWorkflowName: string;
   githubWorkflowPath: string;
@@ -67,7 +67,7 @@ async function upsertWorkflowScheduleRow(params: {
   });
 
   if (existing && existing.userId !== params.userId) {
-    throw new Error("WORKFLOW_SCHEDULE_OWNERSHIP_MISMATCH");
+    throw new Error('WORKFLOW_SCHEDULE_OWNERSHIP_MISMATCH');
   }
 
   return prisma.workflowSchedule.upsert({
@@ -108,9 +108,10 @@ async function blockWorkflowScheduleAfterWorkflowChange(userId: string, schedule
   await prisma.workflowSchedule.update({
     where: { id_userId: { id: scheduleId, userId } },
     data: {
-      status: "blocked",
-      deploymentState: "needs_resync",
-      deploymentReason: "Workflow changed. Re-evaluate policy and re-sync the GitHub Actions schedule before recurring runs continue.",
+      status: 'blocked',
+      deploymentState: 'needs_resync',
+      deploymentReason:
+        'Workflow changed. Re-evaluate policy and re-sync the GitHub Actions schedule before recurring runs continue.',
     },
   });
 }
@@ -140,8 +141,8 @@ async function updateWorkflowScheduleOutcomeByRunId(params: {
   status: WorkflowRunStatus;
   message: string | null;
 }) {
-  const isCompleted = params.status === "completed";
-  const isFailure = ["failed", "blocked", "cancelled"].includes(params.status);
+  const isCompleted = params.status === 'completed';
+  const isFailure = ['failed', 'blocked', 'cancelled'].includes(params.status);
 
   // Note: We update by lastRunId which is a bit implicit but matches current logic.
   // In a more robust system we would have a direct relation or use scheduleId from the run.
@@ -156,7 +157,7 @@ async function updateWorkflowScheduleOutcomeByRunId(params: {
     data: {
       lastSuccessfulAt: isCompleted ? new Date() : undefined,
       lastError: isCompleted ? null : params.message,
-      consecutiveFailures: isCompleted ? 0 : (isFailure ? { increment: 1 } : undefined),
+      consecutiveFailures: isCompleted ? 0 : isFailure ? { increment: 1 } : undefined,
     },
   });
 }
@@ -165,9 +166,9 @@ async function pauseWorkflowScheduleRow(workflowId: string, userId: string) {
   return prisma.workflowSchedule.update({
     where: { workflowId_userId: { workflowId, userId } },
     data: {
-      status: "paused",
-      deploymentState: "pending_manual_sync",
-      deploymentReason: "Schedule paused by user.",
+      status: 'paused',
+      deploymentState: 'pending_manual_sync',
+      deploymentReason: 'Schedule paused by user.',
     },
   });
 }
@@ -190,23 +191,26 @@ export async function saveWorkflowDraft(params: {
 
   const record = params.workflowId
     ? await prisma.workflow.update({
-      where: {
-        id_userId: {
-          id: params.workflowId,
-          userId: params.userId,
+        where: {
+          id_userId: {
+            id: params.workflowId,
+            userId: params.userId,
+          },
         },
-      },
-      data,
-    })
+        data,
+      })
     : await prisma.workflow.create({
-      data: {
-        userId: params.userId,
-        ...data,
-      },
-    });
+        data: {
+          userId: params.userId,
+          ...data,
+        },
+      });
 
   if (params.workflowId) {
-    const existingSchedule = await getWorkflowScheduleRowByWorkflowId(params.userId, params.workflowId);
+    const existingSchedule = await getWorkflowScheduleRowByWorkflowId(
+      params.userId,
+      params.workflowId
+    );
     if (existingSchedule) {
       await blockWorkflowScheduleAfterWorkflowChange(params.userId, existingSchedule.id);
     }
@@ -214,7 +218,7 @@ export async function saveWorkflowDraft(params: {
 
   const refreshed = await getWorkflowById(params.userId, record.id);
   if (!refreshed) {
-    throw new Error("WORKFLOW_NOT_FOUND");
+    throw new Error('WORKFLOW_NOT_FOUND');
   }
 
   return refreshed;
@@ -223,16 +227,18 @@ export async function saveWorkflowDraft(params: {
 export async function listWorkflows(userId: string) {
   const records = await prisma.workflow.findMany({
     where: { userId },
-    orderBy: { updatedAt: "desc" },
+    orderBy: { updatedAt: 'desc' },
   });
 
-  const schedules = await Promise.all(records.map((record) => getWorkflowScheduleRowByWorkflowId(userId, record.id)));
+  const schedules = await Promise.all(
+    records.map(record => getWorkflowScheduleRowByWorkflowId(userId, record.id))
+  );
 
   return records.map((record, index) =>
     normalizeWorkflowDbRecord({
       ...record,
       schedule: schedules[index],
-    }),
+    })
   );
 }
 
@@ -272,7 +278,7 @@ export async function createWorkflowRun(params: {
   });
 
   if (!workflow) {
-    throw new Error("WORKFLOW_NOT_FOUND");
+    throw new Error('WORKFLOW_NOT_FOUND');
   }
 
   const schedule = await getWorkflowScheduleRowByWorkflowId(params.userId, workflow.id);
@@ -281,7 +287,7 @@ export async function createWorkflowRun(params: {
       workflowId: workflow.id,
       userId: params.userId,
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
   });
   const normalizedWorkflow = normalizeWorkflowDbRecord({
     ...workflow,
@@ -289,7 +295,7 @@ export async function createWorkflowRun(params: {
   });
   const nextAttemptNumber = (latestRun?.attemptNumber ?? 0) + 1;
   const policyDecision = await evaluateAndRecordPolicy({
-    subjectType: "workflow_run",
+    subjectType: 'workflow_run',
     actor: { userId: params.userId },
     triggerSource: params.triggerSource,
     workflowId: workflow.id,
@@ -305,7 +311,7 @@ export async function createWorkflowRun(params: {
 
   let resolvedStartDecision = startDecision;
 
-  if (policyDecision.decision === "approve") {
+  if (policyDecision.decision === 'approve') {
     await createApprovalRequestFromPolicy({
       userId: params.userId,
       workflowId: workflow.id,
@@ -313,15 +319,15 @@ export async function createWorkflowRun(params: {
     });
     resolvedStartDecision = {
       allowed: false,
-      status: "blocked",
+      status: 'blocked',
       blockedReason: policyDecision.reason,
     };
   }
 
-  if (policyDecision.decision === "simulate" || policyDecision.decision === "deny") {
+  if (policyDecision.decision === 'simulate' || policyDecision.decision === 'deny') {
     resolvedStartDecision = {
       allowed: false,
-      status: "blocked",
+      status: 'blocked',
       blockedReason: policyDecision.reason,
     };
   }
@@ -348,7 +354,10 @@ export async function createWorkflowRun(params: {
       userId: params.userId,
       scheduleId: params.scheduleId,
       runId: run.id,
-      blockedReason: resolvedStartDecision.status === "blocked" ? resolvedStartDecision.blockedReason ?? null : null,
+      blockedReason:
+        resolvedStartDecision.status === 'blocked'
+          ? (resolvedStartDecision.blockedReason ?? null)
+          : null,
     });
   }
 
@@ -363,10 +372,10 @@ export async function createWorkflowRun(params: {
 export async function listWorkflowRuns(userId: string, workflowId: string) {
   const records = await prisma.workflowRun.findMany({
     where: { userId, workflowId },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
   });
 
-  return records.map((record) => normalizeWorkflowRunDbRecord(record));
+  return records.map(record => normalizeWorkflowRunDbRecord(record));
 }
 
 export async function getWorkflowRunById(userId: string, runId: string) {
@@ -407,15 +416,15 @@ export async function updateWorkflowRunStatus(params: {
     data.lastErrorJson = serializeWorkflowError(params.error);
   }
 
-  if (params.status === "running") {
+  if (params.status === 'running') {
     data.startedAt = new Date();
   }
 
-  if (["failed", "completed", "cancelled", "blocked"].includes(params.status)) {
+  if (['failed', 'completed', 'cancelled', 'blocked'].includes(params.status)) {
     data.finishedAt = new Date();
   }
 
-  const isTerminal = ["failed", "completed", "cancelled", "blocked"].includes(params.status);
+  const isTerminal = ['failed', 'completed', 'cancelled', 'blocked'].includes(params.status);
 
   const record = await prisma.workflowRun.update({
     where: {
@@ -450,7 +459,7 @@ export async function updateWorkflowRunStatus(params: {
     try {
       await logWorkflowRunActualCost({ workflowRunId: record.id });
     } catch (error) {
-      console.warn("Failed to log workflow run actual cost:", error);
+      console.warn('Failed to log workflow run actual cost:', error);
     }
   }
 
@@ -476,7 +485,7 @@ export async function recordWorkflowRunRetry(params: {
   });
 
   if (!existing) {
-    throw new Error("WORKFLOW_RUN_NOT_FOUND");
+    throw new Error('WORKFLOW_RUN_NOT_FOUND');
   }
 
   const retryHistory = normalizeWorkflowRunDbRecord(existing).retryHistory;
@@ -533,7 +542,7 @@ export async function upsertWorkflowSchedule(params: {
   timezone?: string;
 }) {
   if (!isValidCronExpression(params.cronExpression)) {
-    throw new Error("INVALID_CRON_EXPRESSION");
+    throw new Error('INVALID_CRON_EXPRESSION');
   }
 
   const workflow = await prisma.workflow.findUnique({
@@ -546,7 +555,7 @@ export async function upsertWorkflowSchedule(params: {
   });
 
   if (!workflow) {
-    throw new Error("WORKFLOW_NOT_FOUND");
+    throw new Error('WORKFLOW_NOT_FOUND');
   }
 
   const existingSchedule = await getWorkflowScheduleRowByWorkflowId(params.userId, workflow.id);
@@ -555,9 +564,9 @@ export async function upsertWorkflowSchedule(params: {
     schedule: existingSchedule,
   });
   const policyDecision = await evaluateAndRecordPolicy({
-    subjectType: "workflow_run",
+    subjectType: 'workflow_run',
     actor: { userId: params.userId },
-    triggerSource: "schedule",
+    triggerSource: 'schedule',
     workflowId: workflow.id,
     workflowTitle: normalizedWorkflow.title,
     workflowStatus: normalizedWorkflow.status,
@@ -578,7 +587,7 @@ export async function upsertWorkflowSchedule(params: {
     workflowId: workflow.id,
     title: normalizedWorkflow.title,
     cronExpression: params.cronExpression,
-    timezone: params.timezone ?? "UTC",
+    timezone: params.timezone ?? 'UTC',
   });
   const secretName = preview.secretName;
 
@@ -588,7 +597,7 @@ export async function upsertWorkflowSchedule(params: {
     userId: params.userId,
     status: activation.status,
     cronExpression: params.cronExpression,
-    timezone: params.timezone ?? "UTC",
+    timezone: params.timezone ?? 'UTC',
     schedulerTarget: target,
     deploymentState: activation.deploymentState,
     deploymentReason: activation.reason,
@@ -596,7 +605,7 @@ export async function upsertWorkflowSchedule(params: {
     githubWorkflowPath: preview.workflowPath,
     githubSecretName: secretName,
     triggerTokenHash: hashWorkflowScheduleToken(secretToken),
-    lastError: activation.status === "blocked" ? activation.reason : null,
+    lastError: activation.status === 'blocked' ? activation.reason : null,
   });
 
   const bundle = buildWorkflowScheduleDeploymentBundle({
@@ -604,7 +613,7 @@ export async function upsertWorkflowSchedule(params: {
     workflowId: workflow.id,
     title: normalizedWorkflow.title,
     cronExpression: params.cronExpression,
-    timezone: params.timezone ?? "UTC",
+    timezone: params.timezone ?? 'UTC',
     deploymentState: activation.deploymentState,
     baseUrl: process.env.NEXT_PUBLIC_APP_URL,
   });
@@ -618,20 +627,17 @@ export async function upsertWorkflowSchedule(params: {
   };
 }
 
-export async function pauseWorkflowSchedule(params: {
-  userId: string;
-  workflowId: string;
-}) {
+export async function pauseWorkflowSchedule(params: { userId: string; workflowId: string }) {
   const record = await getWorkflowScheduleRowByWorkflowId(params.userId, params.workflowId);
 
   if (!record) {
-    throw new Error("WORKFLOW_SCHEDULE_NOT_FOUND");
+    throw new Error('WORKFLOW_SCHEDULE_NOT_FOUND');
   }
 
   const updated = await pauseWorkflowScheduleRow(params.workflowId, params.userId);
 
   if (!updated) {
-    throw new Error("WORKFLOW_SCHEDULE_NOT_FOUND");
+    throw new Error('WORKFLOW_SCHEDULE_NOT_FOUND');
   }
 
   return normalizeWorkflowScheduleRecord(updated);
@@ -647,21 +653,21 @@ export async function dispatchWorkflowSchedule(params: {
   });
 
   if (!schedule || schedule.workflowId !== params.workflowId) {
-    throw new Error("WORKFLOW_SCHEDULE_NOT_FOUND");
+    throw new Error('WORKFLOW_SCHEDULE_NOT_FOUND');
   }
 
-  if (schedule.status !== "active") {
-    throw new Error("WORKFLOW_SCHEDULE_INACTIVE");
+  if (schedule.status !== 'active') {
+    throw new Error('WORKFLOW_SCHEDULE_INACTIVE');
   }
 
   if (hashWorkflowScheduleToken(params.token) !== schedule.triggerTokenHash) {
-    throw new Error("WORKFLOW_SCHEDULE_FORBIDDEN");
+    throw new Error('WORKFLOW_SCHEDULE_FORBIDDEN');
   }
 
   const run = await createWorkflowRun({
     userId: schedule.userId,
     workflowId: schedule.workflowId,
-    triggerSource: "schedule",
+    triggerSource: 'schedule',
     scheduleId: schedule.id,
   });
 

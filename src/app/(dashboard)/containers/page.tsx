@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useContainers } from "@/hooks/useContainers";
-import { ContainerCard } from "@/components/containers/ContainerCard";
-import { useState } from "react";
+import Link from 'next/link';
+import { useContainers } from '@/hooks/useContainers';
+import { ContainerCard } from '@/components/containers/ContainerCard';
+import { useState } from 'react';
 
 export default function ContainersPage() {
   const { containers, loading, stopContainer, snapshotContainer } = useContainers();
   const [snapshotStatus, setSnapshotStatus] = useState<Record<string, boolean>>({});
 
-  const active = containers.filter((c) => c.status === "RUNNING");
-  const inactive = containers.filter((c) => c.status !== "RUNNING");
+  const active = containers.filter(c => c.status === 'RUNNING');
+  const inactive = containers.filter(c => c.status !== 'RUNNING');
 
   const handleSnapshot = async (containerId: string, agentId: string) => {
     setSnapshotStatus(prev => ({ ...prev, [containerId]: true }));
     try {
       await snapshotContainer(containerId, agentId);
     } catch (error) {
-      console.error("Snapshot failed:", error);
+      console.error('Snapshot failed:', error);
     } finally {
       setSnapshotStatus(prev => ({ ...prev, [containerId]: false }));
     }
@@ -51,11 +51,9 @@ export default function ContainersPage() {
         <>
           {active.length > 0 && (
             <div className="mb-8">
-              <h2 className="text-lg font-semibold mb-4">
-                Active ({active.length})
-              </h2>
+              <h2 className="text-lg font-semibold mb-4">Active ({active.length})</h2>
               <div className="grid md:grid-cols-2 gap-4">
-                {active.map((container) => (
+                {active.map(container => (
                   <ContainerCard
                     key={container.id}
                     container={container}
@@ -70,16 +68,10 @@ export default function ContainersPage() {
 
           {inactive.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold mb-4">
-                History ({inactive.length})
-              </h2>
+              <h2 className="text-lg font-semibold mb-4">History ({inactive.length})</h2>
               <div className="grid md:grid-cols-2 gap-4">
-                {inactive.map((container) => (
-                  <ContainerCard
-                    key={container.id}
-                    container={container}
-                    onStop={stopContainer}
-                  />
+                {inactive.map(container => (
+                  <ContainerCard key={container.id} container={container} onStop={stopContainer} />
                 ))}
               </div>
             </div>

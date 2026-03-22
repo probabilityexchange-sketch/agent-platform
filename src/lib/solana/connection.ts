@@ -1,6 +1,6 @@
-import { Connection } from "@solana/web3.js";
+import { Connection } from '@solana/web3.js';
 
-const DEFAULT_MAINNET_RPC = "https://api.mainnet-beta.solana.com";
+const DEFAULT_MAINNET_RPC = 'https://api.mainnet-beta.solana.com';
 
 const RPC_URL = (
   process.env.SOLANA_RPC_URL ||
@@ -15,9 +15,9 @@ const globalForSolana = globalThis as unknown as {
 export const connection =
   globalForSolana.solanaConnection ??
   new Connection(RPC_URL, {
-    commitment: "confirmed",
+    commitment: 'confirmed',
   });
 
-if (process.env.NODE_ENV !== "production") {
+if (process.env.NODE_ENV !== 'production') {
   globalForSolana.solanaConnection = connection;
 }

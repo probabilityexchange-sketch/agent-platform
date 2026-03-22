@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface LogViewerProps {
   containerId: string;
 }
 
 export function LogViewer({ containerId }: LogViewerProps) {
-  const [logs, setLogs] = useState<string>("");
+  const [logs, setLogs] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -32,17 +32,14 @@ export function LogViewer({ containerId }: LogViewerProps) {
   }, [fetchLogs]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
 
   return (
     <div className="bg-black rounded-lg border border-border overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 bg-muted border-b border-border">
         <span className="text-sm font-medium">Logs</span>
-        <button
-          onClick={fetchLogs}
-          className="text-xs text-muted-foreground hover:text-foreground"
-        >
+        <button onClick={fetchLogs} className="text-xs text-muted-foreground hover:text-foreground">
           Refresh
         </button>
       </div>

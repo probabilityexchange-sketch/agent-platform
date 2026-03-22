@@ -3,7 +3,7 @@
 All protected API routes must use the `requireAuth()` helper to ensure only authenticated users can access them:
 
 ```typescript
-import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
+import { requireAuth, handleAuthError } from '@/lib/auth/middleware';
 
 export async function GET(req: NextRequest) {
   try {

@@ -5,6 +5,7 @@ Scripts for deploying infrastructure, exploring Meteora pools, managing LP posit
 ## Scripts
 
 **Infrastructure:**
+
 - `deploy_hummingbot_api.sh` — Install/upgrade/manage Hummingbot API
 - `setup_gateway.sh` — Start Gateway (with custom image), configure RPC per network
 - `check_api.sh` — Shared: check if Hummingbot API is running (source or run directly)
@@ -12,15 +13,18 @@ Scripts for deploying infrastructure, exploring Meteora pools, managing LP posit
 - `add_wallet.py` — Add wallets and check balances
 
 **Pool Explorer:**
+
 - `list_meteora_pools.py` — Search and list Meteora DLMM pools
 - `get_meteora_pool.py` — Get detailed pool information with liquidity distribution
 
 **Position Management:**
+
 - `manage_executor.py` — Create, monitor, and stop LP executors
 - `manage_controller.py` — Deploy and manage LP Rebalancer controllers
 - `manage_gateway.py` — Start/stop Gateway and configure RPC nodes (advanced)
 
 **Analysis:**
+
 - `export_lp_positions.py` — Export LP position events to CSV
 - `visualize_lp_positions.py` — Generate interactive HTML dashboard from LP position events
 
@@ -60,22 +64,22 @@ python scripts/list_meteora_pools.py --query SOL --json
 list_meteora_pools.py [-q QUERY] [-s SORT] [--order ORDER] [-n LIMIT] [-p PAGE] [--json]
 ```
 
-| Argument | Description |
-|---|---|
-| `-q`, `--query` | Search by pool name, token symbol, or address |
-| `-s`, `--sort` | Sort by: `volume`, `tvl`, `fees`, `apr`, `apy` (default: `volume`) |
-| `--order` | Sort order: `asc` or `desc` (default: `desc`) |
-| `-n`, `--limit` | Number of results (default: 10, max: 1000) |
-| `-p`, `--page` | Page number (default: 1) |
-| `--json` | Output as JSON |
+| Argument        | Description                                                        |
+| --------------- | ------------------------------------------------------------------ |
+| `-q`, `--query` | Search by pool name, token symbol, or address                      |
+| `-s`, `--sort`  | Sort by: `volume`, `tvl`, `fees`, `apr`, `apy` (default: `volume`) |
+| `--order`       | Sort order: `asc` or `desc` (default: `desc`)                      |
+| `-n`, `--limit` | Number of results (default: 10, max: 1000)                         |
+| `-p`, `--page`  | Page number (default: 1)                                           |
+| `--json`        | Output as JSON                                                     |
 
 ### Output
 
 Outputs a markdown table with token mint addresses to identify correct tokens:
 
-| # | Pool | Pool Address | Base (mint) | Quote (mint) | TVL | Vol 24h | Fees 24h | APR | Fee | Bin |
-|---|------|--------------|-------------|--------------|-----|---------|----------|-----|-----|-----|
-| 1 | Percolator-SOL | `ATrBUW..sPMSms` | Percolator (`8PzF..pump`) | SOL (`So11..1112`) | $8.9K | $15.5K | $348 | 3.9% | 2.00% | 100 |
+| #   | Pool           | Pool Address     | Base (mint)               | Quote (mint)       | TVL   | Vol 24h | Fees 24h | APR  | Fee   | Bin |
+| --- | -------------- | ---------------- | ------------------------- | ------------------ | ----- | ------- | -------- | ---- | ----- | --- |
+| 1   | Percolator-SOL | `ATrBUW..sPMSms` | Percolator (`8PzF..pump`) | SOL (`So11..1112`) | $8.9K | $15.5K  | $348     | 3.9% | 2.00% | 100 |
 
 ---
 
@@ -104,10 +108,10 @@ python scripts/get_meteora_pool.py <pool_address> --json
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
+| Variable       | Default     | Description      |
+| -------------- | ----------- | ---------------- |
 | `GATEWAY_HOST` | `localhost` | Gateway API host |
-| `GATEWAY_PORT` | `15888` | Gateway API port |
+| `GATEWAY_PORT` | `15888`     | Gateway API port |
 
 ### Output Sections
 
@@ -172,12 +176,12 @@ python scripts/export_lp_positions.py -o exports/my_positions.csv
 export_lp_positions.py [--db PATH] [--output PATH] [--pair PAIR] [--summary]
 ```
 
-| Argument | Description |
-|---|---|
-| `--db PATH` | Path to SQLite database. Defaults to auto-detecting database with most LP data. |
-| `-o`, `--output PATH` | Output CSV path. Defaults to `data/lp_positions_<timestamp>.csv`. |
-| `-p`, `--pair PAIR` | Filter by trading pair (e.g., `SOL-USDC`). |
-| `-s`, `--summary` | Show summary only, don't export. |
+| Argument              | Description                                                                     |
+| --------------------- | ------------------------------------------------------------------------------- |
+| `--db PATH`           | Path to SQLite database. Defaults to auto-detecting database with most LP data. |
+| `-o`, `--output PATH` | Output CSV path. Defaults to `data/lp_positions_<timestamp>.csv`.               |
+| `-p`, `--pair PAIR`   | Filter by trading pair (e.g., `SOL-USDC`).                                      |
+| `-s`, `--summary`     | Show summary only, don't export.                                                |
 
 ### Exported columns
 
@@ -237,14 +241,14 @@ python scripts/visualize_lp_positions.py --pair SOL-USDC --no-open
 visualize_lp_positions.py --pair PAIR [--db PATH] [--connector NAME] [--hours N] [-o PATH] [--no-open]
 ```
 
-| Argument | Description |
-|---|---|
-| `-p`, `--pair PAIR` | **Required.** Trading pair (e.g., `SOL-USDC`). |
-| `--db PATH` | Path to SQLite database. Defaults to auto-detecting database with most LP data. |
-| `-c`, `--connector NAME` | Filter by connector (e.g., `meteora/clmm`). |
-| `-H`, `--hours N` | Lookback period in hours (e.g., `24` for last 24 hours). |
-| `-o`, `--output PATH` | Output HTML path. |
-| `--no-open` | Don't auto-open the dashboard in the browser. |
+| Argument                 | Description                                                                     |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| `-p`, `--pair PAIR`      | **Required.** Trading pair (e.g., `SOL-USDC`).                                  |
+| `--db PATH`              | Path to SQLite database. Defaults to auto-detecting database with most LP data. |
+| `-c`, `--connector NAME` | Filter by connector (e.g., `meteora/clmm`).                                     |
+| `-H`, `--hours N`        | Lookback period in hours (e.g., `24` for last 24 hours).                        |
+| `-o`, `--output PATH`    | Output HTML path.                                                               |
+| `--no-open`              | Don't auto-open the dashboard in the browser.                                   |
 
 ### Dashboard Features
 
@@ -261,6 +265,7 @@ visualize_lp_positions.py --pair PAIR [--db PATH] [--connector NAME] [--hours N]
 **IL vs Fees Breakdown** — how impermanent loss compares to fees earned.
 
 **Positions table** — sortable/filterable table with:
+
 - Timing (opened, closed, duration)
 - Price bounds and prices at ADD/REMOVE
 - ADD liquidity with deposited amounts and Solscan TX link
@@ -306,19 +311,19 @@ python scripts/manage_executor.py summary
 
 ### Create Options
 
-| Argument | Description |
-|---|---|
-| `--pool` | Pool address (required) |
-| `--pair` | Trading pair e.g., SOL-USDC (required) |
-| `--lower` | Lower price bound (required) |
-| `--upper` | Upper price bound (required) |
-| `--connector` | Connector name (default: meteora/clmm) |
-| `--base-amount` | Base token amount (default: 0) |
-| `--quote-amount` | Quote token amount |
-| `--side` | 0=BOTH, 1=BUY, 2=SELL (default: 1) |
+| Argument             | Description                               |
+| -------------------- | ----------------------------------------- |
+| `--pool`             | Pool address (required)                   |
+| `--pair`             | Trading pair e.g., SOL-USDC (required)    |
+| `--lower`            | Lower price bound (required)              |
+| `--upper`            | Upper price bound (required)              |
+| `--connector`        | Connector name (default: meteora/clmm)    |
+| `--base-amount`      | Base token amount (default: 0)            |
+| `--quote-amount`     | Quote token amount                        |
+| `--side`             | 0=BOTH, 1=BUY, 2=SELL (default: 1)        |
 | `--auto-close-above` | Auto-close seconds when price above range |
 | `--auto-close-below` | Auto-close seconds when price below range |
-| `--strategy-type` | Meteora: 0=Spot, 1=Curve, 2=Bid-Ask |
+| `--strategy-type`    | Meteora: 0=Spot, 1=Curve, 2=Bid-Ask       |
 
 ---
 
@@ -387,44 +392,44 @@ python scripts/manage_controller.py delete-config my_lp_config
 
 ### Create-Config Options
 
-| Argument | Description |
-|---|---|
-| `--pool` | Pool address (required) |
-| `--pair` | Trading pair e.g., SOL-USDC (required) |
-| `--connector` | Connector name (default: meteora/clmm) |
-| `--network` | Network (default: solana-mainnet-beta) |
-| `--amount` | Total amount in quote currency (default: 50) |
-| `--side` | 0=BOTH, 1=BUY, 2=SELL (default: 1) |
-| `--width` | Position width % (default: 0.5) |
-| `--offset` | Position offset % (default: 0.01) |
-| `--rebalance-seconds` | Seconds out-of-range before rebalancing (default: 60) |
+| Argument                | Description                                              |
+| ----------------------- | -------------------------------------------------------- |
+| `--pool`                | Pool address (required)                                  |
+| `--pair`                | Trading pair e.g., SOL-USDC (required)                   |
+| `--connector`           | Connector name (default: meteora/clmm)                   |
+| `--network`             | Network (default: solana-mainnet-beta)                   |
+| `--amount`              | Total amount in quote currency (default: 50)             |
+| `--side`                | 0=BOTH, 1=BUY, 2=SELL (default: 1)                       |
+| `--width`               | Position width % (default: 0.5)                          |
+| `--offset`              | Position offset % (default: 0.01)                        |
+| `--rebalance-seconds`   | Seconds out-of-range before rebalancing (default: 60)    |
 | `--rebalance-threshold` | Price % beyond bounds before timer starts (default: 0.1) |
-| `--sell-max` | Sell price max (anchor point) |
-| `--sell-min` | Sell price min |
-| `--buy-max` | Buy price max |
-| `--buy-min` | Buy price min (anchor point) |
-| `--strategy-type` | Meteora: 0=Spot, 1=Curve, 2=Bid-Ask (default: 0) |
+| `--sell-max`            | Sell price max (anchor point)                            |
+| `--sell-min`            | Sell price min                                           |
+| `--buy-max`             | Buy price max                                            |
+| `--buy-min`             | Buy price min (anchor point)                             |
+| `--strategy-type`       | Meteora: 0=Spot, 1=Curve, 2=Bid-Ask (default: 0)         |
 
 ### Deploy Options
 
-| Argument | Description |
-|---|---|
-| `bot_name` | Bot instance name (required) |
-| `--configs` | Controller config name(s) (required) |
-| `--account` | Credentials profile (default: master_account) |
-| `--image` | Docker image (default: hummingbot/hummingbot:latest) |
-| `--max-global-drawdown` | Max global drawdown in quote |
-| `--max-controller-drawdown` | Max controller drawdown in quote |
-| `--script-config` | Script config name (auto-generated if not provided) |
-| `--headless` | Run in headless mode |
+| Argument                    | Description                                          |
+| --------------------------- | ---------------------------------------------------- |
+| `bot_name`                  | Bot instance name (required)                         |
+| `--configs`                 | Controller config name(s) (required)                 |
+| `--account`                 | Credentials profile (default: master_account)        |
+| `--image`                   | Docker image (default: hummingbot/hummingbot:latest) |
+| `--max-global-drawdown`     | Max global drawdown in quote                         |
+| `--max-controller-drawdown` | Max controller drawdown in quote                     |
+| `--script-config`           | Script config name (auto-generated if not provided)  |
+| `--headless`                | Run in headless mode                                 |
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
+| Variable             | Default                 | Description        |
+| -------------------- | ----------------------- | ------------------ |
 | `HUMMINGBOT_API_URL` | `http://localhost:8000` | Hummingbot API URL |
-| `API_USER` | `admin` | API username |
-| `API_PASS` | `admin` | API password |
+| `API_USER`           | `admin`                 | API username       |
+| `API_PASS`           | `admin`                 | API password       |
 
 Scripts check for `.env` in: `./hummingbot-api/.env` → `~/.hummingbot/.env` → `.env`
 
@@ -466,16 +471,16 @@ python scripts/manage_gateway.py network solana-mainnet-beta --node-url https://
 
 ### Commands
 
-| Command | Description |
-|---|---|
-| `status` | Check if Gateway is running |
-| `start` | Start Gateway container |
-| `stop` | Stop Gateway container |
-| `restart` | Restart Gateway container |
-| `logs` | Get Gateway container logs |
-| `networks` | List all available networks |
-| `network <id>` | Get network config |
-| `network <id> --node-url <url>` | Set custom RPC node URL |
+| Command                         | Description                 |
+| ------------------------------- | --------------------------- |
+| `status`                        | Check if Gateway is running |
+| `start`                         | Start Gateway container     |
+| `stop`                          | Stop Gateway container      |
+| `restart`                       | Restart Gateway container   |
+| `logs`                          | Get Gateway container logs  |
+| `networks`                      | List all available networks |
+| `network <id>`                  | Get network config          |
+| `network <id> --node-url <url>` | Set custom RPC node URL     |
 
 ### Custom RPC Nodes
 
@@ -490,6 +495,7 @@ python scripts/manage_gateway.py network solana-mainnet-beta
 ```
 
 Popular Solana RPC providers:
+
 - [Helius](https://helius.dev/) - Free tier available
 - [QuickNode](https://quicknode.com/)
 - [Alchemy](https://alchemy.com/)
@@ -530,13 +536,13 @@ bash scripts/deploy_hummingbot_api.sh reset
 
 ### Commands
 
-| Command | Description |
-|---|---|
-| `status` | Check if Hummingbot API is installed and running |
+| Command   | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| `status`  | Check if Hummingbot API is installed and running             |
 | `install` | Clone repo and deploy (use `--defaults` for non-interactive) |
-| `upgrade` | Pull latest and redeploy |
-| `logs` | Show container logs |
-| `reset` | Stop containers and remove installation |
+| `upgrade` | Pull latest and redeploy                                     |
+| `logs`    | Show container logs                                          |
+| `reset`   | Stop containers and remove installation                      |
 
 ---
 
@@ -609,14 +615,14 @@ bash scripts/setup_gateway.sh --passphrase mypassword --port 15888
 
 ### Options
 
-| Option | Default | Description |
-|---|---|---|
-| `--status` | | Check status only, don't start |
-| `--image IMAGE` | `hummingbot/gateway:latest` | Docker image to use |
-| `--passphrase TEXT` | `hummingbot` | Gateway passphrase |
-| `--rpc-url URL` | | Custom RPC endpoint for `--network` |
-| `--network ID` | `solana-mainnet-beta` | Network to configure RPC for |
-| `--port PORT` | `15888` | Gateway port |
+| Option              | Default                     | Description                         |
+| ------------------- | --------------------------- | ----------------------------------- |
+| `--status`          |                             | Check status only, don't start      |
+| `--image IMAGE`     | `hummingbot/gateway:latest` | Docker image to use                 |
+| `--passphrase TEXT` | `hummingbot`                | Gateway passphrase                  |
+| `--rpc-url URL`     |                             | Custom RPC endpoint for `--network` |
+| `--network ID`      | `solana-mainnet-beta`       | Network to configure RPC for        |
+| `--port PORT`       | `15888`                     | Gateway port                        |
 
 ---
 
@@ -651,29 +657,29 @@ python scripts/add_wallet.py balances --address <WALLET_ADDRESS> --tokens SOL US
 
 ### Commands
 
-| Command | Description |
-|---|---|
-| `list` | List all connected wallets |
-| `add` | Add a wallet (prompted or via `--private-key`) |
-| `balances` | Get wallet token balances |
+| Command    | Description                                    |
+| ---------- | ---------------------------------------------- |
+| `list`     | List all connected wallets                     |
+| `add`      | Add a wallet (prompted or via `--private-key`) |
+| `balances` | Get wallet token balances                      |
 
 ### Add Options
 
-| Option | Description |
-|---|---|
+| Option          | Description                                          |
+| --------------- | ---------------------------------------------------- |
 | `--private-key` | Private key in base58. Omit to be prompted securely. |
-| `--chain` | Blockchain (default: solana) |
-| `--network` | Network (default: mainnet-beta) |
+| `--chain`       | Blockchain (default: solana)                         |
+| `--network`     | Network (default: mainnet-beta)                      |
 
 ### Balances Options
 
-| Option | Description |
-|---|---|
-| `--address` | Wallet address (required) |
-| `--tokens` | Specific token symbols to check |
-| `--chain` | Blockchain (default: solana) |
+| Option      | Description                     |
+| ----------- | ------------------------------- |
+| `--address` | Wallet address (required)       |
+| `--tokens`  | Specific token symbols to check |
+| `--chain`   | Blockchain (default: solana)    |
 | `--network` | Network (default: mainnet-beta) |
-| `--all` | Show zero balances too |
+| `--all`     | Show zero balances too          |
 
 ---
 

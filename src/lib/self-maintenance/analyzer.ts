@@ -39,20 +39,20 @@ export class CodeAnalyzer {
    */
   async analyze(targetPath: string): Promise<AnalysisResult[]> {
     const fullPath = join(this.rootDir, targetPath);
-    
+
     if (!existsSync(fullPath)) {
       throw new Error(`Path does not exist: ${targetPath}`);
     }
 
     const results: AnalysisResult[] = [];
-    
+
     const files = this.getTypeScriptFiles(fullPath);
-    
+
     for (const file of files) {
       const fileResult = await this.analyzeFile(file);
       results.push(fileResult);
     }
-    
+
     return results;
   }
 
@@ -61,36 +61,38 @@ export class CodeAnalyzer {
    */
   private getTypeScriptFiles(filePath: string): string[] {
     const stats = statSync(filePath);
-    
+
     if (stats.isFile()) {
       if (this.isTypeScriptFile(filePath)) {
         return [filePath];
       }
       return [];
     }
-    
+
     const files: string[] = [];
     const entries = readdirSync(filePath, { withFileTypes: true });
-    
+
     for (const entry of entries) {
-      if (entry.name.startsWith('.') || 
-          entry.name === 'node_modules' || 
-          entry.name === '.next' || 
-          entry.name === 'out' || 
-          entry.name === 'build' ||
-          entry.name === 'coverage') {
+      if (
+        entry.name.startsWith('.') ||
+        entry.name === 'node_modules' ||
+        entry.name === '.next' ||
+        entry.name === 'out' ||
+        entry.name === 'build' ||
+        entry.name === 'coverage'
+      ) {
         continue;
       }
-      
+
       const fullPath = join(filePath, entry.name);
-      
+
       if (entry.isDirectory()) {
         files.push(...this.getTypeScriptFiles(fullPath));
       } else if (this.isTypeScriptFile(fullPath)) {
         files.push(fullPath);
       }
     }
-    
+
     return files;
   }
 
@@ -103,31 +105,27 @@ export class CodeAnalyzer {
    */
   private async analyzeFile(filePath: string): Promise<AnalysisResult> {
     const relativePath = relative(this.rootDir, filePath);
-    
+
     // Run ESLint on the file
     const lintIssues = this.runLint(filePath);
-    
+
     // Check formatting with Prettier
     const formatIssues = this.checkFormat(filePath);
-    
+
     // Get test coverage info (if it's a test file, skip)
-    const metrics = this.isTestFile(filePath) 
-      ? this.getDefaultMetrics() 
+    const metrics = this.isTestFile(filePath)
+      ? this.getDefaultMetrics()
       : this.getCoverageMetrics(filePath);
-    
+
     // Check for documentation issues
     const docIssues = this.checkDocumentation(filePath);
-    
-    const allIssues = [
-      ...lintIssues,
-      ...formatIssues,
-      ...docIssues
-    ];
-    
+
+    const allIssues = [...lintIssues, ...formatIssues, ...docIssues];
+
     return {
       filepath: relativePath,
       issues: allIssues,
-      metrics
+      metrics,
     };
   }
 
@@ -137,14 +135,14 @@ export class CodeAnalyzer {
   private runLint(filePath: string): Issue[] {
     try {
       // Use npx eslint with JSON format
-      const output = execSync(`npx eslint "${filePath}" --format json`, { 
+      const output = execSync(`npx eslint "${filePath}" --format json`, {
         encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'ignore'] 
+        stdio: ['pipe', 'pipe', 'ignore'],
       });
-      
+
       const results = JSON.parse(output);
       const issues: Issue[] = [];
-      
+
       for (const result of results) {
         for (const message of result.messages) {
           issues.push({
@@ -153,11 +151,11 @@ export class CodeAnalyzer {
             message: message.message,
             line: message.line,
             column: message.column,
-            ruleId: message.ruleId
+            ruleId: message.ruleId,
           });
         }
       }
-      
+
       return issues;
     } catch (error) {
       // If ESLint exits with error code (issues found), we still want to parse output
@@ -166,7 +164,7 @@ export class CodeAnalyzer {
           const output = (error as any).stdout.toString();
           const results = JSON.parse(output);
           const issues: Issue[] = [];
-          
+
           for (const result of results) {
             for (const message of result.messages) {
               issues.push({
@@ -175,11 +173,11 @@ export class CodeAnalyzer {
                 message: message.message,
                 line: message.line,
                 column: message.column,
-                ruleId: message.ruleId
+                ruleId: message.ruleId,
               });
             }
           }
-          
+
           return issues;
         } catch (parseError) {
           // If we can't parse, return empty
@@ -196,17 +194,19 @@ export class CodeAnalyzer {
   private checkFormat(filePath: string): Issue[] {
     try {
       // Use npx prettier --check
-      execSync(`npx prettier --check "${filePath}"`, { 
-        stdio: 'ignore' 
+      execSync(`npx prettier --check "${filePath}"`, {
+        stdio: 'ignore',
       });
       return []; // No issues if it passes
     } catch (error) {
       // Prettier failed - file is not formatted
-      return [{
-        type: 'format',
-        severity: 'error',
-        message: 'File is not formatted according to Prettier standards'
-      }];
+      return [
+        {
+          type: 'format',
+          severity: 'error',
+          message: 'File is not formatted according to Prettier standards',
+        },
+      ];
     }
   }
 
@@ -224,26 +224,26 @@ export class CodeAnalyzer {
     }
   }
 
-   /**
-    * Check for documentation issues
-    */
-   private checkDocumentation(filePath: string): Issue[] {
-     const issues: Issue[] = [];
-     
-     try {
-       const content = require('fs').readFileSync(filePath, 'utf8');
-       
-       // Check for missing JSDoc on exported functions
-       if (this.isTypeScriptFile(filePath)) {
-         const jsdocIssues = this.checkForMissingJSDoc(content);
-         issues.push(...jsdocIssues);
-       }
-     } catch (error) {
-       // If we can't read the file, skip documentation check
-     }
-     
-     return issues;
-   }
+  /**
+   * Check for documentation issues
+   */
+  private checkDocumentation(filePath: string): Issue[] {
+    const issues: Issue[] = [];
+
+    try {
+      const content = require('fs').readFileSync(filePath, 'utf8');
+
+      // Check for missing JSDoc on exported functions
+      if (this.isTypeScriptFile(filePath)) {
+        const jsdocIssues = this.checkForMissingJSDoc(content);
+        issues.push(...jsdocIssues);
+      }
+    } catch (error) {
+      // If we can't read the file, skip documentation check
+    }
+
+    return issues;
+  }
 
   /**
    * Check for missing JSDoc comments on exported functions
@@ -251,16 +251,16 @@ export class CodeAnalyzer {
   private checkForMissingJSDoc(content: string): Issue[] {
     const issues: Issue[] = [];
     const lines = content.split('\n');
-    
+
     // Simple regex to find exported functions without preceding JSDoc
     // This is a simplified check - a real implementation would use AST
     const exportFuncPattern = /^export\s+(?:async\s+)?function\s+(\w+)\s*\(/gm;
     let match;
-    
+
     while ((match = exportFuncPattern.exec(content)) !== null) {
       const lineNum = content.substr(0, match.index).split('\n').length;
       const lineContent = lines[lineNum - 1];
-      
+
       // Check if there's a JSDoc comment on the line before
       let hasJSDoc = false;
       for (let i = lineNum - 2; i >= 0 && i >= lineNum - 5; i--) {
@@ -268,21 +268,25 @@ export class CodeAnalyzer {
           hasJSDoc = true;
           break;
         }
-        if (lines[i].trim() && !lines[i].trim().startsWith('*') && !lines[i].trim().startsWith('/')) {
+        if (
+          lines[i].trim() &&
+          !lines[i].trim().startsWith('*') &&
+          !lines[i].trim().startsWith('/')
+        ) {
           break;
         }
       }
-      
-       if (!hasJSDoc) {
-         issues.push({
-           type: 'documentation',
-           severity: 'warning',
-           message: `Exported function '${match[1]}' is missing JSDoc documentation`,
-           line: lineNum
-         });
-       }
+
+      if (!hasJSDoc) {
+        issues.push({
+          type: 'documentation',
+          severity: 'warning',
+          message: `Exported function '${match[1]}' is missing JSDoc documentation`,
+          line: lineNum,
+        });
+      }
     }
-    
+
     return issues;
   }
 
@@ -301,7 +305,7 @@ export class CodeAnalyzer {
       lines: 0,
       statements: 0,
       branches: 0,
-      functions: 0
+      functions: 0,
     };
   }
 }

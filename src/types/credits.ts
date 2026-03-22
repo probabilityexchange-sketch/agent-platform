@@ -1,5 +1,5 @@
-export type TransactionType = "PURCHASE" | "USAGE" | "REFUND";
-export type TransactionStatus = "PENDING" | "CONFIRMED" | "FAILED" | "EXPIRED";
+export type TransactionType = 'PURCHASE' | 'USAGE' | 'REFUND';
+export type TransactionStatus = 'PENDING' | 'CONFIRMED' | 'FAILED' | 'EXPIRED';
 
 export interface TokenPackage {
   id: string;
@@ -10,7 +10,7 @@ export interface TokenPackage {
 
 export interface PurchaseInitResponse {
   transactionId: string;
-  paymentAsset: "spl" | "sol";
+  paymentAsset: 'spl' | 'sol';
   tokenMint: string | null;
   treasuryWallet: string;
   burnWallet: string | null;

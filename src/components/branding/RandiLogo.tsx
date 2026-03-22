@@ -1,39 +1,36 @@
-import Image from "next/image";
-import Link from "next/link";
+import Image from 'next/image';
+import Link from 'next/link';
 
 interface RandiLogoProps {
-  size?: "sm" | "md" | "lg" | "xl";
-  variant?: "default" | "with-text" | "icon-only";
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  variant?: 'default' | 'with-text' | 'icon-only';
   href?: string;
   animated?: boolean;
   className?: string;
 }
 
 const sizeMap = {
-  sm: { width: 62, height: 62, textSize: "text-xl" },
-  md: { width: 80, height: 80, textSize: "text-2xl" },
-  lg: { width: 120, height: 120, textSize: "text-3xl" },
-  xl: { width: 164, height: 164, textSize: "text-5xl" },
+  sm: { width: 62, height: 62, textSize: 'text-xl' },
+  md: { width: 80, height: 80, textSize: 'text-2xl' },
+  lg: { width: 120, height: 120, textSize: 'text-3xl' },
+  xl: { width: 164, height: 164, textSize: 'text-5xl' },
 };
 
 export function RandiLogo({
-  size = "md",
-  variant = "default",
+  size = 'md',
+  variant = 'default',
   href,
   animated = false,
-  className = "",
+  className = '',
 }: RandiLogoProps) {
   const { width, height, textSize } = sizeMap[size];
-  const showText = variant === "default" || variant === "with-text";
+  const showText = variant === 'default' || variant === 'with-text';
 
   const logoContent = (
     <div
-      className={`flex items-center gap-3 group ${animated ? "transition-transform duration-200 hover:scale-105" : ""} ${className}`}
+      className={`flex items-center gap-3 group ${animated ? 'transition-transform duration-200 hover:scale-105' : ''} ${className}`}
     >
-      <div
-        className="relative transition-all duration-200"
-        style={{ width, height }}
-      >
+      <div className="relative transition-all duration-200" style={{ width, height }}>
         <Image
           src="/randi.png"
           alt="Randi"

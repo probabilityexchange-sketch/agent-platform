@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAuth, handleAuthError, AuthError } from "@/lib/auth/middleware";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth, handleAuthError, AuthError } from '@/lib/auth/middleware';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/utils/rate-limit';
 
 // FIX (MEDIUM): This route is now authenticated and rate-limited.
 // Previously it was an open proxy that anyone could use to consume our RPC credits.
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
-const DEFAULT_MAINNET_RPC = "https://api.mainnet-beta.solana.com";
+const DEFAULT_MAINNET_RPC = 'https://api.mainnet-beta.solana.com';
 
 function normalizeUrl(value: string | undefined): string | null {
   if (!value) return null;
@@ -31,13 +31,13 @@ function getSolanaRpcCandidates(): string[] {
 
 async function callRpc(url: string, payload: unknown): Promise<Response> {
   return fetch(url, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
     },
     body: JSON.stringify(payload),
-    cache: "no-store",
+    cache: 'no-store',
     signal: AbortSignal.timeout(8000),
   });
 }
@@ -53,14 +53,14 @@ function shouldRetryRpcResponse(status: number, responseText: string): boolean {
     };
     const codeValue = parsed?.error?.code;
     const numericCode =
-      typeof codeValue === "number" ? codeValue : Number.parseInt(String(codeValue), 10);
-    const message = (parsed?.error?.message || "").toLowerCase();
+      typeof codeValue === 'number' ? codeValue : Number.parseInt(String(codeValue), 10);
+    const message = (parsed?.error?.message || '').toLowerCase();
 
     if (numericCode === 401 || numericCode === 403 || numericCode === 429) {
       return true;
     }
 
-    if (message.includes("access forbidden") || message.includes("too many requests")) {
+    if (message.includes('access forbidden') || message.includes('too many requests')) {
       return true;
     }
   } catch {
@@ -76,65 +76,62 @@ export async function POST(request: NextRequest) {
     const auth = await requireAuth();
 
     // FIX (HIGH): Rate limit per user to prevent abuse
-    const { allowed } = await checkRateLimit(
-      `solana-rpc:${auth.userId}`,
-      RATE_LIMITS.solanaRpc
-    );
+    const { allowed } = await checkRateLimit(`solana-rpc:${auth.userId}`, RATE_LIMITS.solanaRpc);
     if (!allowed) {
-      return NextResponse.json({ error: "Too many RPC requests" }, { status: 429 });
+      return NextResponse.json({ error: 'Too many RPC requests' }, { status: 429 });
     }
 
     let payload: unknown;
     try {
       payload = await request.json();
     } catch {
-      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
 
-  const rpcCandidates = getSolanaRpcCandidates();
-  let upstreamResponse: Response | null = null;
-  let lastResponseText = "";
+    const rpcCandidates = getSolanaRpcCandidates();
+    let upstreamResponse: Response | null = null;
+    let lastResponseText = '';
 
-  for (const rpcUrl of rpcCandidates) {
-    const hasFallbackCandidate = rpcCandidates[rpcCandidates.length - 1] !== rpcUrl;
-    try {
-      const response = await callRpc(rpcUrl, payload);
-      const responseText = await response.text();
+    for (const rpcUrl of rpcCandidates) {
+      const hasFallbackCandidate = rpcCandidates[rpcCandidates.length - 1] !== rpcUrl;
+      try {
+        const response = await callRpc(rpcUrl, payload);
+        const responseText = await response.text();
 
-      if (hasFallbackCandidate && shouldRetryRpcResponse(response.status, responseText)) {
-        upstreamResponse = response;
-        lastResponseText = responseText;
+        if (hasFallbackCandidate && shouldRetryRpcResponse(response.status, responseText)) {
+          upstreamResponse = response;
+          lastResponseText = responseText;
+          continue;
+        }
+
+        return new NextResponse(responseText, {
+          status: response.status,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      } catch {
         continue;
       }
+    }
 
-      return new NextResponse(responseText, {
-        status: response.status,
+    if (upstreamResponse) {
+      return new NextResponse(lastResponseText, {
+        status: upstreamResponse.status,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
       });
-    } catch {
-      continue;
     }
-  }
-
-  if (upstreamResponse) {
-    return new NextResponse(lastResponseText, {
-      status: upstreamResponse.status,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-  }
 
     return NextResponse.json(
-      { error: "Unable to reach configured Solana RPC endpoints" },
+      { error: 'Unable to reach configured Solana RPC endpoints' },
       { status: 502 }
     );
   } catch (error) {
     if (error instanceof AuthError) {
       return handleAuthError(error);
     }
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

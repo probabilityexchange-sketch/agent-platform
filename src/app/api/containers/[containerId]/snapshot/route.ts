@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
-import { prisma } from "@/lib/db/prisma";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth, handleAuthError } from '@/lib/auth/middleware';
+import { prisma } from '@/lib/db/prisma';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/utils/rate-limit';
 
 /**
  * POST /api/containers/[containerId]/snapshot
@@ -15,9 +15,12 @@ export async function POST(
   try {
     const auth = await requireAuth();
 
-    const { allowed } = await checkRateLimit(`containers-snapshot:${auth.userId}`, RATE_LIMITS.provision);
+    const { allowed } = await checkRateLimit(
+      `containers-snapshot:${auth.userId}`,
+      RATE_LIMITS.provision
+    );
     if (!allowed) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     const { containerId } = await params;
@@ -25,7 +28,7 @@ export async function POST(
     const { agentSlug } = body;
 
     if (!agentSlug) {
-      return NextResponse.json({ error: "agentSlug is required" }, { status: 400 });
+      return NextResponse.json({ error: 'agentSlug is required' }, { status: 400 });
     }
 
     // Verify the container belongs to the user
@@ -37,12 +40,12 @@ export async function POST(
     });
 
     if (!container) {
-      return NextResponse.json({ error: "Container not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Container not found' }, { status: 404 });
     }
 
-    if (container.status !== "RUNNING") {
+    if (container.status !== 'RUNNING') {
       return NextResponse.json(
-        { error: "Container must be running to create a snapshot" },
+        { error: 'Container must be running to create a snapshot' },
         { status: 400 }
       );
     }
@@ -52,18 +55,15 @@ export async function POST(
     const bridgeApiKey = process.env.COMPUTE_BRIDGE_API_KEY;
 
     if (!bridgeUrl || !bridgeApiKey) {
-      return NextResponse.json(
-        { error: "Bridge not configured" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Bridge not configured' }, { status: 500 });
     }
 
     // Trigger snapshot on the bridge
     const response = await fetch(`${bridgeUrl}/container/${container.dockerId}/snapshot`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        "x-bridge-api-key": bridgeApiKey,
+        'Content-Type': 'application/json',
+        'x-bridge-api-key': bridgeApiKey,
       },
       body: JSON.stringify({
         userId: auth.userId,
@@ -74,14 +74,11 @@ export async function POST(
 
     if (!response.ok) {
       const error = await response.text();
-      console.error("Bridge snapshot error:", error);
-      return NextResponse.json(
-        { error: "Failed to trigger snapshot" },
-        { status: 500 }
-      );
+      console.error('Bridge snapshot error:', error);
+      return NextResponse.json({ error: 'Failed to trigger snapshot' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, message: "Snapshot triggered" });
+    return NextResponse.json({ success: true, message: 'Snapshot triggered' });
   } catch (err) {
     return handleAuthError(err);
   }

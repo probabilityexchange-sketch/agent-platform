@@ -19,7 +19,7 @@ This is a small API that runs on your AWS EC2 instance to allow the Randi web pl
    ```bash
    node server.js
    ```
-   *(Recommended: Use `pm2` to keep it running)*
+   _(Recommended: Use `pm2` to keep it running)_
 
 ## Security Note
 

@@ -19,11 +19,11 @@ Deploy the Hummingbot trading infrastructure. Before starting, explain to the us
 
 ## Components
 
-| Component | Repository |
-|-----------|------------|
+| Component      | Repository                                                                |
+| -------------- | ------------------------------------------------------------------------- |
 | Hummingbot API | [hummingbot/hummingbot-api](https://github.com/hummingbot/hummingbot-api) |
-| MCP Server | [hummingbot/mcp](https://github.com/hummingbot/mcp) |
-| Condor | [hummingbot/condor](https://github.com/hummingbot/condor) |
+| MCP Server     | [hummingbot/mcp](https://github.com/hummingbot/mcp)                       |
+| Condor         | [hummingbot/condor](https://github.com/hummingbot/condor)                 |
 
 ## Pre-Installation Check
 
@@ -40,24 +40,29 @@ This checks: container detection, TTY, Docker, Docker Compose, Git, Make.
 ## Install Hummingbot API
 
 **If ./hummingbot-api already exists**, verify it's running by checking docker logs:
+
 ```bash
 cd ./hummingbot-api && make deploy && sleep 2 && docker logs hummingbot-api 2>&1 | grep -i "uvicorn running"
 ```
+
 If logs show "Uvicorn running", skip to "Install MCP Server". Otherwise, reset and reinstall.
 
 **Fresh install:**
+
 ```bash
 git clone https://github.com/hummingbot/hummingbot-api.git ./hummingbot-api
 cd ./hummingbot-api
 ```
 
 **On regular machines** (interactive TTY - check_env.sh shows "Interactive TTY: Yes"):
+
 ```bash
 make setup    # Prompts for: API username, password, config password (defaults: admin/admin/admin)
 make deploy
 ```
 
 **In containers** (no TTY - check with `[ -t 0 ] && echo "TTY" || echo "No TTY"`):
+
 ```bash
 # Set USER env var and create sudo shim if needed
 export USER=${USER:-root}
@@ -89,6 +94,7 @@ make deploy
 ```
 
 **Verify:** Wait 2 seconds then check logs for "Uvicorn running on http://0.0.0.0:8000":
+
 ```bash
 sleep 2 && docker logs hummingbot-api 2>&1 | grep -i "uvicorn running"
 ```
@@ -98,6 +104,7 @@ sleep 2 && docker logs hummingbot-api 2>&1 | grep -i "uvicorn running"
 Install the MCP server using your CLI's native command. Use the same credentials from API setup.
 
 **IMPORTANT:** Do NOT ask the user which CLI to use. You already know which CLI you are:
+
 - If you are Claude Code, use `claude`
 - If you are Gemini CLI, use `gemini`
 - If you are Codex CLI, use `codex`
@@ -108,6 +115,7 @@ bash <(curl -s https://raw.githubusercontent.com/hummingbot/skills/main/skills/h
 ```
 
 Example for Claude (substitute your actual CLI name and credentials):
+
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/hummingbot/skills/main/skills/hummingbot-deploy/scripts/install_mcp.sh) \
   --agent claude --user admin --pass admin

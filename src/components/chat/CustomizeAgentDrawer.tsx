@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 
 interface CustomizeAgentDrawerProps {
   agentId: string;
@@ -12,10 +12,10 @@ export function CustomizeAgentDrawer({ agentId, isOpen, onClose }: CustomizeAgen
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [agentSlug, setAgentSlug] = useState<string | null>(null);
-  const [personality, setPersonality] = useState("");
-  const [rules, setRules] = useState("");
-  const [skills, setSkills] = useState("");
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [personality, setPersonality] = useState('');
+  const [rules, setRules] = useState('');
+  const [skills, setSkills] = useState('');
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -28,18 +28,18 @@ export function CustomizeAgentDrawer({ agentId, isOpen, onClose }: CustomizeAgen
         const agent = (data.agents as any[]).find(a => a.id === agentId || a.slug === agentId);
         if (agent) {
           setAgentSlug(agent.slug);
-          
+
           // Now fetch preferences
           const prefRes = await fetch(`/api/user/agent-preferences?agentSlug=${agent.slug}`);
           const prefData = await prefRes.json();
           if (prefData) {
-            setPersonality(prefData.personality || "");
-            setRules(prefData.rules || "");
-            setSkills(prefData.skills || "");
+            setPersonality(prefData.personality || '');
+            setRules(prefData.rules || '');
+            setSkills(prefData.skills || '');
           }
         }
       } catch (err) {
-        console.error("Error fetching agent preferences:", err);
+        console.error('Error fetching agent preferences:', err);
       } finally {
         setLoading(false);
       }
@@ -83,14 +83,21 @@ export function CustomizeAgentDrawer({ agentId, isOpen, onClose }: CustomizeAgen
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      
+
       <div className="absolute inset-y-0 right-0 max-w-full flex">
         <div className="w-screen max-w-md flex flex-col bg-card border-l border-border shadow-2xl animate-in slide-in-from-right duration-300">
           <div className="flex items-center justify-between p-4 border-b border-border">
-            <h2 className="text-xl font-bold uppercase tracking-wider text-primary">Customize Agent</h2>
+            <h2 className="text-xl font-bold uppercase tracking-wider text-primary">
+              Customize Agent
+            </h2>
             <button onClick={onClose} className="p-2 hover:bg-muted rounded-full transition-colors">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -103,33 +110,45 @@ export function CustomizeAgentDrawer({ agentId, isOpen, onClose }: CustomizeAgen
             ) : (
               <>
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-muted-foreground uppercase tracking-wider">Personality</label>
-                  <p className="text-xs text-muted-foreground mb-2">How should Randi talk? (e.g. funny, sarcastic, strictly professional)</p>
+                  <label className="block text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                    Personality
+                  </label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    How should Randi talk? (e.g. funny, sarcastic, strictly professional)
+                  </p>
                   <textarea
                     value={personality}
-                    onChange={(e) => setPersonality(e.target.value)}
+                    onChange={e => setPersonality(e.target.value)}
                     className="w-full h-32 bg-background border border-border rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary outline-none transition-all resize-none"
                     placeholder="Describe the agent's personality..."
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-muted-foreground uppercase tracking-wider">Custom Rules</label>
-                  <p className="text-xs text-muted-foreground mb-2">Specific behaviors or constraints Randi must follow.</p>
+                  <label className="block text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                    Custom Rules
+                  </label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Specific behaviors or constraints Randi must follow.
+                  </p>
                   <textarea
                     value={rules}
-                    onChange={(e) => setRules(e.target.value)}
+                    onChange={e => setRules(e.target.value)}
                     className="w-full h-32 bg-background border border-border rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary outline-none transition-all resize-none"
                     placeholder="List rules (one per line)..."
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-muted-foreground uppercase tracking-wider">Additional Skills</label>
-                  <p className="text-xs text-muted-foreground mb-2">Any special knowledge or instructions Randi should have.</p>
+                  <label className="block text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                    Additional Skills
+                  </label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Any special knowledge or instructions Randi should have.
+                  </p>
                   <textarea
                     value={skills}
-                    onChange={(e) => setSkills(e.target.value)}
+                    onChange={e => setSkills(e.target.value)}
                     className="w-full h-32 bg-background border border-border rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary outline-none transition-all resize-none"
                     placeholder="Define additional skills or knowledge..."
                   />
@@ -140,7 +159,9 @@ export function CustomizeAgentDrawer({ agentId, isOpen, onClose }: CustomizeAgen
 
           <div className="p-4 border-t border-border bg-muted/30">
             {message && (
-              <div className={`mb-4 p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+              <div
+                className={`mb-4 p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}
+              >
                 {message.text}
               </div>
             )}
@@ -156,7 +177,7 @@ export function CustomizeAgentDrawer({ agentId, isOpen, onClose }: CustomizeAgen
                 disabled={saving || loading}
                 className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-bold disabled:opacity-50"
               >
-                {saving ? "Saving..." : "Save Changes"}
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

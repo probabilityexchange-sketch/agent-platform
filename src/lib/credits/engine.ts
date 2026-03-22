@@ -1,9 +1,5 @@
-import { prisma } from "@/lib/db/prisma";
-import {
-  getCallCost,
-  toLamports,
-  getCreditPacks,
-} from "@/lib/tokenomics";
+import { prisma } from '@/lib/db/prisma';
+import { getCallCost, toLamports, getCreditPacks } from '@/lib/tokenomics';
 
 export { getCreditPacks };
 
@@ -18,7 +14,7 @@ export async function deductForAgentCall(
   chatSessionId?: string
 ): Promise<{ success: boolean; cost?: number; error?: string }> {
   try {
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async tx => {
       // 1. Get user
       const user = await tx.user.findUnique({
         where: { id: userId },
@@ -28,7 +24,7 @@ export async function deductForAgentCall(
       });
 
       if (!user) {
-        return { success: false, error: "User not found" };
+        return { success: false, error: 'User not found' };
       }
 
       // 2. Calculate cost based on model
@@ -37,7 +33,7 @@ export async function deductForAgentCall(
 
       // 3. Check if user has enough credits
       if (user.tokenBalance < finalCost) {
-        return { success: false, error: "Insufficient $RANDI balance" };
+        return { success: false, error: 'Insufficient $RANDI balance' };
       }
 
       // 4. Deduct from user balance
@@ -47,14 +43,14 @@ export async function deductForAgentCall(
       });
 
       // 5. Update ChatSession (if applicable)
-      if (chatSessionId && chatSessionId !== "new") {
+      if (chatSessionId && chatSessionId !== 'new') {
         try {
           await tx.chatSession.update({
             where: { id: chatSessionId },
             data: { tokensUsed: { increment: finalCost } },
           });
         } catch (e) {
-          console.warn("Failed to update tokensUsed for session:", chatSessionId);
+          console.warn('Failed to update tokensUsed for session:', chatSessionId);
         }
       }
 
@@ -62,8 +58,8 @@ export async function deductForAgentCall(
       await tx.tokenTransaction.create({
         data: {
           userId,
-          type: "USAGE",
-          status: "CONFIRMED",
+          type: 'USAGE',
+          status: 'CONFIRMED',
           amount: -finalCost,
           tokenAmount: toLamports(finalCost),
           description: `[Call] ${model}: ${description}`,
@@ -73,8 +69,8 @@ export async function deductForAgentCall(
       return { success: true, cost: finalCost };
     });
   } catch (error) {
-    console.error("Deduction error:", error);
-    return { success: false, error: "An internal error occurred. Please try again." };
+    console.error('Deduction error:', error);
+    return { success: false, error: 'An internal error occurred. Please try again.' };
   }
 }
 
@@ -95,7 +91,7 @@ export async function depositTokens(
   // Calculate bonus if pack found
   let bonusMultiplier = 1.0;
   if (pack) {
-    bonusMultiplier = 1 + (pack.bonusPercent / 100);
+    bonusMultiplier = 1 + pack.bonusPercent / 100;
   }
 
   // Convert BigInt base amount to tokens for bonus calculation
@@ -104,12 +100,12 @@ export async function depositTokens(
   const wholeTokens = Number(baseTokenAmount / BigInt(decimals));
   const finalWholeTokens = Math.floor(wholeTokens * bonusMultiplier);
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async tx => {
     // 1. Claim the pending transaction record
     const claim = await tx.tokenTransaction.updateMany({
-      where: { memo, userId, status: "PENDING" },
+      where: { memo, userId, status: 'PENDING' },
       data: {
-        status: "CONFIRMED",
+        status: 'CONFIRMED',
         txSignature,
         tokenAmount: baseTokenAmount,
         amount: finalWholeTokens,
@@ -150,6 +146,6 @@ export async function deductCredits(
   amount: number,
   description: string
 ): Promise<boolean> {
-  const result = await deductForAgentCall(userId, "llama-3-70b", description);
+  const result = await deductForAgentCall(userId, 'llama-3-70b', description);
   return result.success;
 }

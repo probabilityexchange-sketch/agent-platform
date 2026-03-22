@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db/prisma";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db/prisma';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/utils/rate-limit';
 
 // FIX (HIGH): Added rate limiting to prevent enumeration/scraping.
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for") ?? "anon";
+  const ip = request.headers.get('x-forwarded-for') ?? 'anon';
   const { allowed } = await checkRateLimit(`agents-list:${ip}`, RATE_LIMITS.agents);
   if (!allowed) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 
   const { searchParams } = new URL(request.url);
-  const includeAll = searchParams.get("all") === "true";
+  const includeAll = searchParams.get('all') === 'true';
 
-  const specialists = ["research-assistant", "code-assistant", "productivity-agent"];
+  const specialists = ['research-assistant', 'code-assistant', 'productivity-agent'];
 
   const where: any = { active: true };
   if (!includeAll) {
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       image: true,
       internalPort: true,
     },
-    orderBy: { name: "asc" },
+    orderBy: { name: 'asc' },
   });
 
   return NextResponse.json({ agents });

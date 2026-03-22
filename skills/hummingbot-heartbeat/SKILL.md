@@ -54,11 +54,11 @@ API_USER=admin
 API_PASS=admin
 ```
 
-| Variable | Default | Description |
-|----------|---------|-------------|
+| Variable             | Default                 | Description             |
+| -------------------- | ----------------------- | ----------------------- |
 | `HUMMINGBOT_API_URL` | `http://localhost:8000` | Hummingbot API base URL |
-| `API_USER` | `admin` | API username |
-| `API_PASS` | `admin` | API password |
+| `API_USER`           | `admin`                 | API username            |
+| `API_PASS`           | `admin`                 | API password            |
 
 ## Requirements
 
@@ -88,10 +88,10 @@ API_PASS=admin
 
 ## What It Checks
 
-| Check | Endpoint | Notes |
-|-------|----------|-------|
-| API health | `GET /` | Returns version |
-| Gateway | `docker ps \| grep gateway` | Skipped if Docker unavailable |
-| Active bots | `GET /bot-orchestration/status` | Lists controller configs |
-| Active executors | `POST /executors/search` | Filters out CLOSED/FAILED |
-| Portfolio | `POST /portfolio/history` | Latest balances with prices |
+| Check            | Endpoint                        | Notes                         |
+| ---------------- | ------------------------------- | ----------------------------- |
+| API health       | `GET /`                         | Returns version               |
+| Gateway          | `docker ps \| grep gateway`     | Skipped if Docker unavailable |
+| Active bots      | `GET /bot-orchestration/status` | Lists controller configs      |
+| Active executors | `POST /executors/search`        | Filters out CLOSED/FAILED     |
+| Portfolio        | `POST /portfolio/history`       | Latest balances with prices   |

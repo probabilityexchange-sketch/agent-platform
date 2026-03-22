@@ -1,7 +1,7 @@
 name: Integration issue
 description: Report Composio connection or tool execution issues.
-title: "[Integration] "
-labels: ["integrations", "triage"]
+title: '[Integration] '
+labels: ['integrations', 'triage']
 body:
   - type: markdown
     attributes:
@@ -26,7 +26,7 @@ body:
     id: auth_config_id
     attributes:
       label: Auth config id
-      description: Example: ac_xxxxx
+      description: 'Example: ac_xxxxx'
       placeholder: ac_12345
   - type: dropdown
     id: mode
@@ -57,7 +57,7 @@ body:
     attributes:
       label: Details
       description: Include exact messages and what you expected.
-      placeholder: "No auth config found for this toolkit" on Integrations page.
+      placeholder: '"No auth config found for this toolkit" on Integrations page.'
     validations:
       required: true
   - type: textarea

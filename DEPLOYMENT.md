@@ -12,14 +12,15 @@ GitHub Push -> GitHub Actions -> Build Image -> Push GHCR -> SSH EC2 -> Pull -> 
 
 Configure in GitHub: `Settings -> Secrets and variables -> Actions`.
 
-| Secret | Description | Example |
-|--------|-------------|---------|
-| `EC2_HOST` | EC2 public IP or DNS | `ec2-1-2-3-4.compute-1.amazonaws.com` |
-| `EC2_USER` | SSH user for deployment | `deploy` |
-| `EC2_SSH_KEY` | Private SSH key | `-----BEGIN OPENSSH PRIVATE KEY-----...` |
-| `GHCR_PAT` | PAT with `read:packages` | `ghp_xxxx` |
+| Secret        | Description              | Example                                  |
+| ------------- | ------------------------ | ---------------------------------------- |
+| `EC2_HOST`    | EC2 public IP or DNS     | `ec2-1-2-3-4.compute-1.amazonaws.com`    |
+| `EC2_USER`    | SSH user for deployment  | `deploy`                                 |
+| `EC2_SSH_KEY` | Private SSH key          | `-----BEGIN OPENSSH PRIVATE KEY-----...` |
+| `GHCR_PAT`    | PAT with `read:packages` | `ghp_xxxx`                               |
 
 Notes:
+
 - EC2 needs `GHCR_PAT` to pull private GHCR images.
 - GitHub Actions can still push with `GITHUB_TOKEN`.
 
@@ -33,6 +34,7 @@ Notes:
 ## AWS/EC2 Rollout Runbook (Token Credits Ledger)
 
 ### Ordered Rollout
+
 1. Build and push image to GHCR.
 2. Pull image on EC2.
 3. Apply database migrations.
@@ -44,6 +46,7 @@ Notes:
 ### Prechecks
 
 Run before production rollout:
+
 - [ ] GitHub Actions workflow is green for target commit.
 - [ ] Target image exists in GHCR.
 - [ ] EC2 SSH access confirmed.
@@ -75,6 +78,7 @@ docker logs agent-platform-web --tail 200
 ### Post-Deploy Smoke Tests
 
 Verify the happy-path flow in order:
+
 1. Auth/session works (`/api/auth/me` after login returns 200).
 2. Platform config endpoint returns expected values (`/api/config`).
 3. Purchase intent create works (`POST /api/purchase-intents`).
@@ -88,12 +92,14 @@ Verify the happy-path flow in order:
 Use this checklist for the issue you described (agent creates but cannot be configured) and for end-to-end devnet purchase validation.
 
 Preconditions:
+
 - [ ] `.env` has `AGENT_PERSISTENT_STORAGE=true`.
 - [ ] `.env` has valid `TOKEN_MINT`, `TREASURY_WALLET`, `NEXT_PUBLIC_SOLANA_NETWORK=devnet`, and `NEXT_PUBLIC_SOLANA_RPC_URL`.
 - [ ] Test wallet has both devnet SOL (fees) and the configured token mint balance.
 - [ ] App can reach Docker via `DOCKER_HOST` (`http://docker-proxy:2375` in compose deployment).
 
 Agent creation/configuration/persistence:
+
 1. Sign in and set username in dashboard profile.
 2. Create one container for `agent-zero` and one for `openclaw`.
 3. Open each agent URL and save a visible config artifact:
@@ -105,6 +111,7 @@ Agent creation/configuration/persistence:
 7. Confirm `GET /api/containers` shows new container records and no `ERROR` status.
 
 Devnet token purchase verification:
+
 1. Open Credits page and buy one package (Small is sufficient).
 2. Confirm `POST /api/credits/purchase` returns `transactionId`, `memo`, `tokenMint`, `treasuryWallet`.
 3. Sign and submit SPL transfer from test wallet to treasury with the exact `memo`.
@@ -127,6 +134,7 @@ Devnet token purchase verification:
 ## Rollback Procedure
 
 If the rollout causes payment/ledger instability:
+
 1. Stop or gate verification traffic path.
 2. Roll app image back to previous known-good tag.
 3. Restore pre-deploy DB snapshot if schema/data mismatch is present.
@@ -139,13 +147,16 @@ If the rollout causes payment/ledger instability:
 For the modern chat-centric platform, we recommend Vercel for the frontend/API and Supabase for the PostgreSQL database.
 
 ### 1. Supabase Setup
+
 - Create a new project on [Supabase](https://supabase.com).
 - Go to `Project Settings -> Database`.
 - Copy the **Connection String** (Transaction mode, port 6543) for the `DATABASE_URL`.
 - Copy the **Direct Connection String** (port 5432) for `DIRECT_URL`.
 
 ### 2. Vercel Environment Variables
+
 Add these to your Vercel project:
+
 - `DATABASE_URL`: Your Supabase transaction pooler URL.
 - `DIRECT_URL`: Your Supabase direct connection URL.
 - `NEXT_PUBLIC_PRIVY_APP_ID`: From Privy Dashboard.
@@ -166,17 +177,21 @@ Add these to your Vercel project:
 - `COMPOSIO_API_KEY`: Required for Gmail, Calendar, GitHub, and other tool integrations.
 
 Recommended production-only additions:
+
 - `TREASURY_SECRET_KEY`: Required if you want the protocol batch burn job to execute on-chain.
 - `CRON_SECRET`: Required to authorize `/api/cron/scan` in production.
 - `COMPOSIO_AUTH_CONFIG_GMAIL`: Shared Gmail auth config if you are not using per-user auth.
 - `COMPOSIO_AUTH_CONFIG_GOOGLECALENDAR`: Shared Google Calendar auth config if you are not using per-user auth.
 
 ### 3. Deploy
+
 - Connect your GitHub repo to Vercel.
 - The `vercel.json` included in the root handles the build and prisma generation.
 
 ### 4. Database Migration
+
 Run this locally (targeting the remote DB) or via a CI pipeline:
+
 ```bash
 DATABASE_URL="your_direct_supabase_url" npx prisma db push
 ```
@@ -189,34 +204,40 @@ Use this for production rollout approvals and audit trail:
 Title: Secure token purchase-intent credits ledger rollout (AWS/EC2)
 
 Window:
+
 - Start:
 - End:
 - Owner:
 - On-call:
 
 Scope:
+
 - Commit(s):
 - Environment: production
 
 Prechecks:
+
 - [ ] Actions green
 - [ ] GHCR image present
 - [ ] DB snapshot taken
 - [ ] EC2 access verified
 
 Deploy:
+
 - [ ] pull image
 - [ ] migrate deploy
 - [ ] db seed
 - [ ] restart app
 
 Validation:
+
 - [ ] auth check
 - [ ] purchase-intent create/verify
 - [ ] credits balance correctness
 - [ ] logs stable
 
 Rollback ready:
+
 - [ ] previous image tag identified
 - [ ] snapshot restore plan confirmed
 ```

@@ -4,19 +4,22 @@ interface RateLimitEntry {
 }
 
 const inMemoryStore = new Map<string, RateLimitEntry>();
-const redisUrl = process.env.UPSTASH_REDIS_REST_URL?.replace(/\/$/, "");
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL?.replace(/\/$/, '');
 const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
 const redisEnabled = Boolean(redisUrl && redisToken);
 
 // Clean up expired entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of inMemoryStore) {
-    if (entry.resetAt < now) {
-      inMemoryStore.delete(key);
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const [key, entry] of inMemoryStore) {
+      if (entry.resetAt < now) {
+        inMemoryStore.delete(key);
+      }
     }
-  }
-}, 5 * 60 * 1000);
+  },
+  5 * 60 * 1000
+);
 
 export interface RateLimitConfig {
   maxRequests: number;
@@ -34,30 +37,30 @@ export const RATE_LIMITS = {
   auth: { maxRequests: 5, windowMs: 60 * 1000 },
   purchase: { maxRequests: 3, windowMs: 60 * 1000 },
   purchaseVerify: {
-    maxRequests: envInt("RATE_LIMIT_PURCHASE_VERIFY_MAX_REQUESTS", 12),
-    windowMs: envInt("RATE_LIMIT_PURCHASE_VERIFY_WINDOW_MS", 60 * 1000),
+    maxRequests: envInt('RATE_LIMIT_PURCHASE_VERIFY_MAX_REQUESTS', 12),
+    windowMs: envInt('RATE_LIMIT_PURCHASE_VERIFY_WINDOW_MS', 60 * 1000),
   },
   provision: {
-    maxRequests: envInt("RATE_LIMIT_PROVISION_MAX_REQUESTS", 6),
-    windowMs: envInt("RATE_LIMIT_PROVISION_WINDOW_MS", 60 * 1000),
+    maxRequests: envInt('RATE_LIMIT_PROVISION_MAX_REQUESTS', 6),
+    windowMs: envInt('RATE_LIMIT_PROVISION_WINDOW_MS', 60 * 1000),
   },
   general: { maxRequests: 30, windowMs: 60 * 1000 },
   // FIX (HIGH): New rate limits for previously unprotected routes
   chat: {
-    maxRequests: envInt("RATE_LIMIT_CHAT_MAX_REQUESTS", 20),
-    windowMs: envInt("RATE_LIMIT_CHAT_WINDOW_MS", 60 * 1000),
+    maxRequests: envInt('RATE_LIMIT_CHAT_MAX_REQUESTS', 20),
+    windowMs: envInt('RATE_LIMIT_CHAT_WINDOW_MS', 60 * 1000),
   },
   solanaRpc: {
-    maxRequests: envInt("RATE_LIMIT_SOLANA_RPC_MAX_REQUESTS", 60),
-    windowMs: envInt("RATE_LIMIT_SOLANA_RPC_WINDOW_MS", 60 * 1000),
+    maxRequests: envInt('RATE_LIMIT_SOLANA_RPC_MAX_REQUESTS', 60),
+    windowMs: envInt('RATE_LIMIT_SOLANA_RPC_WINDOW_MS', 60 * 1000),
   },
   agents: {
-    maxRequests: envInt("RATE_LIMIT_AGENTS_MAX_REQUESTS", 60),
-    windowMs: envInt("RATE_LIMIT_AGENTS_WINDOW_MS", 60 * 1000),
+    maxRequests: envInt('RATE_LIMIT_AGENTS_MAX_REQUESTS', 60),
+    windowMs: envInt('RATE_LIMIT_AGENTS_WINDOW_MS', 60 * 1000),
   },
   toolApproval: {
-    maxRequests: envInt("RATE_LIMIT_TOOL_APPROVAL_MAX_REQUESTS", 30),
-    windowMs: envInt("RATE_LIMIT_TOOL_APPROVAL_WINDOW_MS", 60 * 1000),
+    maxRequests: envInt('RATE_LIMIT_TOOL_APPROVAL_MAX_REQUESTS', 30),
+    windowMs: envInt('RATE_LIMIT_TOOL_APPROVAL_WINDOW_MS', 60 * 1000),
   },
 } as const;
 
@@ -68,7 +71,7 @@ function parsePipelineResult(entry: unknown): unknown {
     return entry[1];
   }
 
-  if (entry && typeof entry === "object" && "result" in entry) {
+  if (entry && typeof entry === 'object' && 'result' in entry) {
     return (entry as { result: unknown }).result;
   }
 
@@ -88,21 +91,21 @@ async function checkRedisRateLimit(
 
   try {
     const response = await fetch(`${redisUrl}/pipeline`, {
-      method: "POST",
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${redisToken}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify([
-        ["INCR", redisKey],
-        ["PEXPIRE", redisKey, config.windowMs, "NX"],
-        ["PTTL", redisKey],
+        ['INCR', redisKey],
+        ['PEXPIRE', redisKey, config.windowMs, 'NX'],
+        ['PTTL', redisKey],
       ]),
-      cache: "no-store",
+      cache: 'no-store',
     });
 
     if (!response.ok) {
-      throw new Error("Redis rate-limit request failed");
+      throw new Error('Redis rate-limit request failed');
     }
 
     const payload = (await response.json()) as unknown[];
@@ -113,8 +116,7 @@ async function checkRedisRateLimit(
       return null;
     }
 
-    const effectiveTtlMs =
-      Number.isFinite(ttlMs) && ttlMs > 0 ? ttlMs : config.windowMs;
+    const effectiveTtlMs = Number.isFinite(ttlMs) && ttlMs > 0 ? ttlMs : config.windowMs;
     const remaining = Math.max(config.maxRequests - count, 0);
     return {
       allowed: count <= config.maxRequests,
@@ -126,10 +128,7 @@ async function checkRedisRateLimit(
   }
 }
 
-function checkInMemoryRateLimit(
-  key: string,
-  config: RateLimitConfig
-): RateLimitResult {
+function checkInMemoryRateLimit(key: string, config: RateLimitConfig): RateLimitResult {
   const now = Date.now();
   const entry = inMemoryStore.get(key);
 

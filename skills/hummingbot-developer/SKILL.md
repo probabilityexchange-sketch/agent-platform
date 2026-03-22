@@ -44,36 +44,37 @@ Developer workflow skill for building and running the full Hummingbot stack from
 
 **Commands** (run as `/hummingbot-developer <command>`):
 
-| Command | Description |
-|---------|-------------|
-| `start` | Check dev environment status |
-| `select-branches` | Pick branches for all 3 repos |
-| `install-all` | Install all 3 repos in order |
-| `build-all` | Build wheel + all Docker images |
-| `verify-build` | Verify builds are correct + in sync |
-| `run-dev-stack` | Start full stack from source |
-| `setup-hummingbot` | Install Hummingbot from source |
-| `run-hummingbot` | Run Hummingbot CLI from source |
-| `build-hummingbot` | Build wheel + Docker image |
-| `setup-gateway` | Install Gateway from source |
-| `run-gateway` | Run Gateway in dev mode |
-| `build-gateway` | Build Gateway Docker image |
-| `setup-api-dev` | Wire API to local Hummingbot source |
-| `run-api-dev` | Run API from source with hot-reload |
-| `test-integration` | Smoke test the full stack |
+| Command            | Description                         |
+| ------------------ | ----------------------------------- |
+| `start`            | Check dev environment status        |
+| `select-branches`  | Pick branches for all 3 repos       |
+| `install-all`      | Install all 3 repos in order        |
+| `build-all`        | Build wheel + all Docker images     |
+| `verify-build`     | Verify builds are correct + in sync |
+| `run-dev-stack`    | Start full stack from source        |
+| `setup-hummingbot` | Install Hummingbot from source      |
+| `run-hummingbot`   | Run Hummingbot CLI from source      |
+| `build-hummingbot` | Build wheel + Docker image          |
+| `setup-gateway`    | Install Gateway from source         |
+| `run-gateway`      | Run Gateway in dev mode             |
+| `build-gateway`    | Build Gateway Docker image          |
+| `setup-api-dev`    | Wire API to local Hummingbot source |
+| `run-api-dev`      | Run API from source with hot-reload |
+| `test-integration` | Smoke test the full stack           |
 
 **Typical dev workflow:**
+
 ```
 install-deps → select-branches → install-all → build-all → verify-build → run-dev-stack → test-integration
 ```
 
 **Repo locations (all in workspace):**
 
-| Repo | Path |
-|------|------|
-| hummingbot | `~/.openclaw/workspace/hummingbot` |
-| gateway | `~/.openclaw/workspace/hummingbot-gateway` |
-| hummingbot-api | `~/.openclaw/workspace/hummingbot-api` |
+| Repo           | Path                                       |
+| -------------- | ------------------------------------------ |
+| hummingbot     | `~/.openclaw/workspace/hummingbot`         |
+| gateway        | `~/.openclaw/workspace/hummingbot-gateway` |
+| hummingbot-api | `~/.openclaw/workspace/hummingbot-api`     |
 
 Override with env vars: `HUMMINGBOT_DIR`, `GATEWAY_DIR`, `HUMMINGBOT_API_DIR`, or `WORKSPACE`.
 
@@ -88,6 +89,7 @@ bash scripts/install_deps.sh
 ```
 
 **Installs (only if missing):**
+
 - Homebrew (macOS)
 - Xcode Command Line Tools (macOS — needed for Cython `build_ext`)
 - Miniconda (conda)
@@ -97,6 +99,7 @@ bash scripts/install_deps.sh
 - Docker Desktop (macOS — via Homebrew cask or opens download page)
 
 **Options:**
+
 ```bash
 --check         # check only, don't install anything
 --conda         # only install conda
@@ -117,6 +120,7 @@ bash scripts/select_branches.sh
 ```
 
 **Non-interactive options:**
+
 ```bash
 # Use development for all
 bash scripts/select_branches.sh --defaults
@@ -141,6 +145,7 @@ bash scripts/install_all.sh
 ```
 
 **What it does (in order):**
+
 1. Removes `solders` from `environment.yml` (pip-only)
 2. `make install` in hummingbot → `conda env hummingbot`
 3. `pip install solders>=0.19.0` into hummingbot env
@@ -149,6 +154,7 @@ bash scripts/install_all.sh
 6. `pip install -e <hummingbot_dir> --no-deps` → wires local source into API env
 
 **Options:**
+
 ```bash
 --skip-hbot      # skip hummingbot conda install
 --skip-gateway   # skip gateway pnpm install
@@ -167,6 +173,7 @@ bash scripts/build_all.sh
 ```
 
 **Build order:**
+
 1. `hummingbot` wheel (`dist/*.whl`) via `python setup.py bdist_wheel`
 2. `hummingbot/hummingbot:dev` Docker image
 3. `hummingbot/gateway:dev` Docker image (also rebuilds dist/)
@@ -175,6 +182,7 @@ bash scripts/build_all.sh
 **Each image is also tagged with the branch name** (e.g., `hummingbot/gateway:core-2.7`).
 
 **Options:**
+
 ```bash
 --wheel-only     # only build hummingbot wheel, no Docker
 --no-docker      # skip all Docker builds
@@ -195,6 +203,7 @@ bash scripts/verify_build.sh
 ```
 
 **Checks:**
+
 1. Each repo is on the expected branch (from `.dev-branches`)
 2. Hummingbot wheel exists in `dist/`
 3. Gateway `dist/` is built and not stale vs source
@@ -220,11 +229,13 @@ bash scripts/run_dev_stack.sh
 ```
 
 **Start order:**
+
 1. Docker infra (postgres + EMQX) via `docker compose up emqx postgres -d`
 2. Gateway from source in background (`node dist/index.js --passphrase=hummingbot --dev`)
 3. Hummingbot API from source in foreground (`uvicorn main:app --reload`)
 
 **Options:**
+
 ```bash
 --no-gateway           # skip gateway start
 --passphrase <pass>    # gateway passphrase (default: hummingbot)
@@ -233,6 +244,7 @@ bash scripts/run_dev_stack.sh
 ```
 
 **Logs:**
+
 - Gateway logs: `tail -f ~/.openclaw/workspace/.gateway.log`
 - API logs: printed to terminal (foreground)
 
@@ -323,12 +335,12 @@ conda run -n hummingbot pip install "solders>=0.19.0"
 
 ### Interpreting output
 
-| Output | Meaning | Next step |
-|--------|---------|-----------|
-| `conda develop .` succeeds | Dev install registered | Proceed |
-| `PackagesNotFoundError: solders` | Forgot step 3 | Run sed + reinstall |
-| `Error: Conda is not found` | conda not in PATH | `source ~/.zshrc` or install Anaconda |
-| `build_ext` errors | Missing build tools | Install Xcode CLT: `xcode-select --install` |
+| Output                           | Meaning                | Next step                                   |
+| -------------------------------- | ---------------------- | ------------------------------------------- |
+| `conda develop .` succeeds       | Dev install registered | Proceed                                     |
+| `PackagesNotFoundError: solders` | Forgot step 3          | Run sed + reinstall                         |
+| `Error: Conda is not found`      | conda not in PATH      | `source ~/.zshrc` or install Anaconda       |
+| `build_ext` errors               | Missing build tools    | Install Xcode CLT: `xcode-select --install` |
 
 ### After setup
 
@@ -352,6 +364,7 @@ conda activate hummingbot
 ```
 
 Or via make:
+
 ```bash
 cd <HUMMINGBOT_DIR>
 make run
@@ -360,6 +373,7 @@ make run
 **Note:** This opens the interactive Hummingbot CLI. Use `exit` to quit.
 
 To run with a specific config:
+
 ```bash
 make run ARGS="--config-file-name conf_pure_mm_1.yml"
 ```
@@ -384,6 +398,7 @@ Wheel is output to `dist/hummingbot-*.whl`.
 **Important:** The wheel must be built with Python 3.12 to match hummingbot-api's environment.
 
 **Use this wheel to install into other envs:**
+
 ```bash
 pip install dist/hummingbot-*.whl --force-reinstall --no-deps
 ```
@@ -409,6 +424,7 @@ ls dist/*linux*.whl
 ```
 
 **Platform wheel suffixes:**
+
 - `linux_x86_64` — Linux AMD/Intel 64-bit
 - `linux_aarch64` — Linux ARM64 (Apple Silicon Docker, AWS Graviton)
 - `macosx_11_0_arm64` — macOS Apple Silicon (native only, NOT for Docker)
@@ -422,23 +438,25 @@ docker build -t hummingbot/hummingbot:dev -f Dockerfile .
 ```
 
 Or with make (also cleans first):
+
 ```bash
 make build TAG=:dev
 ```
 
 **Tag for use with hummingbot-api:**
+
 ```bash
 docker build -t hummingbot/hummingbot:development -f Dockerfile .
 ```
 
 ### Interpreting output
 
-| Output | Meaning |
-|--------|---------|
-| `Successfully built` + wheel path | Wheel ready in `dist/` |
-| `Successfully tagged hummingbot/hummingbot:dev` | Docker image ready |
-| `build_ext` error | Cython compile issue — check conda env is active |
-| OOM during Docker build | Add `--memory 4g` flag |
+| Output                                          | Meaning                                          |
+| ----------------------------------------------- | ------------------------------------------------ |
+| `Successfully built` + wheel path               | Wheel ready in `dist/`                           |
+| `Successfully tagged hummingbot/hummingbot:dev` | Docker image ready                               |
+| `build_ext` error                               | Cython compile issue — check conda env is active |
+| OOM during Docker build                         | Add `--memory 4g` flag                           |
 
 ---
 
@@ -471,6 +489,7 @@ pnpm install
 ```
 
 If you see USB HID errors on macOS:
+
 ```bash
 pnpm install --force
 ```
@@ -492,17 +511,18 @@ pnpm run setup
 ```
 
 Setup creates:
+
 - `conf/` — chain, connector, token, and RPC configs
 - `certs/` — TLS certificates (self-signed for dev)
 
 ### Interpreting output
 
-| Output | Meaning | Next step |
-|--------|---------|-----------|
-| `Gateway setup complete` | Ready to start | `run-gateway` |
-| `tsc` errors | TypeScript compile error | Check Node version (`node --version` ≥ 20) |
-| `pnpm: command not found` | pnpm not installed | `npm install -g pnpm` |
-| `ENOSPC` | Disk space | Free up space |
+| Output                    | Meaning                  | Next step                                  |
+| ------------------------- | ------------------------ | ------------------------------------------ |
+| `Gateway setup complete`  | Ready to start           | `run-gateway`                              |
+| `tsc` errors              | TypeScript compile error | Check Node version (`node --version` ≥ 20) |
+| `pnpm: command not found` | pnpm not installed       | `npm install -g pnpm`                      |
+| `ENOSPC`                  | Disk space               | Free up space                              |
 
 ---
 
@@ -522,16 +542,19 @@ pnpm start --passphrase=hummingbot --dev
 ```
 
 **What `--dev` does:**
+
 - Runs in HTTP mode (no TLS) on port 15888
 - Enables verbose logging
 - Hummingbot API auto-connects at `http://localhost:15888`
 
 **Verify it's running:**
+
 ```bash
 curl http://localhost:15888/
 ```
 
 **Watch logs for startup sequence:**
+
 ```
 Gateway listening on port 15888
 Solana mainnet-beta initialized
@@ -539,6 +562,7 @@ Solana mainnet-beta initialized
 ```
 
 **Configure custom RPC (recommended to avoid rate limits):**
+
 ```bash
 # After gateway is running, update RPC via API
 curl -X POST http://localhost:15888/network/config \
@@ -563,11 +587,13 @@ docker build \
 ```
 
 **Tag as development for use with hummingbot-api:**
+
 ```bash
 docker tag hummingbot/gateway:dev hummingbot/gateway:development
 ```
 
 **Verify image:**
+
 ```bash
 docker run --rm hummingbot/gateway:dev node -e "console.log('OK')"
 ```
@@ -592,6 +618,7 @@ This creates the `hummingbot-api` conda env with the PyPI version of hummingbot.
 ### Step 2: Install local Hummingbot into hummingbot-api env
 
 **Option A — Editable install (recommended for active development):**
+
 ```bash
 conda run -n hummingbot-api pip install -e <HUMMINGBOT_DIR> --no-deps
 ```
@@ -599,6 +626,7 @@ conda run -n hummingbot-api pip install -e <HUMMINGBOT_DIR> --no-deps
 Changes to hummingbot source are reflected immediately (no reinstall needed).
 
 **Option B — Wheel install (for testing a specific build):**
+
 ```bash
 # First build the wheel
 cd <HUMMINGBOT_DIR> && conda run -n hummingbot python setup.py bdist_wheel
@@ -623,11 +651,11 @@ conda run -n hummingbot-api pip install "solders>=0.19.0"
 
 ### Interpreting output
 
-| Output | Meaning |
-|--------|---------|
-| Path inside your hummingbot dir | ✅ Local source active |
+| Output                                    | Meaning                     |
+| ----------------------------------------- | --------------------------- |
+| Path inside your hummingbot dir           | ✅ Local source active      |
 | Path inside `anaconda3/.../site-packages` | ❌ Still using PyPI version |
-| `ImportError: No module named hummingbot` | pip install failed — retry |
+| `ImportError: No module named hummingbot` | pip install failed — retry  |
 
 ---
 
@@ -643,6 +671,7 @@ docker compose up emqx postgres -d
 ```
 
 Verify they're healthy:
+
 ```bash
 docker compose ps
 ```
@@ -655,6 +684,7 @@ conda run --no-capture-output -n hummingbot-api uvicorn main:app --reload
 ```
 
 Or via make:
+
 ```bash
 make run
 ```
@@ -700,26 +730,26 @@ python scripts/test_integration.py
 
 ### What gets tested
 
-| Test | Checks |
-|------|--------|
-| API health | `GET /health` returns 200 |
-| API version | Confirms hummingbot source path (not PyPI) |
-| Gateway health | `GET /` on port 15888 returns 200 |
-| API→Gateway | API can reach Gateway (`/gateway/status`) |
-| Connectors | At least one connector visible via API |
-| Wallets | Gateway wallet list accessible |
+| Test           | Checks                                     |
+| -------------- | ------------------------------------------ |
+| API health     | `GET /health` returns 200                  |
+| API version    | Confirms hummingbot source path (not PyPI) |
+| Gateway health | `GET /` on port 15888 returns 200          |
+| API→Gateway    | API can reach Gateway (`/gateway/status`)  |
+| Connectors     | At least one connector visible via API     |
+| Wallets        | Gateway wallet list accessible             |
 
 ### Interpreting results
 
-| Output | Meaning | Fix |
-|--------|---------|-----|
-| `✓ API running` | API up | — |
-| `✓ Gateway running` | Gateway up | — |
-| `✓ API→Gateway connected` | Full stack wired | — |
-| `✗ API not running` | Start with `run-api-dev` | — |
-| `✗ Gateway not running` | Start with `run-gateway` | — |
-| `✗ API→Gateway: connection refused` | Gateway URL mismatch | Check `.env` `GATEWAY_URL=http://localhost:15888` |
-| `✗ Local hummingbot not active` | Using PyPI version | Run `setup-api-dev` |
+| Output                              | Meaning                  | Fix                                               |
+| ----------------------------------- | ------------------------ | ------------------------------------------------- |
+| `✓ API running`                     | API up                   | —                                                 |
+| `✓ Gateway running`                 | Gateway up               | —                                                 |
+| `✓ API→Gateway connected`           | Full stack wired         | —                                                 |
+| `✗ API not running`                 | Start with `run-api-dev` | —                                                 |
+| `✗ Gateway not running`             | Start with `run-gateway` | —                                                 |
+| `✗ API→Gateway: connection refused` | Gateway URL mismatch     | Check `.env` `GATEWAY_URL=http://localhost:15888` |
+| `✗ Local hummingbot not active`     | Using PyPI version       | Run `setup-api-dev`                               |
 
 ---
 
@@ -792,11 +822,11 @@ curl -X POST http://localhost:8000/bot-orchestration/deploy-v2-controllers \
 
 ### Available hummingbot images
 
-| Image | Description |
-|-------|-------------|
-| `hummingbot/hummingbot:latest` | Stable PyPI release (default) |
+| Image                               | Description                        |
+| ----------------------------------- | ---------------------------------- |
+| `hummingbot/hummingbot:latest`      | Stable PyPI release (default)      |
 | `hummingbot/hummingbot:development` | Development branch from Docker Hub |
-| `hummingbot/hummingbot:dev` | Locally built image |
+| `hummingbot/hummingbot:dev`         | Locally built image                |
 
 ### DEX connectors require Gateway
 
@@ -860,13 +890,14 @@ python scripts/test_integration.py
 
 ### Repo Paths (defaults)
 
-| Component | Default path |
-|-----------|-------------|
-| Hummingbot | `~/Documents/hummingbot` |
-| Gateway | `~/.openclaw/workspace/hummingbot-gateway` |
-| Hummingbot API | `~/.openclaw/workspace/hummingbot-api` |
+| Component      | Default path                               |
+| -------------- | ------------------------------------------ |
+| Hummingbot     | `~/Documents/hummingbot`                   |
+| Gateway        | `~/.openclaw/workspace/hummingbot-gateway` |
+| Hummingbot API | `~/.openclaw/workspace/hummingbot-api`     |
 
 Override by setting env vars:
+
 ```bash
 export HUMMINGBOT_DIR=~/code/hummingbot
 export GATEWAY_DIR=~/code/gateway
@@ -875,10 +906,10 @@ export HUMMINGBOT_API_DIR=~/code/hummingbot-api
 
 ### Scripts Reference
 
-| Script | Purpose |
-|--------|---------|
-| `check_env.sh` | Verify prereqs (conda, node, pnpm, docker, git) |
-| `check_repos.sh` | Show branch + build status for each repo |
-| `check_api.sh` | Check if Hummingbot API is running |
-| `check_gateway.sh` | Check if Gateway is running |
-| `test_integration.py` | End-to-end smoke tests |
+| Script                | Purpose                                         |
+| --------------------- | ----------------------------------------------- |
+| `check_env.sh`        | Verify prereqs (conda, node, pnpm, docker, git) |
+| `check_repos.sh`      | Show branch + build status for each repo        |
+| `check_api.sh`        | Check if Hummingbot API is running              |
+| `check_gateway.sh`    | Check if Gateway is running                     |
+| `test_integration.py` | End-to-end smoke tests                          |

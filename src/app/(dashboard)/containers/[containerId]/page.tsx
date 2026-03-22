@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import { StatusBadge } from "@/components/containers/StatusBadge";
-import { LogViewer } from "@/components/containers/LogViewer";
-import { StorageCard } from "@/components/storage/StorageCard";
-import { useStorage } from "@/hooks/useStorage";
-import type { ContainerInfo } from "@/types/container";
+import { useParams, useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+import { StatusBadge } from '@/components/containers/StatusBadge';
+import { LogViewer } from '@/components/containers/LogViewer';
+import { StorageCard } from '@/components/storage/StorageCard';
+import { useStorage } from '@/hooks/useStorage';
+import type { ContainerInfo } from '@/types/container';
 
 export default function ContainerDetailPage() {
   const params = useParams();
@@ -17,7 +17,13 @@ export default function ContainerDetailPage() {
   const [extending, setExtending] = useState(false);
   const [stopping, setStopping] = useState(false);
 
-  const { storage, loading: storageLoading, snapshotting, fetchStorage, createSnapshot } = useStorage();
+  const {
+    storage,
+    loading: storageLoading,
+    snapshotting,
+    fetchStorage,
+    createSnapshot,
+  } = useStorage();
 
   const fetchContainer = useCallback(async () => {
     try {
@@ -52,7 +58,7 @@ export default function ContainerDetailPage() {
   const handleStop = async () => {
     setStopping(true);
     try {
-      await fetch(`/api/containers/${containerId}`, { method: "DELETE" });
+      await fetch(`/api/containers/${containerId}`, { method: 'DELETE' });
       await fetchContainer();
     } catch {
       // ignore
@@ -65,8 +71,8 @@ export default function ContainerDetailPage() {
     setExtending(true);
     try {
       await fetch(`/api/containers/${containerId}/extend`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ hours }),
       });
       await fetchContainer();
@@ -103,7 +109,7 @@ export default function ContainerDetailPage() {
           <StatusBadge status={container.status} />
         </div>
 
-        {container.url && container.status === "RUNNING" && (
+        {container.url && container.status === 'RUNNING' && (
           <a
             href={container.url}
             target="_blank"
@@ -114,7 +120,7 @@ export default function ContainerDetailPage() {
           </a>
         )}
 
-        {container.password && container.status === "RUNNING" && (
+        {container.password && container.status === 'RUNNING' && (
           <div className="bg-muted rounded-lg p-3 mb-4">
             <p className="text-xs text-muted-foreground">Password</p>
             <p className="font-mono">{container.password}</p>
@@ -129,9 +135,7 @@ export default function ContainerDetailPage() {
           <div>
             <p className="text-xs text-muted-foreground">Time Remaining</p>
             <p className="text-sm font-medium">
-              {container.status === "RUNNING"
-                ? `${hoursLeft}h ${minutesLeft}m`
-                : "N/A"}
+              {container.status === 'RUNNING' ? `${hoursLeft}h ${minutesLeft}m` : 'N/A'}
             </p>
           </div>
           <div>
@@ -140,27 +144,25 @@ export default function ContainerDetailPage() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Created</p>
-            <p className="text-sm font-medium">
-              {new Date(container.createdAt).toLocaleString()}
-            </p>
+            <p className="text-sm font-medium">{new Date(container.createdAt).toLocaleString()}</p>
           </div>
         </div>
 
-        {container.status === "RUNNING" && (
+        {container.status === 'RUNNING' && (
           <div className="flex gap-3">
             <button
               onClick={() => handleExtend(2)}
               disabled={extending}
               className="px-4 py-2 bg-muted hover:bg-border rounded-lg text-sm transition-colors disabled:opacity-50"
             >
-              {extending ? "Extending..." : "Extend +2h"}
+              {extending ? 'Extending...' : 'Extend +2h'}
             </button>
             <button
               onClick={handleStop}
               disabled={stopping}
               className="px-4 py-2 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-lg text-sm transition-colors disabled:opacity-50"
             >
-              {stopping ? "Stopping..." : "Stop Container"}
+              {stopping ? 'Stopping...' : 'Stop Container'}
             </button>
           </div>
         )}
@@ -172,14 +174,12 @@ export default function ContainerDetailPage() {
           agentSlug={container.agentId}
           storage={storage}
           loading={storageLoading}
-          onSnapshot={container.status === "RUNNING" ? handleSnapshot : undefined}
+          onSnapshot={container.status === 'RUNNING' ? handleSnapshot : undefined}
           snapshotting={snapshotting}
         />
       </div>
 
-      {container.status === "RUNNING" && (
-        <LogViewer containerId={container.id} />
-      )}
+      {container.status === 'RUNNING' && <LogViewer containerId={container.id} />}
     </div>
   );
 }

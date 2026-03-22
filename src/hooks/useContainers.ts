@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import type { ContainerInfo } from "@/types/container";
-import { fetchApi } from "@/lib/utils/api";
+import { useState, useEffect, useCallback } from 'react';
+import type { ContainerInfo } from '@/types/container';
+import { fetchApi } from '@/lib/utils/api';
 
 export function useContainers() {
   const [containers, setContainers] = useState<ContainerInfo[]>([]);
@@ -12,16 +12,16 @@ export function useContainers() {
   const fetchContainers = useCallback(async () => {
     try {
       setError(null);
-      const res = await fetchApi("/api/containers");
+      const res = await fetchApi('/api/containers');
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || "Failed to fetch containers");
+        setError(data.error || 'Failed to fetch containers');
         return;
       }
       const data = await res.json();
       setContainers(data.containers);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "An unexpected error occurred");
+      setError(e instanceof Error ? e.message : 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -32,9 +32,9 @@ export function useContainers() {
   }, [fetchContainers]);
 
   const launchContainer = async (agentId: string, hours: number) => {
-    const res = await fetchApi("/api/containers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res = await fetchApi('/api/containers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ agentId, hours }),
     });
     if (!res.ok) {
@@ -48,7 +48,7 @@ export function useContainers() {
 
   const stopContainer = async (containerId: string) => {
     const res = await fetchApi(`/api/containers/${containerId}`, {
-      method: "DELETE",
+      method: 'DELETE',
     });
     if (!res.ok) {
       const err = await res.json();
@@ -59,8 +59,8 @@ export function useContainers() {
 
   const extendContainer = async (containerId: string, hours: number) => {
     const res = await fetchApi(`/api/containers/${containerId}/extend`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ hours }),
     });
     if (!res.ok) {
@@ -74,8 +74,8 @@ export function useContainers() {
 
   const snapshotContainer = async (containerId: string, agentSlug: string) => {
     const res = await fetchApi(`/api/containers/${containerId}/snapshot`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ agentSlug }),
     });
     if (!res.ok) {

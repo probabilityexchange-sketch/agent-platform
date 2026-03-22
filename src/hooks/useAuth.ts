@@ -169,7 +169,7 @@ export function useAuth() {
     const serverConfirmed = await syncSession();
 
     if (!serverConfirmed) {
-      throw new SessionSyncError("Failed to initiate server session.");
+      throw new SessionSyncError('Failed to initiate server session.');
     }
 
     // After calling syncSession, the server has sent a Set-Cookie header.
@@ -198,10 +198,10 @@ export function useAuth() {
     // moment to settle. This "cooldown" significantly reduces race conditions
     // during fast client-side transitions.
     if (pollCount > 0) {
-      await new Promise<void>((resolve) => window.setTimeout(resolve, 500));
+      await new Promise<void>(resolve => window.setTimeout(resolve, 500));
     } else {
       // If it worked on the very first try, still give it a tiny bit of air
-      await new Promise<void>((resolve) => window.setTimeout(resolve, 200));
+      await new Promise<void>(resolve => window.setTimeout(resolve, 200));
     }
 
     sharedSessionSynced = true;

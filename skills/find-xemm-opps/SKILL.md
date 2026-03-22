@@ -79,16 +79,16 @@ The script outputs a **market overview table** and ranked **XEMM opportunity pai
 
 ## Script Options
 
-| Option | Description |
-|--------|-------------|
-| `--base` | Base token(s), comma-separated (e.g., ETH,WETH) |
-| `--quote` | Quote token(s), comma-separated (e.g., USDT,USDC) |
-| `--connectors` | Filter to specific connectors (optional) |
-| `--depth` | Order book depth per exchange (default: 20) |
-| `--min-spread` | Minimum mid-price spread % between exchanges (default: 0.0) |
-| `--include-btc-markets` | Include btc_markets (Australian residents only) |
-| `--include-ndax` | Include ndax (Canadian residents only) |
-| `--json` | Output as JSON |
+| Option                  | Description                                                 |
+| ----------------------- | ----------------------------------------------------------- |
+| `--base`                | Base token(s), comma-separated (e.g., ETH,WETH)             |
+| `--quote`               | Quote token(s), comma-separated (e.g., USDT,USDC)           |
+| `--connectors`          | Filter to specific connectors (optional)                    |
+| `--depth`               | Order book depth per exchange (default: 20)                 |
+| `--min-spread`          | Minimum mid-price spread % between exchanges (default: 0.0) |
+| `--include-btc-markets` | Include btc_markets (Australian residents only)             |
+| `--include-ndax`        | Include ndax (Canadian residents only)                      |
+| `--json`                | Output as JSON                                              |
 
 ## Environment Variables
 

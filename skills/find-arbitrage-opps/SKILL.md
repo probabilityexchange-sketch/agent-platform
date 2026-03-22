@@ -21,11 +21,11 @@ bash <(curl -s https://raw.githubusercontent.com/hummingbot/skills/main/skills/l
 
 By default the script queries CEX connectors via the Hummingbot API. Add `--dex` to also fetch prices from:
 
-| DEX | Chain | Default Network |
-|-----|-------|-----------------|
-| **Jupiter** | Solana | `mainnet-beta` |
-| **Uniswap** | Ethereum | `mainnet` |
-| **PancakeSwap** | Ethereum (BSC) | `bsc` |
+| DEX             | Chain          | Default Network |
+| --------------- | -------------- | --------------- |
+| **Jupiter**     | Solana         | `mainnet-beta`  |
+| **Uniswap**     | Ethereum       | `mainnet`       |
+| **PancakeSwap** | Ethereum (BSC) | `bsc`           |
 
 DEX prices are fetched directly via the Hummingbot Gateway. Make sure Gateway is running on `http://localhost:15888` (or set `GATEWAY_URL`).
 
@@ -63,6 +63,7 @@ python scripts/find_arb_opps.py --base BTC --quote USDT --connectors binance,kra
 ### Step 3: Analyze Results
 
 The script outputs:
+
 - Prices from each CEX and DEX source
 - Best bid/ask across all sources
 - Arbitrage spread (buy low, sell high)
@@ -74,14 +75,14 @@ The script outputs:
 python scripts/find_arb_opps.py --help
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--base` | Base token(s), comma-separated (e.g., BTC,WBTC) |
-| `--quote` | Quote token(s), comma-separated (e.g., USDT,USDC) |
-| `--connectors` | Filter to specific CEX connectors (optional) |
-| `--dex` | Include DEX prices via Gateway (Jupiter + Uniswap) |
-| `--min-spread` | Minimum spread % to show (default: 0.0) |
-| `--json` | Output as JSON |
+| Option         | Description                                        |
+| -------------- | -------------------------------------------------- |
+| `--base`       | Base token(s), comma-separated (e.g., BTC,WBTC)    |
+| `--quote`      | Quote token(s), comma-separated (e.g., USDT,USDC)  |
+| `--connectors` | Filter to specific CEX connectors (optional)       |
+| `--dex`        | Include DEX prices via Gateway (Jupiter + Uniswap) |
+| `--min-spread` | Minimum spread % to show (default: 0.0)            |
+| `--json`       | Output as JSON                                     |
 
 ## Output Example
 

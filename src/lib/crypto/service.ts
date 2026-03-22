@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/db/prisma";
-import { evaluateCryptoGuardrails } from "@/lib/crypto/guardrails";
+import { prisma } from '@/lib/db/prisma';
+import { evaluateCryptoGuardrails } from '@/lib/crypto/guardrails';
 import {
   cryptoDestinationAllowlistEntrySchema,
   cryptoGuardrailConfigSchema,
@@ -7,15 +7,17 @@ import {
   type CryptoGuardrailConfig,
   type CryptoGuardrailDecision,
   type CryptoGuardrailEvaluationInput,
-} from "@/lib/crypto/schema";
+} from '@/lib/crypto/schema';
 
-export async function getOrCreateCryptoGuardrailConfig(userId: string): Promise<CryptoGuardrailConfig> {
+export async function getOrCreateCryptoGuardrailConfig(
+  userId: string
+): Promise<CryptoGuardrailConfig> {
   const record = await prisma.cryptoGuardrailConfig.upsert({
     where: { userId },
     update: {},
     create: {
       userId,
-      defaultDecision: "simulate",
+      defaultDecision: 'simulate',
       perTransactionUsdCapCents: 1000,
       dailyUsdCapCents: 5000,
       enforceDestinationAllowlist: true,
@@ -26,25 +28,27 @@ export async function getOrCreateCryptoGuardrailConfig(userId: string): Promise<
   return cryptoGuardrailConfigSchema.parse(record);
 }
 
-export async function listActiveCryptoDestinations(userId: string): Promise<CryptoDestinationAllowlistEntry[]> {
+export async function listActiveCryptoDestinations(
+  userId: string
+): Promise<CryptoDestinationAllowlistEntry[]> {
   const records = await prisma.cryptoDestinationAllowlistEntry.findMany({
     where: {
       userId,
       active: true,
     },
     orderBy: {
-      createdAt: "asc",
+      createdAt: 'asc',
     },
   });
 
-  return records.map((record) =>
+  return records.map(record =>
     cryptoDestinationAllowlistEntrySchema.parse({
       destination: record.destination,
       asset: record.asset ?? undefined,
       chain: record.chain ?? undefined,
       label: record.label,
       active: record.active,
-    }),
+    })
   );
 }
 
@@ -58,7 +62,7 @@ export async function loadCryptoGuardrailContext(userId: string) {
 }
 
 export async function evaluateCryptoGuardrailsForUser(
-  input: Omit<CryptoGuardrailEvaluationInput, "config" | "destinations">,
+  input: Omit<CryptoGuardrailEvaluationInput, 'config' | 'destinations'>
 ): Promise<CryptoGuardrailDecision> {
   const { config, destinations } = await loadCryptoGuardrailContext(input.actor.userId);
 
@@ -74,7 +78,7 @@ export async function recordCryptoAuditEvent(params: {
   sessionId?: string;
   workflowId?: string;
   subjectId: string;
-  triggerSource: CryptoGuardrailEvaluationInput["triggerSource"];
+  triggerSource: CryptoGuardrailEvaluationInput['triggerSource'];
   decision: CryptoGuardrailDecision;
   input: unknown;
 }) {

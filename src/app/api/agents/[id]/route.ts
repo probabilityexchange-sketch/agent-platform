@@ -1,19 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db/prisma";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db/prisma';
 
-export async function GET(
-    req: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    const { id } = await params;
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
-    const agent = await prisma.agentConfig.findUnique({
-        where: { id },
-    });
+  const agent = await prisma.agentConfig.findUnique({
+    where: { id },
+  });
 
-    if (!agent) {
-        return NextResponse.json({ error: "Agent not found" }, { status: 404 });
-    }
+  if (!agent) {
+    return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+  }
 
-    return NextResponse.json({ agent });
+  return NextResponse.json({ agent });
 }

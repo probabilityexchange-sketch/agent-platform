@@ -1,6 +1,6 @@
 ---
 name: composio-dev
-description: "Provides expert guidance for integrating Composio to build AI agents with tool-use capabilities. Use for tasks involving the Composio SDK (Python/TypeScript), sessions, authentication (OAuth, Connect Links), meta tools, triggers, and MCP integration."
+description: 'Provides expert guidance for integrating Composio to build AI agents with tool-use capabilities. Use for tasks involving the Composio SDK (Python/TypeScript), sessions, authentication (OAuth, Connect Links), meta tools, triggers, and MCP integration.'
 ---
 
 # Composio Developer Skill
@@ -15,9 +15,9 @@ When a task requires building an AI agent with tool-use capabilities or connecti
 
 Clarify the agent's goals and the specific tools it will need:
 
-*   **Core Functionality:** What is the primary purpose of the agent?
-*   **Required Applications:** Which external services does the agent need to connect to? (e.g., Gmail, GitHub, Slack, Notion)
-*   **User Interaction Model:** How will users interact with the agent?
+- **Core Functionality:** What is the primary purpose of the agent?
+- **Required Applications:** Which external services does the agent need to connect to? (e.g., Gmail, GitHub, Slack, Notion)
+- **User Interaction Model:** How will users interact with the agent?
 
 ### 2. Set Up the Composio Environment
 
@@ -43,13 +43,13 @@ session = composio.create(user_id="unique_user_id_from_your_app")
 
 Provide the agent with Composio's five meta tools via `session.tools()`. These meta tools allow the agent to dynamically discover and execute any of Composio's 1000+ integrations without needing to define them all upfront.
 
-| Meta Tool | Purpose |
-| :--- | :--- |
-| `COMPOSIO_SEARCH_TOOLS` | Discover relevant tools by natural language |
-| `COMPOSIO_MANAGE_CONNECTIONS` | Handle OAuth and authentication flows |
-| `COMPOSIO_MULTI_EXECUTE_TOOL` | Execute one or more tools in parallel |
-| `COMPOSIO_REMOTE_WORKBENCH` | Run Python code for complex data processing |
-| `COMPOSIO_REMOTE_BASH_TOOL` | Run bash commands for file/data operations |
+| Meta Tool                     | Purpose                                     |
+| :---------------------------- | :------------------------------------------ |
+| `COMPOSIO_SEARCH_TOOLS`       | Discover relevant tools by natural language |
+| `COMPOSIO_MANAGE_CONNECTIONS` | Handle OAuth and authentication flows       |
+| `COMPOSIO_MULTI_EXECUTE_TOOL` | Execute one or more tools in parallel       |
+| `COMPOSIO_REMOTE_WORKBENCH`   | Run Python code for complex data processing |
+| `COMPOSIO_REMOTE_BASH_TOOL`   | Run bash commands for file/data operations  |
 
 ### 5. Handle Authentication
 
@@ -57,9 +57,9 @@ For most interactive agents, the default **in-chat authentication** is sufficien
 
 ### 6. Advanced Integration
 
-*   **Triggers:** For event-driven agents (e.g., respond to new GitHub issues), set up Composio Triggers via webhooks.
-*   **MCP Integration:** Retrieve the MCP endpoint from `session.mcp.url` and `session.mcp.headers` for MCP-compatible agents.
+- **Triggers:** For event-driven agents (e.g., respond to new GitHub issues), set up Composio Triggers via webhooks.
+- **MCP Integration:** Retrieve the MCP endpoint from `session.mcp.url` and `session.mcp.headers` for MCP-compatible agents.
 
 ## Key Resources
 
-*   **Comprehensive Reference:** `/home/ubuntu/skills/composio-dev/references/reference.md`
+- **Comprehensive Reference:** `/home/ubuntu/skills/composio-dev/references/reference.md`

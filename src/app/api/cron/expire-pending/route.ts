@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db/prisma";
-import { isCronAuthorized } from "@/lib/utils/cron-auth";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db/prisma';
+import { isCronAuthorized } from '@/lib/utils/cron-auth';
 
 /**
  * POST /api/cron/expire-pending
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
 async function handleExpiry(request: NextRequest) {
   if (!isCronAuthorized(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
@@ -36,11 +36,11 @@ async function handleExpiry(request: NextRequest) {
     // Find all PENDING transactions older than 24 hours
     const expired = await prisma.tokenTransaction.updateMany({
       where: {
-        status: "PENDING",
+        status: 'PENDING',
         createdAt: { lt: cutoff },
       },
       data: {
-        status: "EXPIRED",
+        status: 'EXPIRED',
         updatedAt: new Date(),
       },
     });
@@ -48,11 +48,11 @@ async function handleExpiry(request: NextRequest) {
     // Also expire stale ToolApprovals (HITL approvals pending > 24h)
     const expiredApprovals = await prisma.toolApproval.updateMany({
       where: {
-        status: "PENDING",
+        status: 'PENDING',
         createdAt: { lt: cutoff },
       },
       data: {
-        status: "REJECTED", // Treat expired HITL approvals as auto-rejected
+        status: 'REJECTED', // Treat expired HITL approvals as auto-rejected
         updatedAt: new Date(),
       },
     });
@@ -69,9 +69,9 @@ async function handleExpiry(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("[expire-pending] Cron failed:", error);
+    console.error('[expire-pending] Cron failed:', error);
     return NextResponse.json(
-      { error: "Expiry cron failed", detail: error instanceof Error ? error.message : "Unknown" },
+      { error: 'Expiry cron failed', detail: error instanceof Error ? error.message : 'Unknown' },
       { status: 500 }
     );
   }

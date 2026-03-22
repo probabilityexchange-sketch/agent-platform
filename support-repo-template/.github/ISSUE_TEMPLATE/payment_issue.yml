@@ -1,7 +1,7 @@
 name: Payment and credits issue
 description: Report payment, verification, or credit balance problems.
-title: "[Payments] "
-labels: ["payments", "triage"]
+title: '[Payments] '
+labels: ['payments', 'triage']
 body:
   - type: dropdown
     id: network

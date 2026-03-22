@@ -6,13 +6,14 @@ This guide explains how to develop and test hummingbot-api with custom branches 
 
 The Hummingbot stack consists of three repositories:
 
-| Repository | Purpose | Default Port |
-|------------|---------|--------------|
-| [hummingbot](https://github.com/hummingbot/hummingbot) | Core trading engine (Python) | N/A (library) |
-| [gateway](https://github.com/hummingbot/gateway) | DEX connector service (TypeScript) | 15888 |
-| [hummingbot-api](https://github.com/hummingbot/hummingbot-api) | REST API server (Python/FastAPI) | 8000 |
+| Repository                                                     | Purpose                            | Default Port  |
+| -------------------------------------------------------------- | ---------------------------------- | ------------- |
+| [hummingbot](https://github.com/hummingbot/hummingbot)         | Core trading engine (Python)       | N/A (library) |
+| [gateway](https://github.com/hummingbot/gateway)               | DEX connector service (TypeScript) | 15888         |
+| [hummingbot-api](https://github.com/hummingbot/hummingbot-api) | REST API server (Python/FastAPI)   | 8000          |
 
 **Key insight**: hummingbot-api imports the `hummingbot` package as a library. When testing changes to hummingbot, you must either:
+
 1. Build a wheel from your hummingbot branch and install it
 2. Install hummingbot in editable mode
 
@@ -81,6 +82,7 @@ dependencies:
 ```
 
 **Platform suffixes:**
+
 - Linux x86_64: `linux_x86_64`
 - Linux ARM64: `linux_aarch64`
 - macOS Intel: `macosx_10_9_x86_64`
@@ -353,6 +355,7 @@ pnpm build
 **Cause**: The hummingbot wheel is not installed or path is incorrect.
 
 **Fix**:
+
 ```bash
 # Check if hummingbot is installed
 conda activate hummingbot-api
@@ -368,6 +371,7 @@ conda env create -f environment.yml
 **Cause**: The wheel path in `environment.yml` doesn't exist or is platform-specific.
 
 **Fix**: Use the correct wheel for your platform:
+
 ```bash
 ls ~/hummingbot/dist/
 # Use the wheel matching your Python version and platform
@@ -378,6 +382,7 @@ ls ~/hummingbot/dist/
 **Cause**: Old cached bytecode or stale installation.
 
 **Fix**:
+
 ```bash
 # Force reinstall
 pip install ~/hummingbot/dist/hummingbot-*.whl --force-reinstall --no-deps
@@ -391,6 +396,7 @@ find ~/hummingbot-api -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null
 **Cause**: Gateway not running or wrong port.
 
 **Fix**:
+
 ```bash
 # Check if Gateway is running
 curl http://localhost:15888/
@@ -406,6 +412,7 @@ grep GATEWAY_URL .env
 **Cause**: `solders` is a pip-only package that conflicts with conda.
 
 **Fix**: Remove solders from conda environment.yml (if present) and install via pip:
+
 ```bash
 pip install solders>=0.19.0
 ```
@@ -415,6 +422,7 @@ pip install solders>=0.19.0
 **Cause**: Wheel is built for different platform than Docker container (e.g., macOS wheel in Linux container).
 
 **Fix**: Build the wheel inside Docker with Python 3.12:
+
 ```bash
 # Build Linux wheel for Docker (Python 3.12 to match hummingbot-api)
 docker run --rm -v ~/hummingbot:/hummingbot -w /hummingbot continuumio/miniconda3 bash -c "
@@ -426,6 +434,7 @@ docker run --rm -v ~/hummingbot:/hummingbot -w /hummingbot continuumio/miniconda
 ```
 
 **Common platform wheel suffixes:**
+
 - `linux_x86_64` - Linux AMD/Intel 64-bit
 - `linux_aarch64` - Linux ARM64 (Apple Silicon Docker, AWS Graviton)
 - `macosx_11_0_arm64` - macOS Apple Silicon (native, NOT for Docker)
@@ -435,13 +444,14 @@ docker run --rm -v ~/hummingbot:/hummingbot -w /hummingbot continuumio/miniconda
 
 ## Branch Selection Reference
 
-| Component | Default Branch | Description |
-|-----------|---------------|-------------|
-| hummingbot | `development` | Latest features, may be unstable |
-| gateway | `development` | Latest features |
-| hummingbot-api | `main` | Stable release |
+| Component      | Default Branch | Description                      |
+| -------------- | -------------- | -------------------------------- |
+| hummingbot     | `development`  | Latest features, may be unstable |
+| gateway        | `development`  | Latest features                  |
+| hummingbot-api | `main`         | Stable release                   |
 
 For PRs, checkout the specific PR branch:
+
 ```bash
 git fetch origin pull/<PR_NUMBER>/head:<LOCAL_BRANCH_NAME>
 git checkout <LOCAL_BRANCH_NAME>
@@ -453,13 +463,13 @@ git checkout <LOCAL_BRANCH_NAME>
 
 Key environment variables for development:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `GATEWAY_URL` | `http://localhost:15888` | Gateway service URL |
-| `GATEWAY_PASSPHRASE` | `admin` | Gateway encryption passphrase |
-| `DATABASE_URL` | (see .env) | PostgreSQL connection string |
-| `BROKER_HOST` | `localhost` | EMQX MQTT broker host |
-| `DEBUG_MODE` | `false` | Enable debug logging |
+| Variable             | Default                  | Description                   |
+| -------------------- | ------------------------ | ----------------------------- |
+| `GATEWAY_URL`        | `http://localhost:15888` | Gateway service URL           |
+| `GATEWAY_PASSPHRASE` | `admin`                  | Gateway encryption passphrase |
+| `DATABASE_URL`       | (see .env)               | PostgreSQL connection string  |
+| `BROKER_HOST`        | `localhost`              | EMQX MQTT broker host         |
+| `DEBUG_MODE`         | `false`                  | Enable debug logging          |
 
 ---
 
@@ -484,6 +494,7 @@ curl -X POST http://localhost:8000/bot-orchestration/deploy-v2-controllers \
 ```
 
 **Available hummingbot images:**
+
 - `hummingbot/hummingbot:latest` - Stable release from PyPI
 - `hummingbot/hummingbot:development` - Development branch (includes lp_executor, etc.)
 - `hummingbot/hummingbot:dev` - Your locally built image (if built)

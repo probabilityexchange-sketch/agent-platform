@@ -175,12 +175,12 @@ jobs:
                   repo: context.repo.repo,
                   issue_number: issueNumber,
                   body: `<!-- issue-guardrails -->
-Thanks for the report. This ticket is currently gated as **needs-info**.
+                    Thanks for the report. This ticket is currently gated as **needs-info**.
 
-Please update the issue with the missing details:
-${checklist}
+                    Please update the issue with the missing details:
+                    ${checklist}
 
-Once updated, this will be re-checked automatically.`,
+                    Once updated, this will be re-checked automatically.`,
                 });
               }
               return;

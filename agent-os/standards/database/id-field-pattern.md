@@ -31,7 +31,7 @@ export class User {
 
 - **Generation:** Use the `cuid()` helper function from `@/lib/utils/cuid` for ID generation
 - **Format:** 25-character string, starting with 'c' (e.g., "clxyz123abc456def789ghi0")
-- **Benefits:** 
+- **Benefits:**
   - Horizontal scaling safe (no central authority needed)
   - Offline generation possible
   - Human-readable and URL-friendly

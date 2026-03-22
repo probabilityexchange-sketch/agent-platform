@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAuth, handleAuthError } from "@/lib/auth/middleware";
-import { prisma } from "@/lib/db/prisma";
-import { stopContainer } from "@/lib/docker/lifecycle";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/utils/rate-limit";
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth, handleAuthError } from '@/lib/auth/middleware';
+import { prisma } from '@/lib/db/prisma';
+import { stopContainer } from '@/lib/docker/lifecycle';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/utils/rate-limit';
 
 export async function GET(
   _request: NextRequest,
@@ -13,7 +13,7 @@ export async function GET(
 
     const { allowed } = await checkRateLimit(`containers:${auth.userId}`, RATE_LIMITS.provision);
     if (!allowed) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     const { containerId } = await params;
@@ -24,7 +24,7 @@ export async function GET(
     });
 
     if (!container || container.userId !== auth.userId) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -54,7 +54,7 @@ export async function DELETE(
 
     const { allowed } = await checkRateLimit(`containers:${auth.userId}`, RATE_LIMITS.provision);
     if (!allowed) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     const { containerId } = await params;
@@ -64,14 +64,11 @@ export async function DELETE(
     });
 
     if (!container || container.userId !== auth.userId) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    if (container.status !== "RUNNING") {
-      return NextResponse.json(
-        { error: "Container is not running" },
-        { status: 400 }
-      );
+    if (container.status !== 'RUNNING') {
+      return NextResponse.json({ error: 'Container is not running' }, { status: 400 });
     }
 
     await stopContainer(containerId);

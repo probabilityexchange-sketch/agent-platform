@@ -14,6 +14,7 @@ Test which exchange connectors are accessible from your location and search for 
 ### Step 1: Test Connectors
 
 Ask user which connectors to test:
+
 - All connectors
 - Spot only
 - Perpetual only
@@ -59,16 +60,19 @@ Found 488 pairs containing BTC
 ## Scripts
 
 **Test all connectors:**
+
 ```bash
 ./scripts/test_all.sh --timeout 10
 ```
 
 **Test specific connectors:**
+
 ```bash
 ./scripts/test_all.sh --connectors "kraken,okx,hyperliquid" --timeout 10
 ```
 
 **Search for a token:**
+
 ```bash
 ./scripts/search_token.sh --token BTC
 ./scripts/search_token.sh --token SOL

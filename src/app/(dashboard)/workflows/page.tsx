@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { WorkflowList } from "@/components/workflows/WorkflowList";
-import { type SavedWorkflow } from "@/lib/workflows/schema";
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { WorkflowList } from '@/components/workflows/WorkflowList';
+import { type SavedWorkflow } from '@/lib/workflows/schema';
 
 export default function WorkflowsPage() {
   const [workflows, setWorkflows] = useState<SavedWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const readyCount = workflows.filter((workflow) => workflow.status === "ready").length;
+  const readyCount = workflows.filter(workflow => workflow.status === 'ready').length;
   const needsInputCount = workflows.filter(
-    (workflow) => workflow.status === "draft" && workflow.plan.openQuestions.length > 0,
+    workflow => workflow.status === 'draft' && workflow.plan.openQuestions.length > 0
   ).length;
 
   useEffect(() => {
     const fetchWorkflows = async () => {
       try {
-        const res = await fetch("/api/workflows");
+        const res = await fetch('/api/workflows');
         if (!res.ok) {
           throw new Error("We couldn't load your automations right now.");
         }
@@ -25,7 +25,11 @@ export default function WorkflowsPage() {
         const data = await res.json();
         setWorkflows(data.workflows || []);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "We hit a connection issue while loading your automations.");
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'We hit a connection issue while loading your automations.'
+        );
       } finally {
         setLoading(false);
       }
@@ -44,7 +48,8 @@ export default function WorkflowsPage() {
             </span>
             <h1 className="mt-4 text-4xl font-black tracking-tight">Automations</h1>
             <p className="mt-3 max-w-2xl text-lg text-muted-foreground leading-relaxed">
-              Save repeatable tasks here after they work well in chat. Review what is ready, what still needs input, and what to do next.
+              Save repeatable tasks here after they work well in chat. Review what is ready, what
+              still needs input, and what to do next.
             </p>
           </div>
 
@@ -53,8 +58,8 @@ export default function WorkflowsPage() {
             <p className="mt-2 text-3xl font-black tracking-tight">{workflows.length}</p>
             <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
               {workflows.length === 0
-                ? "Start with one real task in chat, then save it here."
-                : `${readyCount} ready right now${needsInputCount > 0 ? ` • ${needsInputCount} need input` : ""}.`}
+                ? 'Start with one real task in chat, then save it here.'
+                : `${readyCount} ready right now${needsInputCount > 0 ? ` • ${needsInputCount} need input` : ''}.`}
             </p>
           </div>
         </div>
@@ -78,7 +83,8 @@ export default function WorkflowsPage() {
           </div>
           <h2 className="text-3xl font-black tracking-tight">No saved automations yet</h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground leading-relaxed">
-            Start with one real task in chat. Once the flow works the way you want, ask Randi to save it as an automation.
+            Start with one real task in chat. Once the flow works the way you want, ask Randi to
+            save it as an automation.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link

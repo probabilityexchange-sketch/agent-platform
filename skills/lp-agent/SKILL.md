@@ -28,16 +28,16 @@ This skill helps you run automated liquidity provision strategies on concentrate
 
 **Commands** (run as `/lp-agent <command>`):
 
-| Command | Description |
-|---------|-------------|
-| `start` | Onboarding wizard — check setup status and get started |
-| `deploy-hummingbot-api` | Deploy Hummingbot API trading infrastructure |
-| `setup-gateway` | Start Gateway, configure network RPC endpoints |
-| `add-wallet` | Add or import a Solana wallet |
-| `explore-pools` | Find and explore Meteora DLMM pools |
-| `select-strategy` | Choose LP Executor or Rebalancer Controller |
-| `run-strategy` | Run, monitor, and manage LP strategies |
-| `analyze-performance` | Visualize LP position performance |
+| Command                 | Description                                            |
+| ----------------------- | ------------------------------------------------------ |
+| `start`                 | Onboarding wizard — check setup status and get started |
+| `deploy-hummingbot-api` | Deploy Hummingbot API trading infrastructure           |
+| `setup-gateway`         | Start Gateway, configure network RPC endpoints         |
+| `add-wallet`            | Add or import a Solana wallet                          |
+| `explore-pools`         | Find and explore Meteora DLMM pools                    |
+| `select-strategy`       | Choose LP Executor or Rebalancer Controller            |
+| `run-strategy`          | Run, monitor, and manage LP strategies                 |
+| `analyze-performance`   | Visualize LP position performance                      |
 
 **New here?** Run `/lp-agent start` to check your setup and get a guided walkthrough.
 
@@ -73,11 +73,11 @@ python scripts/add_wallet.py list     # Any wallets connected?
 
 **Interpreting Results:**
 
-| Script | Success Output | Failure Output |
-|--------|---------------|----------------|
-| `check_api.sh --json` | `{"running": true, "url": "http://localhost:8000", ...}` | `{"running": false, ...}` or connection error |
-| `check_gateway.sh --json` | `{"running": true, ...}` | `{"running": false, ...}` |
-| `add_wallet.py list` | Shows wallet addresses like `[solana] ABC123...` | `No wallets found.` or empty list `[]` |
+| Script                    | Success Output                                           | Failure Output                                |
+| ------------------------- | -------------------------------------------------------- | --------------------------------------------- |
+| `check_api.sh --json`     | `{"running": true, "url": "http://localhost:8000", ...}` | `{"running": false, ...}` or connection error |
+| `check_gateway.sh --json` | `{"running": true, ...}`                                 | `{"running": false, ...}`                     |
+| `add_wallet.py list`      | Shows wallet addresses like `[solana] ABC123...`         | `No wallets found.` or empty list `[]`        |
 
 ### Step 3: Show Progress
 
@@ -98,12 +98,12 @@ Adapt the checklist to the actual state. If everything is unchecked, start from 
 
 Based on the first unchecked item, offer to help:
 
-| Missing | What to say |
-|---------|-------------|
+| Missing        | What to say                                                                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Hummingbot API | "Let's deploy the API first — it's the trading backend. Need Docker installed. Want me to run the installer?" → `/lp-agent deploy-hummingbot-api` |
-| Gateway | "API is running! Now we need Gateway for DEX connectivity. Want me to start it?" → `/lp-agent setup-gateway` |
-| Wallet | See **Adding a Wallet** below |
-| All ready | Move to Step 5 |
+| Gateway        | "API is running! Now we need Gateway for DEX connectivity. Want me to start it?" → `/lp-agent setup-gateway`                                      |
+| Wallet         | See **Adding a Wallet** below                                                                                                                     |
+| All ready      | Move to Step 5                                                                                                                                    |
 
 **Adding a Wallet:**
 
@@ -112,19 +112,21 @@ When wallet is the next step, tell the user:
 > Infrastructure is ready. You need a Solana wallet with SOL for transaction fees (~0.06 SOL per LP position).
 >
 > To add a wallet, run:
+>
 > ```
 > python scripts/add_wallet.py add
 > ```
+>
 > You'll be prompted to paste your private key (secure, not saved in shell history).
 
 **Interpreting add_wallet.py output:**
 
-| Output | Meaning |
-|--------|---------|
-| `✓ Wallet added successfully` + address | Success — wallet is connected |
-| `Enter private key (base58):` then `✓ Wallet added` | Success after prompt |
-| `Error: HTTP 400` or validation error | Invalid private key format |
-| `Error: Cannot connect to API` | API not running — run `check_api.sh` first |
+| Output                                              | Meaning                                    |
+| --------------------------------------------------- | ------------------------------------------ |
+| `✓ Wallet added successfully` + address             | Success — wallet is connected              |
+| `Enter private key (base58):` then `✓ Wallet added` | Success after prompt                       |
+| `Error: HTTP 400` or validation error               | Invalid private key format                 |
+| `Error: Cannot connect to API`                      | API not running — run `check_api.sh` first |
 
 After wallet is added, verify with `python scripts/add_wallet.py list` — should show the new address.
 
@@ -135,13 +137,10 @@ Once infrastructure is ready (or if user wants to understand the flow first), ex
 > **How LP strategies work:**
 >
 > 1. **Explore pools** (`/lp-agent explore-pools`) — Find a Meteora DLMM pool. Look at volume, APR, and fee/TVL ratio to pick a good one.
->
 > 2. **Select strategy** (`/lp-agent select-strategy`) — Choose between:
 >    - **Rebalancer Controller** (recommended) — Automatically repositions when price moves out of range. Set-and-forget.
 >    - **LP Executor** — Single fixed position. You control when to close/reopen. Good for testing or limit-order-style LP.
->
 > 3. **Run strategy** (`/lp-agent run-strategy`) — Configure parameters (amount, width, price limits) and deploy. Monitor status and stop when done.
->
 > 4. **Analyze** (`/lp-agent analyze-performance`) — View PnL dashboard, fees earned, position history. Works for both running and stopped strategies.
 >
 > Want to explore some pools to get started?
@@ -187,16 +186,17 @@ bash scripts/deploy_hummingbot_api.sh reset
 
 ### Interpreting Output
 
-| Output | Meaning | Next Step |
-|--------|---------|-----------|
-| `✓ Hummingbot API deployed successfully` | Success | Proceed to `setup-gateway` |
-| `✓ Already installed and running` | Already set up | Proceed to `setup-gateway` |
-| `Error: Docker not found` | Docker not installed | Install Docker first |
-| `Error: Port 8000 already in use` | Another service on port | Stop conflicting service or use different port |
+| Output                                   | Meaning                 | Next Step                                      |
+| ---------------------------------------- | ----------------------- | ---------------------------------------------- |
+| `✓ Hummingbot API deployed successfully` | Success                 | Proceed to `setup-gateway`                     |
+| `✓ Already installed and running`        | Already set up          | Proceed to `setup-gateway`                     |
+| `Error: Docker not found`                | Docker not installed    | Install Docker first                           |
+| `Error: Port 8000 already in use`        | Another service on port | Stop conflicting service or use different port |
 
 ### After Installation
 
 Once the API is running:
+
 1. Swagger UI is at `http://localhost:8000/docs`
 2. Default credentials: admin/admin
 3. Proceed to `setup-gateway` to enable DEX trading
@@ -235,14 +235,14 @@ bash scripts/setup_gateway.sh --passphrase mypassword --port 15888
 
 ### Options
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--status` | | Check Gateway status only (don't start) |
-| `--image IMAGE` | `hummingbot/gateway:development` | Docker image to use |
-| `--passphrase TEXT` | `hummingbot` | Gateway passphrase |
-| `--rpc-url URL` | | Custom RPC endpoint for `--network` |
-| `--network ID` | `solana-mainnet-beta` | Network to configure RPC for |
-| `--port PORT` | `15888` | Gateway port |
+| Option              | Default                          | Description                             |
+| ------------------- | -------------------------------- | --------------------------------------- |
+| `--status`          |                                  | Check Gateway status only (don't start) |
+| `--image IMAGE`     | `hummingbot/gateway:development` | Docker image to use                     |
+| `--passphrase TEXT` | `hummingbot`                     | Gateway passphrase                      |
+| `--rpc-url URL`     |                                  | Custom RPC endpoint for `--network`     |
+| `--network ID`      | `solana-mainnet-beta`            | Network to configure RPC for            |
+| `--port PORT`       | `15888`                          | Gateway port                            |
 
 ### Advanced: manage_gateway.py
 
@@ -261,19 +261,20 @@ python scripts/manage_gateway.py network solana-mainnet-beta --node-url https://
 
 ### Interpreting Output
 
-| Output | Meaning | Next Step |
-|--------|---------|-----------|
-| `✓ Gateway is running` or `✓ Gateway started` | Success | Proceed to `add-wallet` |
-| `✓ Gateway is already running` | Already set up | Proceed to `add-wallet` |
-| `✗ Cannot connect to Hummingbot API` | API not running | Run `/lp-agent deploy-hummingbot-api` first |
-| `✗ Failed to start Gateway` | Docker issue | Check Docker is running, check logs |
-| `✓ RPC configured` + `✓ Gateway restarted` | Custom RPC set | Ready to use |
+| Output                                        | Meaning         | Next Step                                   |
+| --------------------------------------------- | --------------- | ------------------------------------------- |
+| `✓ Gateway is running` or `✓ Gateway started` | Success         | Proceed to `add-wallet`                     |
+| `✓ Gateway is already running`                | Already set up  | Proceed to `add-wallet`                     |
+| `✗ Cannot connect to Hummingbot API`          | API not running | Run `/lp-agent deploy-hummingbot-api` first |
+| `✗ Failed to start Gateway`                   | Docker issue    | Check Docker is running, check logs         |
+| `✓ RPC configured` + `✓ Gateway restarted`    | Custom RPC set  | Ready to use                                |
 
 ### Custom RPC Nodes
 
 Gateway uses public RPC nodes by default, which can hit rate limits. Set a custom nodeUrl per network to avoid this.
 
 Popular Solana RPC providers:
+
 - [Helius](https://helius.dev/) — Free tier available
 - [QuickNode](https://quicknode.com/)
 - [Alchemy](https://alchemy.com/)
@@ -297,12 +298,12 @@ You'll be prompted to paste your private key (base58 format). The key is entered
 
 **Interpreting Output:**
 
-| Output | Meaning | Next Step |
-|--------|---------|-----------|
-| `✓ Wallet added successfully` + `Address: ABC...` | Success | Verify with `list` command |
-| `Error: HTTP 400 - Bad Request` | Invalid private key format | Check key is base58 encoded |
-| `Error: HTTP 503` | Gateway not available | Run `bash scripts/check_gateway.sh` |
-| `Error: Cannot connect to API` | API not running | Run `/lp-agent deploy-hummingbot-api` |
+| Output                                            | Meaning                    | Next Step                             |
+| ------------------------------------------------- | -------------------------- | ------------------------------------- |
+| `✓ Wallet added successfully` + `Address: ABC...` | Success                    | Verify with `list` command            |
+| `Error: HTTP 400 - Bad Request`                   | Invalid private key format | Check key is base58 encoded           |
+| `Error: HTTP 503`                                 | Gateway not available      | Run `bash scripts/check_gateway.sh`   |
+| `Error: Cannot connect to API`                    | API not running            | Run `/lp-agent deploy-hummingbot-api` |
 
 ### Listing Wallets
 
@@ -312,11 +313,11 @@ python scripts/add_wallet.py list
 
 **Interpreting Output:**
 
-| Output | Meaning |
-|--------|---------|
-| `[solana] ABC123...XYZ` | Wallet connected on Solana |
-| `No wallets found.` | No wallets added yet |
-| Empty list `[]` (with --json) | No wallets added yet |
+| Output                        | Meaning                    |
+| ----------------------------- | -------------------------- |
+| `[solana] ABC123...XYZ`       | Wallet connected on Solana |
+| `No wallets found.`           | No wallets added yet       |
+| Empty list `[]` (with --json) | No wallets added yet       |
 
 ### Checking Balances
 
@@ -386,6 +387,7 @@ python scripts/list_meteora_pools.py --query SOL --limit 50 --page 2
 ```
 
 **Output columns:**
+
 - **Pool**: Trading pair name
 - **Pool Address**: Pool contract address (shortened, use `get_meteora_pool.py` for full address)
 - **Base (mint)**: Base token symbol with shortened mint address
@@ -417,10 +419,12 @@ python scripts/get_meteora_pool.py ATrBUW2reZiyftzMQA1hEo8b7w7o8ZLrhPd7M7sPMSms 
 ```
 
 **Data sources:**
+
 - **Meteora API**: Historical volume, fees, APR, token info, market caps
 - **Gateway** (requires running Gateway): Real-time price, liquidity distribution by bin
 
 **Details shown:**
+
 - Token info (symbols, mints, decimals, prices)
 - Pool configuration (bin step, fees, max range width)
 - Real-time price from Gateway (SOL/token ratio)
@@ -455,12 +459,12 @@ Help the user choose the right LP strategy. See `references/` for detailed guide
 
 A controller that automatically manages LP positions with rebalancing logic.
 
-| Feature | Description |
-|---------|-------------|
-| **Auto-rebalance** | Closes and reopens positions when price exits range |
-| **Price limits** | Configure BUY/SELL zones with anchor points |
-| **KEEP logic** | Avoids unnecessary rebalancing when at optimal position |
-| **Hands-off** | Set and forget - controller manages everything |
+| Feature            | Description                                             |
+| ------------------ | ------------------------------------------------------- |
+| **Auto-rebalance** | Closes and reopens positions when price exits range     |
+| **Price limits**   | Configure BUY/SELL zones with anchor points             |
+| **KEEP logic**     | Avoids unnecessary rebalancing when at optimal position |
+| **Hands-off**      | Set and forget - controller manages everything          |
 
 **Best for:** Longer-term LP strategies, range-bound markets, automated fee collection.
 
@@ -470,24 +474,24 @@ A controller that automatically manages LP positions with rebalancing logic.
 
 Creates ONE liquidity position with fixed price bounds. No auto-rebalancing.
 
-| Feature | Description |
-|---------|-------------|
-| **Fixed bounds** | Position stays at configured price range |
-| **Manual control** | User decides when to close/reopen |
-| **Limit orders** | Can auto-close when price exits range (like limit orders) |
-| **Simple** | Direct control over single position |
+| Feature            | Description                                               |
+| ------------------ | --------------------------------------------------------- |
+| **Fixed bounds**   | Position stays at configured price range                  |
+| **Manual control** | User decides when to close/reopen                         |
+| **Limit orders**   | Can auto-close when price exits range (like limit orders) |
+| **Simple**         | Direct control over single position                       |
 
 **Best for:** Short-term positions, limit-order-style LP, manual management, testing.
 
 ### Quick Comparison
 
-| Aspect | Rebalancer Controller | LP Executor |
-|--------|----------------------|-------------|
-| Rebalancing | Automatic | Manual |
-| Position count | One at a time, auto-managed | One, fixed |
-| Price limits | Yes (anchor points) | No (but has auto-close) |
-| Complexity | Higher (more config) | Lower (simpler) |
-| Use case | Set-and-forget | Precise control |
+| Aspect         | Rebalancer Controller       | LP Executor             |
+| -------------- | --------------------------- | ----------------------- |
+| Rebalancing    | Automatic                   | Manual                  |
+| Position count | One at a time, auto-managed | One, fixed              |
+| Price limits   | Yes (anchor points)         | No (but has auto-close) |
+| Complexity     | Higher (more config)        | Lower (simpler)         |
+| Use case       | Set-and-forget              | Precise control         |
 
 ---
 
@@ -504,6 +508,7 @@ Run, monitor, and manage LP strategies.
 Auto-rebalances positions when price moves out of range. Best for hands-off LP management.
 
 > **Key concepts:**
+>
 > - `--amount` (`total_amount_quote`) = amount in **quote asset** (2nd token in pair). For `Percolator-SOL` → SOL. For `SOL-USDC` → USDC. Always quote, regardless of side.
 > - All `*_pct` params are already in percent. `position_width_pct: 10` = 10% width. Do NOT pass decimals (not 0.10).
 > - Price limits (`--buy-min/max`, `--sell-min/max`) default to `null` = no limit. Only set if you want a stop zone.
@@ -536,17 +541,17 @@ python scripts/manage_controller.py status
 
 **Key Parameters:**
 
-| Parameter | Field | Default | Description |
-|-----------|-------|---------|-------------|
-| `--amount` | `total_amount_quote` | required | Amount in **quote asset** (2nd token). SOL for X-SOL pairs, USDC for X-USDC pairs. |
-| `--side` | `side` | `0` | `0`=BOTH, `1`=BUY (quote only), `2`=SELL (base only) |
-| `--width` | `position_width_pct` | `10` | Range width in % (e.g. `10` = ±10% around price). Already in pct — do not use decimals. |
-| `--offset` | `position_offset_pct` | `0.1` | Center offset from current price in %. Already in pct. |
-| `--rebalance-seconds` | `rebalance_seconds` | `300` | Seconds out-of-range before closing and reopening |
-| `--rebalance-threshold` | `rebalance_threshold_pct` | `1` | Min price move % to trigger rebalance. Already in pct. |
-| `--sell-max/--sell-min` | `sell_price_max/min` | `null` | Price limits for SELL side (`null` = no limit) |
-| `--buy-max/--buy-min` | `buy_price_max/min` | `null` | Price limits for BUY side (`null` = no limit) |
-| `--strategy-type` | `strategy_type` | `0` | Meteora shape: `0`=Spot (uniform), `1`=Curve (center-heavy), `2`=Bid-Ask (edge-heavy) |
+| Parameter               | Field                     | Default  | Description                                                                             |
+| ----------------------- | ------------------------- | -------- | --------------------------------------------------------------------------------------- |
+| `--amount`              | `total_amount_quote`      | required | Amount in **quote asset** (2nd token). SOL for X-SOL pairs, USDC for X-USDC pairs.      |
+| `--side`                | `side`                    | `0`      | `0`=BOTH, `1`=BUY (quote only), `2`=SELL (base only)                                    |
+| `--width`               | `position_width_pct`      | `10`     | Range width in % (e.g. `10` = ±10% around price). Already in pct — do not use decimals. |
+| `--offset`              | `position_offset_pct`     | `0.1`    | Center offset from current price in %. Already in pct.                                  |
+| `--rebalance-seconds`   | `rebalance_seconds`       | `300`    | Seconds out-of-range before closing and reopening                                       |
+| `--rebalance-threshold` | `rebalance_threshold_pct` | `1`      | Min price move % to trigger rebalance. Already in pct.                                  |
+| `--sell-max/--sell-min` | `sell_price_max/min`      | `null`   | Price limits for SELL side (`null` = no limit)                                          |
+| `--buy-max/--buy-min`   | `buy_price_max/min`       | `null`   | Price limits for BUY side (`null` = no limit)                                           |
+| `--strategy-type`       | `strategy_type`           | `0`      | Meteora shape: `0`=Spot (uniform), `1`=Curve (center-heavy), `2`=Bid-Ask (edge-heavy)   |
 
 ### Single LP Executor (Alternative)
 
@@ -566,18 +571,19 @@ python scripts/manage_executor.py create \
 
 **Key Parameters:**
 
-| Parameter | Description |
-|-----------|-------------|
-| `--connector` | Must include `/clmm` suffix (default: `meteora/clmm`) |
-| `--lower/--upper` | Position price bounds |
-| `--base-amount/--quote-amount` | Token amounts (set one to 0 for single-sided) |
-| `--side` | 0=BOTH, 1=BUY, 2=SELL |
-| `--auto-close-above` | Auto-close when price above range (for limit orders) |
-| `--auto-close-below` | Auto-close when price below range (for limit orders) |
+| Parameter                      | Description                                           |
+| ------------------------------ | ----------------------------------------------------- |
+| `--connector`                  | Must include `/clmm` suffix (default: `meteora/clmm`) |
+| `--lower/--upper`              | Position price bounds                                 |
+| `--base-amount/--quote-amount` | Token amounts (set one to 0 for single-sided)         |
+| `--side`                       | 0=BOTH, 1=BUY, 2=SELL                                 |
+| `--auto-close-above`           | Auto-close when price above range (for limit orders)  |
+| `--auto-close-below`           | Auto-close when price below range (for limit orders)  |
 
 ### Monitor & Manage
 
 **Check Status:**
+
 ```bash
 # Bot status
 python scripts/manage_controller.py status
@@ -593,6 +599,7 @@ python scripts/manage_executor.py summary
 ```
 
 **Executor States:**
+
 - `OPENING` - Creating position on-chain
 - `IN_RANGE` - Position active, earning fees
 - `OUT_OF_RANGE` - Price outside position bounds
@@ -600,6 +607,7 @@ python scripts/manage_executor.py summary
 - `FAILED` - Transaction failed
 
 **Stop:**
+
 ```bash
 # Stop bot (stops all its controllers)
 python scripts/manage_controller.py stop my_lp_bot
@@ -618,6 +626,7 @@ python scripts/manage_executor.py stop <executor_id> --keep-position
 > Your executor has been stopped. Want me to generate a performance dashboard?
 
 Then run:
+
 ```bash
 python scripts/visualize_lp_executor.py --id <executor_id>
 ```
@@ -637,6 +646,7 @@ for ex in (items if isinstance(items,list) else [items]):
 ```
 
 To also export the raw data to CSV:
+
 ```bash
 python scripts/export_lp_executor.py --id <executor_id>
 ```
@@ -653,25 +663,26 @@ Export data and generate visual dashboards from LP position events. Scripts are 
 
 **Always ask yourself: was this position deployed as an LP Executor (via `manage_executor.py` or direct API) or via a Rebalancer Controller bot?**
 
-| How it was deployed | Script to use |
-|---------------------|--------------|
-| **LP Executor** — `manage_executor.py create` or direct `POST /executors/` API | `visualize_lp_executor.py --id <executor_id>` ✅ |
-| **Rebalancer Controller** — `manage_controller.py deploy` (bot container, SQLite) | `visualize_lp_positions.py --pair <pair>` |
-| Not sure? | Run `curl -s -u admin:admin -X POST http://localhost:8000/executors/search -H "Content-Type: application/json" -d '{"type":"lp_executor"}'` — if the executor ID appears, use the executor scripts |
+| How it was deployed                                                               | Script to use                                                                                                                                                                                      |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **LP Executor** — `manage_executor.py create` or direct `POST /executors/` API    | `visualize_lp_executor.py --id <executor_id>` ✅                                                                                                                                                   |
+| **Rebalancer Controller** — `manage_controller.py deploy` (bot container, SQLite) | `visualize_lp_positions.py --pair <pair>`                                                                                                                                                          |
+| Not sure?                                                                         | Run `curl -s -u admin:admin -X POST http://localhost:8000/executors/search -H "Content-Type: application/json" -d '{"type":"lp_executor"}'` — if the executor ID appears, use the executor scripts |
 
 **If the user has been running an LP Executor in this session** (executor ID is known from context), skip the question and go straight to:
+
 ```bash
 python scripts/visualize_lp_executor.py --id <executor_id>
 ```
 
 ### Available Scripts
 
-| Script | Purpose |
-|--------|---------|
-| `scripts/export_lp_positions.py` | Export LP position events to CSV (SQLite/bot-container based) |
+| Script                              | Purpose                                                                   |
+| ----------------------------------- | ------------------------------------------------------------------------- |
+| `scripts/export_lp_positions.py`    | Export LP position events to CSV (SQLite/bot-container based)             |
 | `scripts/visualize_lp_positions.py` | Generate HTML dashboard from position events (SQLite/bot-container based) |
-| `scripts/export_lp_executor.py` | Export a single LP executor to CSV by `--id` (REST API, no SQLite) |
-| `scripts/visualize_lp_executor.py` | Generate HTML dashboard for a single LP executor by `--id` (REST API) |
+| `scripts/export_lp_executor.py`     | Export a single LP executor to CSV by `--id` (REST API, no SQLite)        |
+| `scripts/visualize_lp_executor.py`  | Generate HTML dashboard for a single LP executor by `--id` (REST API)     |
 
 ### Visualize LP Positions
 
@@ -692,6 +703,7 @@ python scripts/visualize_lp_positions.py --pair SOL-USDC --hours 24
 ```
 
 **Dashboard Features:**
+
 - KPI cards (total PnL, fees, IL, win/loss counts)
 - Cumulative PnL & fees chart
 - Price at open/close with LP range bounds
@@ -727,6 +739,7 @@ python scripts/export_lp_executor.py --id <executor_id> --print   # JSON to stdo
 ```
 
 CSV columns (LP executor schema):
+
 - **Identity:** `id, account_name, controller_id, connector_name, trading_pair`
 - **State:** `status, close_type, is_active, is_trading, error_count`
 - **Timing:** `created_at, closed_at, close_timestamp, duration_seconds`
@@ -743,6 +756,7 @@ python scripts/visualize_lp_executor.py --id <executor_id> --no-open
 ```
 
 **Dashboard panels:**
+
 - KPI cards: status, net PnL, fees earned, duration, LP range
 - Price chart with LP lower/upper bounds + open/close markers (5m KuCoin candles; auto-skipped for exotic pairs)
 - Token balance bar: initial vs final base + quote amounts
@@ -758,6 +772,7 @@ python scripts/visualize_lp_executor.py --id <executor_id> --no-open
 ### Common Workflows
 
 **Full Setup (first time):**
+
 ```bash
 # 1. Deploy API
 bash scripts/deploy_hummingbot_api.sh install
@@ -783,6 +798,7 @@ python scripts/manage_controller.py status
 ```
 
 **Analyze LP Positions:**
+
 ```bash
 # Visualize
 python scripts/visualize_lp_positions.py --pair SOL-USDC
@@ -804,37 +820,37 @@ Both support `--json` output. These scripts are also used internally by `setup_g
 
 ### Scripts Reference
 
-| Script | Purpose |
-|--------|---------|
-| `check_api.sh` | Check if Hummingbot API is running (shared) |
-| `check_gateway.sh` | Check if Gateway is running (shared) |
-| `deploy_hummingbot_api.sh` | Install/upgrade/manage Hummingbot API |
-| `setup_gateway.sh` | Start Gateway and configure RPC |
-| `add_wallet.py` | Add wallets and check balances |
-| `manage_gateway.py` | Advanced Gateway management |
-| `list_meteora_pools.py` | Search and list pools |
-| `get_meteora_pool.py` | Get pool details with liquidity chart |
-| `manage_executor.py` | Create, list, stop LP executors |
-| `manage_controller.py` | Create configs, deploy bots, get status |
-| `export_lp_positions.py` | Export position events to CSV (SQLite/bot-container) |
-| `visualize_lp_positions.py` | Generate HTML dashboard (SQLite/bot-container) |
-| `export_lp_executor.py` | Export single LP executor to CSV by `--id` (REST API) |
-| `visualize_lp_executor.py` | HTML dashboard for single LP executor by `--id` (REST API) |
+| Script                      | Purpose                                                    |
+| --------------------------- | ---------------------------------------------------------- |
+| `check_api.sh`              | Check if Hummingbot API is running (shared)                |
+| `check_gateway.sh`          | Check if Gateway is running (shared)                       |
+| `deploy_hummingbot_api.sh`  | Install/upgrade/manage Hummingbot API                      |
+| `setup_gateway.sh`          | Start Gateway and configure RPC                            |
+| `add_wallet.py`             | Add wallets and check balances                             |
+| `manage_gateway.py`         | Advanced Gateway management                                |
+| `list_meteora_pools.py`     | Search and list pools                                      |
+| `get_meteora_pool.py`       | Get pool details with liquidity chart                      |
+| `manage_executor.py`        | Create, list, stop LP executors                            |
+| `manage_controller.py`      | Create configs, deploy bots, get status                    |
+| `export_lp_positions.py`    | Export position events to CSV (SQLite/bot-container)       |
+| `visualize_lp_positions.py` | Generate HTML dashboard (SQLite/bot-container)             |
+| `export_lp_executor.py`     | Export single LP executor to CSV by `--id` (REST API)      |
+| `visualize_lp_executor.py`  | HTML dashboard for single LP executor by `--id` (REST API) |
 
 ### Error Troubleshooting
 
-| Error | Cause | Solution |
-|-------|-------|----------|
-| "InvalidRealloc" | Position range too wide | Reduce `--width` (check bin_step limits) |
-| State stuck "OPENING" | Transaction failed | Stop executor, reduce range, retry |
-| "Insufficient funds" (wallet has funds) | RPC rate limit or wrong amount units | Add custom RPC key; verify `--amount` is in quote asset |
-| "Transaction simulation failed" | RPC rate limit masking as sim failure | Add custom RPC key (Helius/QuickNode) |
-| `'meteora/clmm'` KeyError | Gateway connector not registered yet | Use hummingbot-api PR #120+ (`feat/lp-executor` branch) |
-| "No CLMM pool found for X-Y" | Token symbol mismatch | Use exact symbol from pool (e.g. `Percolator` not `PRCLT`) |
-| "meteora/clmm is not ready" | Bot can't reach Gateway | Run Gateway as Docker container with `--network host`; dev-mode Gateway on macOS not reachable from containers |
-| "Failed to load strategy" / password error | Missing `.password_verification` in bot conf | Copy from `bots/credentials/master_account/.password_verification` to `bots/bots/instances/<bot>/conf/` |
-| `candles_config / markets extra inputs` | Stale script config format | Use minimal config: only `controllers_config` and `script_file_name` |
-| Bot shows "stopped" in API but running in Docker | MQTT not connected | Bot is running but API can't see it via MQTT; check bot logs directly |
+| Error                                            | Cause                                        | Solution                                                                                                       |
+| ------------------------------------------------ | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| "InvalidRealloc"                                 | Position range too wide                      | Reduce `--width` (check bin_step limits)                                                                       |
+| State stuck "OPENING"                            | Transaction failed                           | Stop executor, reduce range, retry                                                                             |
+| "Insufficient funds" (wallet has funds)          | RPC rate limit or wrong amount units         | Add custom RPC key; verify `--amount` is in quote asset                                                        |
+| "Transaction simulation failed"                  | RPC rate limit masking as sim failure        | Add custom RPC key (Helius/QuickNode)                                                                          |
+| `'meteora/clmm'` KeyError                        | Gateway connector not registered yet         | Use hummingbot-api PR #120+ (`feat/lp-executor` branch)                                                        |
+| "No CLMM pool found for X-Y"                     | Token symbol mismatch                        | Use exact symbol from pool (e.g. `Percolator` not `PRCLT`)                                                     |
+| "meteora/clmm is not ready"                      | Bot can't reach Gateway                      | Run Gateway as Docker container with `--network host`; dev-mode Gateway on macOS not reachable from containers |
+| "Failed to load strategy" / password error       | Missing `.password_verification` in bot conf | Copy from `bots/credentials/master_account/.password_verification` to `bots/bots/instances/<bot>/conf/`        |
+| `candles_config / markets extra inputs`          | Stale script config format                   | Use minimal config: only `controllers_config` and `script_file_name`                                           |
+| Bot shows "stopped" in API but running in Docker | MQTT not connected                           | Bot is running but API can't see it via MQTT; check bot logs directly                                          |
 
 ---
 
@@ -846,20 +862,20 @@ These caused real confusion in production — read before deploying.
 
 The quote asset is the **2nd token** in the trading pair:
 
-| Pair | Quote Asset | Example: deploy 100k base tokens worth ~$100 |
-|------|-------------|----------------------------------------------|
-| `Percolator-SOL` | SOL | `--amount 1.33` (1.33 SOL ≈ $108) |
-| `SOL-USDC` | USDC | `--amount 108` (108 USDC) |
-| `RAY-SOL` | SOL | `--amount 2.5` (2.5 SOL) |
+| Pair             | Quote Asset | Example: deploy 100k base tokens worth ~$100 |
+| ---------------- | ----------- | -------------------------------------------- |
+| `Percolator-SOL` | SOL         | `--amount 1.33` (1.33 SOL ≈ $108)            |
+| `SOL-USDC`       | USDC        | `--amount 108` (108 USDC)                    |
+| `RAY-SOL`        | SOL         | `--amount 2.5` (2.5 SOL)                     |
 
 Even for `--side 2` (SELL/base-only), you express the value in quote units. Convert: `base_tokens × price_in_quote = total_amount_quote`.
 
 ### 2. All `*_pct` params are already in percent
 
-| Param | Correct | Wrong |
-|-------|---------|-------|
-| `position_width_pct: 10` | 10% range | ~~0.10~~ |
-| `position_offset_pct: 1` | 1% offset | ~~0.01~~ |
+| Param                        | Correct      | Wrong    |
+| ---------------------------- | ------------ | -------- |
+| `position_width_pct: 10`     | 10% range    | ~~0.10~~ |
+| `position_offset_pct: 1`     | 1% offset    | ~~0.01~~ |
 | `rebalance_threshold_pct: 1` | 1% threshold | ~~0.01~~ |
 
 ### 3. Token symbol must match pool exactly
@@ -877,17 +893,20 @@ Example: Percolator token symbol is `Percolator` (not `PRCLT`). Use `--pair Perc
 ### 4. Custom RPC is required before deploying (not optional)
 
 The public Solana RPC (`api.mainnet-beta.solana.com`) will rate-limit your bot, causing:
+
 - "Insufficient funds" errors (even when wallet has funds)
 - "Transaction simulation failed"
 - Failed position opens after 10 retries
 
 **Always configure a custom RPC before deploying:**
+
 ```bash
 # Edit Gateway conf
 GATEWAY_DIR=~/.openclaw/workspace/hummingbot-gateway  # or your gateway dir
 nano "$GATEWAY_DIR/conf/chains/solana/mainnet-beta.yml"
 # Set: nodeURL: https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
 ```
+
 Free key at https://helius.dev. Restart Gateway after.
 
 ### 5. Gateway must run as Docker (not dev mode) on macOS
@@ -895,6 +914,7 @@ Free key at https://helius.dev. Restart Gateway after.
 On macOS, Docker containers cannot reach processes running on the host (even with `--network host`). The bot container **cannot** connect to a Gateway running in dev mode (`pnpm start`).
 
 **Always run Gateway as Docker:**
+
 ```bash
 docker run -d --name gateway \
   --network host \
@@ -909,6 +929,7 @@ Then in bot's `conf_client.yml`: `gateway_api_host: localhost` (host networking 
 ### 6. Use `hummingbot:development` image, not `latest`
 
 The `latest` image may not have LP executor support. Always deploy with:
+
 ```bash
 python scripts/manage_controller.py deploy my_bot --configs my_config
 # manage_controller.py defaults to hummingbot/hummingbot:development
@@ -925,9 +946,10 @@ Check which token account has funds — the wallet may have multiple SPL token a
 ### 8. Closing positions
 
 To close all positions on a pool:
+
 ```bash
 # List open positions
-curl -s "http://localhost:15888/connectors/meteora/clmm/positions-owned?network=mainnet-beta&walletAddress=<WALLET>" 
+curl -s "http://localhost:15888/connectors/meteora/clmm/positions-owned?network=mainnet-beta&walletAddress=<WALLET>"
 
 # Close each position
 curl -s -X POST http://localhost:15888/connectors/meteora/clmm/close-position \

@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
-import { usePrivy } from "@privy-io/react-auth";
-import { useConnectedStandardWallets } from "@privy-io/react-auth/solana";
+import { useMemo } from 'react';
+import { usePrivy } from '@privy-io/react-auth';
+import { useConnectedStandardWallets } from '@privy-io/react-auth/solana';
 
 export function useWallet() {
   const { ready, authenticated, login, logout, user } = usePrivy();
@@ -19,7 +19,7 @@ export function useWallet() {
     signIn: () => login(),
     signOut: async () => {
       await logout();
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch('/api/auth/logout', { method: 'POST' });
     },
     walletAddress: primaryWallet?.address || null,
   };

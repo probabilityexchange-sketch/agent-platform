@@ -5,11 +5,13 @@ This guide outlines the testing strategy and best practices for the Randi Agent 
 ## Test Frameworks
 
 ### Unit Testing (Vitest)
+
 - Used for unit tests and integration tests
 - Located in `src/**/*.test.ts` or `src/**/*.spec.ts`
 - Run with `npm run test`
 
 ### End-to-End Testing (Playwright)
+
 - Used for browser-based E2E tests
 - Located in `e2e/**/*.spec.ts`
 - Run with `npm run test:e2e`
@@ -17,6 +19,7 @@ This guide outlines the testing strategy and best practices for the Randi Agent 
 ## Writing Unit Tests
 
 ### Test Structure
+
 ```typescript
 import { describe, it, expect, beforeEach } from 'vitest';
 
@@ -25,20 +28,20 @@ describe('FunctionName', () => {
     it('should return expected output', () => {
       // Arrange
       const input = 'test';
-      
+
       // Act
       const result = functionName(input);
-      
+
       // Assert
       expect(result).toBe('expected');
     });
   });
-  
+
   describe('when invalid input', () => {
     it('should throw an error', () => {
       // Arrange
       const input = null;
-      
+
       // Act & Assert
       expect(() => functionName(input)).toThrow();
     });
@@ -47,6 +50,7 @@ describe('FunctionName', () => {
 ```
 
 ### Best Practices
+
 - Test one thing per test case
 - Use descriptive test names
 - Follow Arrange-Act-Assert pattern
@@ -79,6 +83,7 @@ npm run test:e2e
 ## CI/CD Integration
 
 Tests are automatically run on:
+
 - Every pull request
 - Every push to main branch
 - Before deployment

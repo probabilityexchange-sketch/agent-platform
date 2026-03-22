@@ -4,8 +4,8 @@
  * Recommended: every 5 minutes via cron
  */
 
-import { prisma } from "@/lib/db/prisma";
-import { cleanupExpiredContainers } from "@/lib/docker/cleanup";
+import { prisma } from '@/lib/db/prisma';
+import { cleanupExpiredContainers } from '@/lib/docker/cleanup';
 
 console.log(`[${new Date().toISOString()}] Starting cleanup...`);
 

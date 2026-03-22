@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 /**
  * Skill Validation Script
- * 
+ *
  * Validates that all skills in the repository follow the standard format:
  * - Each skill directory contains a SKILL.md file
  * - SKILL.md has required frontmatter (name, description)
@@ -27,7 +27,7 @@ interface SkillFrontmatter {
 function extractFrontmatter(content: string): SkillFrontmatter {
   const frontmatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n/;
   const match = content.match(frontmatterRegex);
-  
+
   if (!match) {
     return {};
   }
@@ -38,7 +38,10 @@ function extractFrontmatter(content: string): SkillFrontmatter {
   frontmatterString.split('\n').forEach(line => {
     const [key, ...valueParts] = line.split(':');
     if (key && valueParts.length > 0) {
-      const value = valueParts.join(':').trim().replace(/^['"]|['"]$/g, '');
+      const value = valueParts
+        .join(':')
+        .trim()
+        .replace(/^['"]|['"]$/g, '');
       frontmatter[key.trim()] = value;
     }
   });
@@ -92,7 +95,9 @@ function validateSkillDirectory(skillPath: string): SkillValidationResult {
   // Check directory naming
   const dirName = path.basename(skillPath);
   if (dirName !== frontmatter.name && frontmatter.name) {
-    result.warnings.push(`Directory name "${dirName}" doesn't match skill name "${frontmatter.name}"`);
+    result.warnings.push(
+      `Directory name "${dirName}" doesn't match skill name "${frontmatter.name}"`
+    );
   }
 
   return result;
@@ -107,12 +112,12 @@ function findSkillDirectories(basePath: string): string[] {
     for (const entry of entries) {
       if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
         const fullPath = path.join(dirPath, entry.name);
-        
+
         // Check if this directory contains SKILL.md
         if (fs.existsSync(path.join(fullPath, 'SKILL.md'))) {
           skillDirs.push(fullPath);
         }
-        
+
         // Recursively search subdirectories
         searchDirectory(fullPath);
       }
@@ -136,7 +141,7 @@ function main() {
   for (const skillDir of skillDirs) {
     const result = validateSkillDirectory(skillDir);
     results.push(result);
-    
+
     if (result.errors.length > 0) totalErrors += result.errors.length;
     if (result.warnings.length > 0) totalWarnings += result.warnings.length;
   }
@@ -148,11 +153,11 @@ function main() {
   for (const result of results) {
     const status = result.valid ? '✓' : '✗';
     console.log(`\n${status} ${result.path}`);
-    
+
     for (const error of result.errors) {
       console.log(`  ERROR: ${error}`);
     }
-    
+
     for (const warning of result.warnings) {
       console.log(`  WARNING: ${warning}`);
     }

@@ -9,24 +9,28 @@ The burn rate will only ever decrease, never increase. Early users get the most 
 ## Schedule
 
 ### Phase 1: Ignition (Current)
+
 **Burn rate: 70% | Treasury: 30%**
 
 - **Trigger**: Launch through 100 active users
 - **Rationale**: Maximum deflation to reward early adopters and establish visible supply reduction. Platform costs are near zero due to free/open-source model usage. Treasury accumulates a small reserve without sell pressure.
 
 ### Phase 2: Growth
+
 **Burn rate: 50% | Treasury: 50%**
 
 - **Trigger**: 100+ active users OR monthly API costs exceed $500
 - **Rationale**: User growth drives real compute costs as premium model usage increases. Treasury needs sustainable funding for GPT-4o, Claude, and infrastructure. 50/50 split maintains strong deflation while covering operations.
 
 ### Phase 3: Scale
+
 **Burn rate: 40% | Treasury: 60%**
 
 - **Trigger**: 1,000+ active users OR monthly API costs exceed $5,000
 - **Rationale**: Platform is mature. Multi-region compute, expanded model access, and autonomous agent operations require consistent treasury funding. 40% burn still provides meaningful deflation at high transaction volume.
 
 ### Phase 4: Steady State
+
 **Burn rate: 30% | Treasury: 70%**
 
 - **Trigger**: 10,000+ active users OR platform reaches full autonomous operation
@@ -50,10 +54,10 @@ As the platform matures and the community grows, burn rate decisions may transit
 
 ## Changelog
 
-| Date | Change | Announced |
-|------|--------|-----------|
+| Date       | Change                                    | Announced     |
+| ---------- | ----------------------------------------- | ------------- |
 | 2026-02-24 | Phase 1 launched: 70% burn / 30% treasury | This document |
 
 ---
 
-*This is a living document. The schedule and rules above represent commitments to the $RANDI community. Any updates will be versioned in the changelog.*
+_This is a living document. The schedule and rules above represent commitments to the $RANDI community. Any updates will be versioned in the changelog._

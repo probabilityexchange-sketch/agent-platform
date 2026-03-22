@@ -1,17 +1,18 @@
 <div align="center">
   <img src=".github/assets/banner.png" alt="Randi Agent Banner" width="100%">
 
-  # 🤖 Randi Agent Platform
-  
-  **The enterprise-grade AI agent orchestration layer powered by Solana, Composio, and early x402 support.**
+# 🤖 Randi Agent Platform
 
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-  [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
-  [![Solana](https://img.shields.io/badge/Solana-Protocol-blue?logo=solana)](https://solana.com/)
-  [![Auth: Privy](https://img.shields.io/badge/Auth-Privy-indigo)](https://www.privy.io/)
-  [![Docker](https://img.shields.io/badge/Docker-Enabled-blue?logo=docker)](https://www.docker.com/)
+**The enterprise-grade AI agent orchestration layer powered by Solana, Composio, and early x402 support.**
 
-  [Explore Docs](docs/USER_GUIDE.md) · [Report Bug](../../issues/new?template=bug_report.yml) · [Request Feature](../../issues/new?template=feature_request.yml) · [Support on Ko-fi](https://ko-fi.com/randiagent)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
+[![Solana](https://img.shields.io/badge/Solana-Protocol-blue?logo=solana)](https://solana.com/)
+[![Auth: Privy](https://img.shields.io/badge/Auth-Privy-indigo)](https://www.privy.io/)
+[![Docker](https://img.shields.io/badge/Docker-Enabled-blue?logo=docker)](https://www.docker.com/)
+
+[Explore Docs](docs/USER_GUIDE.md) · [Report Bug](../../issues/new?template=bug_report.yml) · [Request Feature](../../issues/new?template=feature_request.yml) · [Support on Ko-fi](https://ko-fi.com/randiagent)
+
 </div>
 
 ---
@@ -23,6 +24,7 @@ Randi is a high-performance AI agent platform designed for secure orchestration,
 ### 💎 The Randi Economy
 
 The platform is powered by a multi-tier economic model designed for autonomous agent operations:
+
 1.  **Hosted Platform**: Access the managed environment at [randi.chat](https://www.randi.chat/), fueled by the **$RANDI** token on Solana.
 2.  **Verified Credits**: Users top up their balance with $RANDI to fund LLM reasoning and container compute.
 3.  **x402 Protocol**: Initial support for autonomous machine-to-machine payments for premium AI services.
@@ -32,9 +34,9 @@ The platform is powered by a multi-tier economic model designed for autonomous a
 
 Randi adopts a **security-first** approach to agentic workflows:
 
-*   **Hardened Isolation**: While standard frameworks execute tools in shared spaces, Randi supports **isolated Docker containers** on AWS EC2 for intensive agent tasks.
-*   **Trustless Orchestration**: Native **Privy authentication** supports secure wallet-based and social/email sign-in for agent fleet management.
-*   **Infrastructure over Interfaces**: Randi is designed as an **orchestration layer**, focusing on fleet health, container lifecycles, and verified credit ledgers.
+- **Hardened Isolation**: While standard frameworks execute tools in shared spaces, Randi supports **isolated Docker containers** on AWS EC2 for intensive agent tasks.
+- **Trustless Orchestration**: Native **Privy authentication** supports secure wallet-based and social/email sign-in for agent fleet management.
+- **Infrastructure over Interfaces**: Randi is designed as an **orchestration layer**, focusing on fleet health, container lifecycles, and verified credit ledgers.
 
 ### 🚀 Key Capabilities
 
@@ -72,6 +74,7 @@ The platform has successfully moved through its foundational stages and is curre
 ### Installation
 
 1. **Clone and Install**
+
    ```bash
    git clone https://github.com/Randi-Agent/agent-platform.git
    cd agent-platform
@@ -82,6 +85,7 @@ The platform has successfully moved through its foundational stages and is curre
    Copy `.env.example` to `.env.local` and fill in your credentials (Privy, Supabase, Solana RPC, OpenRouter, Composio).
 
 3. **Initialize Database**
+
    ```bash
    npx prisma generate
    npx prisma db push
@@ -101,17 +105,20 @@ Open [http://localhost:3000](http://localhost:3000) to see the platform in actio
 Detailed guides and operational playbooks are available in the [docs/](docs/) directory:
 
 ### 📖 User & Platform Guides
+
 - **[User Guide](docs/USER_GUIDE.md)**: Getting started with chat, integrations, and credits.
 - **[Payments Explainer](docs/PAYMENTS_EXPLAINER.md)**: Deep dive into the $RANDI, x402, and AgentCard economy.
 - **[Support & Ticketing](docs/SUPPORT_AND_TICKETING.md)**: How to report bugs and request help.
 
 ### 🤖 Agent Architecture & Rules
+
 - **[Agent Rules](docs/AGENT_RULES.md)**: Architectural overview of runtime prompts, skills, and enforcement.
 - **[Core Policies](docs/policies/core-rules.md)**: Non-negotiable operating rules for AI agents.
 - **[Operational Playbooks](docs/playbooks/how-to-operate-as-randi.md)**: Step-by-step guides for agent behavior and execution.
 - **[Tool Catalog](docs/tools/tool-catalog.md)**: Directory of available skills, tools, and integration boundaries.
 
 ### 🛠️ Developer & Ops
+
 - **[Developer Guide](docs/PRIVATE_CODE_PUBLIC_SUPPORT_MIGRATION.md)**: Working with the codebase and local setup.
 - **[Deployment Runbook](DEPLOYMENT.md)**: AWS EC2 rollout procedures and bridge configuration.
 - **[Payment Ops](PAYMENTS.md)**: Managing the $RANDI token economy and burn mechanics.
@@ -142,15 +149,15 @@ If you believe in secure, decentralized AI orchestration, consider supporting th
 
 Randi Agent stands on the shoulders of giants. We are proud to build upon and integrate with the following open-source projects and platforms:
 
-*   **[Anthropic Agent Skills](https://github.com/anthropics/skills)**: Inspired the foundational logic for our specialized agent skill system.
-*   **[Alchemy Skills](https://github.com/alchemyplatform/skills)**: Powers our autonomous wallet authentication and Web3 infrastructure layers.
-*   **[Composio](https://github.com/composiohq/composio)**: Provides the robust connectivity layer allowing our agents to interact with 1000+ external tools and SaaS platforms.
-*   **[Solana](https://github.com/solana-labs/solana)**: The core protocol enabling our secure payments, $RANDI token economy, and verified deposit workflows.
-*   **[Privy](https://www.privy.io/)**: Our primary authentication provider, enabling secure, non-custodial wallet connections and social login.
-*   **[OpenClaw](https://github.com/openclaw/openclaw)**: A major inspiration for decentralized AI infrastructure.
-*   **[Vercel](https://vercel.com/)**: Our hosting platform for the "Brain" (Next.js application).
-*   **[Traefik](https://github.com/traefik/traefik)**: The edge router managing our containerized agent fleet on AWS.
-*   **[Clawnch](https://clawn.ch)**: Partner integration for token launch and agent network matching.
+- **[Anthropic Agent Skills](https://github.com/anthropics/skills)**: Inspired the foundational logic for our specialized agent skill system.
+- **[Alchemy Skills](https://github.com/alchemyplatform/skills)**: Powers our autonomous wallet authentication and Web3 infrastructure layers.
+- **[Composio](https://github.com/composiohq/composio)**: Provides the robust connectivity layer allowing our agents to interact with 1000+ external tools and SaaS platforms.
+- **[Solana](https://github.com/solana-labs/solana)**: The core protocol enabling our secure payments, $RANDI token economy, and verified deposit workflows.
+- **[Privy](https://www.privy.io/)**: Our primary authentication provider, enabling secure, non-custodial wallet connections and social login.
+- **[OpenClaw](https://github.com/openclaw/openclaw)**: A major inspiration for decentralized AI infrastructure.
+- **[Vercel](https://vercel.com/)**: Our hosting platform for the "Brain" (Next.js application).
+- **[Traefik](https://github.com/traefik/traefik)**: The edge router managing our containerized agent fleet on AWS.
+- **[Clawnch](https://clawn.ch)**: Partner integration for token launch and agent network matching.
 
 ---
 

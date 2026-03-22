@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import type { ContainerInfo } from "@/types/container";
-import { StatusBadge } from "./StatusBadge";
-import { StorageCard } from "@/components/storage/StorageCard";
-import { useStorage } from "@/hooks/useStorage";
+import Link from 'next/link';
+import type { ContainerInfo } from '@/types/container';
+import { StatusBadge } from './StatusBadge';
+import { StorageCard } from '@/components/storage/StorageCard';
+import { useStorage } from '@/hooks/useStorage';
 
 interface ContainerCardProps {
   container: ContainerInfo;
@@ -13,7 +13,12 @@ interface ContainerCardProps {
   snapshotting?: boolean;
 }
 
-export function ContainerCard({ container, onStop, onSnapshot, snapshotting = false }: ContainerCardProps) {
+export function ContainerCard({
+  container,
+  onStop,
+  onSnapshot,
+  snapshotting = false,
+}: ContainerCardProps) {
   const expiresAt = new Date(container.expiresAt);
   const now = new Date();
   const timeLeft = expiresAt.getTime() - now.getTime();
@@ -32,7 +37,7 @@ export function ContainerCard({ container, onStop, onSnapshot, snapshotting = fa
         <StatusBadge status={container.status} />
       </div>
 
-      {container.url && container.status === "RUNNING" && (
+      {container.url && container.status === 'RUNNING' && (
         <a
           href={container.url}
           target="_blank"
@@ -43,7 +48,7 @@ export function ContainerCard({ container, onStop, onSnapshot, snapshotting = fa
         </a>
       )}
 
-      {container.password && container.status === "RUNNING" && (
+      {container.password && container.status === 'RUNNING' && (
         <div className="bg-muted rounded-lg p-2 mb-3">
           <p className="text-xs text-muted-foreground">Password</p>
           <p className="text-sm font-mono">{container.password}</p>
@@ -52,7 +57,7 @@ export function ContainerCard({ container, onStop, onSnapshot, snapshotting = fa
 
       <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
         <span>
-          {container.status === "RUNNING"
+          {container.status === 'RUNNING'
             ? `${hoursLeft}h ${minutesLeft}m remaining`
             : `Used ${container.tokensUsed} tokens`}
         </span>
@@ -63,7 +68,7 @@ export function ContainerCard({ container, onStop, onSnapshot, snapshotting = fa
           >
             Details
           </Link>
-          {container.status === "RUNNING" && (
+          {container.status === 'RUNNING' && (
             <button
               onClick={() => onStop(container.id)}
               className="text-destructive hover:text-destructive/80 text-sm"
@@ -75,7 +80,7 @@ export function ContainerCard({ container, onStop, onSnapshot, snapshotting = fa
       </div>
 
       {/* Storage Section */}
-      {container.status === "RUNNING" && (
+      {container.status === 'RUNNING' && (
         <div className="mt-4">
           <StorageCard
             agentSlug={container.agentId}

@@ -80,7 +80,7 @@ polymarket clob trades
 ## 💡 Expert Tips
 
 1.  **JSON Output**: Always use the `-o json` flag when scripting or processing data for precise extraction.
-    *   Example: `polymarket -o json clob midpoint <TOKEN_ID> | jq '.mid'`
+    - Example: `polymarket -o json clob midpoint <TOKEN_ID> | jq '.mid'`
 2.  **Market Identifiers**: Markets can be identified by **Slug**, **Condition ID**, or **Token ID**. Use `polymarket markets get <SLUG>` to find the specific Token IDs for "Yes" and "No" outcomes.
 3.  **Order Types**: The default is `GTC` (Good 'Til Cancelled). You can also use `FOK` (Fill or Kill) or `GTD` (Good 'Til Date).
 4.  **Batch Actions**: You can query multiple tokens at once by comma-separating IDs: `polymarket clob batch-prices "TOKEN1,TOKEN2"`.

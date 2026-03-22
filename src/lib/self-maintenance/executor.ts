@@ -51,20 +51,20 @@ export class ImprovementExecutor {
           return await this.executeDocAdd(improvement);
         case 'test-add':
           return await this.executeTestAdd(improvement);
-         default:
-           return {
-             success: false,
-             error: `Unsupported improvement type: ${improvement.type}`,
-             output: '',
-             filesChanged: []
-           };
+        default:
+          return {
+            success: false,
+            error: `Unsupported improvement type: ${improvement.type}`,
+            output: '',
+            filesChanged: [],
+          };
       }
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
         output: '',
-        filesChanged: []
+        filesChanged: [],
       };
     }
   }
@@ -74,34 +74,34 @@ export class ImprovementExecutor {
    */
   private async executeFormatFix(improvement: Improvement): Promise<ExecutionResult> {
     const filePath = join(this.rootDir, improvement.filepath);
-    
+
     if (!existsSync(filePath)) {
       return {
         success: false,
         error: `File not found: ${improvement.filepath}`,
         output: '',
-        filesChanged: []
+        filesChanged: [],
       };
     }
-    
+
     try {
       // Run prettier --write on the file
       const output = execSync(`npx prettier --write "${filePath}"`, {
         encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
-      
+
       return {
         success: true,
         output: output || 'Formatting applied successfully',
-        filesChanged: [improvement.filepath]
+        filesChanged: [improvement.filepath],
       };
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
         output: '',
-        filesChanged: []
+        filesChanged: [],
       };
     }
   }
@@ -111,45 +111,45 @@ export class ImprovementExecutor {
    */
   private async executeLintFix(improvement: Improvement): Promise<ExecutionResult> {
     const filePath = join(this.rootDir, improvement.filepath);
-    
+
     if (!existsSync(filePath)) {
       return {
         success: false,
         error: `File not found: ${improvement.filepath}`,
         output: '',
-        filesChanged: []
+        filesChanged: [],
       };
     }
-    
+
     try {
       // Run eslint --fix on the file
       const output = execSync(`npx eslint "${filePath}" --fix`, {
         encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
-      
+
       // Check if there are still errors after fixing
       try {
         execSync(`npx eslint "${filePath}"`, {
-          stdio: ['pipe', 'ignore', 'ignore']
+          stdio: ['pipe', 'ignore', 'ignore'],
         });
         // If we get here, no errors remain
       } catch (lintError) {
         // There are still lint errors after fixing
         // We'll still consider this a partial success
       }
-      
+
       return {
         success: true,
         output: output || 'Linting fixes applied',
-        filesChanged: [improvement.filepath]
+        filesChanged: [improvement.filepath],
       };
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
         output: '',
-        filesChanged: []
+        filesChanged: [],
       };
     }
   }
@@ -161,43 +161,43 @@ export class ImprovementExecutor {
    */
   private async executeDocAdd(improvement: Improvement): Promise<ExecutionResult> {
     const filePath = join(this.rootDir, improvement.filepath);
-    
+
     if (!existsSync(filePath)) {
       return {
         success: false,
         error: `File not found: ${improvement.filepath}`,
         output: '',
-        filesChanged: []
+        filesChanged: [],
       };
     }
-    
+
     try {
       const content = readFileSync(filePath, 'utf8');
       const updatedContent = this.addBasicJSDocTemplates(content);
-      
+
       if (updatedContent === content) {
         // No changes were made (likely couldn't find appropriate places)
         return {
           success: false,
           error: 'Could not automatically add documentation - requires human input',
           output: '',
-          filesChanged: []
+          filesChanged: [],
         };
       }
-      
+
       writeFileSync(filePath, updatedContent, 'utf8');
-      
+
       return {
         success: true,
         output: 'Added basic JSDoc templates (review and complete manually)',
-        filesChanged: [improvement.filepath]
+        filesChanged: [improvement.filepath],
       };
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
         output: '',
-        filesChanged: []
+        filesChanged: [],
       };
     }
   }
@@ -208,47 +208,47 @@ export class ImprovementExecutor {
    */
   private async executeTestAdd(improvement: Improvement): Promise<ExecutionResult> {
     const sourceFilePath = join(this.rootDir, improvement.filepath);
-    
+
     if (!existsSync(sourceFilePath)) {
       return {
         success: false,
         error: `Source file not found: ${improvement.filepath}`,
         output: '',
-        filesChanged: []
+        filesChanged: [],
       };
     }
-    
+
     try {
       const testFilePath = this.getTestFilePath(sourceFilePath);
       const testContent = this.generateTestFileTemplate(sourceFilePath);
-      
+
       // Check if test file already exists
       if (existsSync(testFilePath)) {
         return {
           success: false,
           error: `Test file already exists: ${this.relativePath(testFilePath)}`,
           output: '',
-          filesChanged: []
+          filesChanged: [],
         };
       }
-      
+
       // Ensure the directory exists
       const testDir = testFilePath.substring(0, testFilePath.lastIndexOf('/\\'));
       execSync(`mkdir -p "${testDir}"`);
-      
+
       writeFileSync(testFilePath, testContent, 'utf8');
-      
+
       return {
         success: true,
         output: `Created test file: ${this.relativePath(testFilePath)}`,
-        filesChanged: [this.relativePath(testFilePath)]
+        filesChanged: [this.relativePath(testFilePath)],
       };
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
         output: '',
-        filesChanged: []
+        filesChanged: [],
       };
     }
   }
@@ -260,13 +260,13 @@ export class ImprovementExecutor {
   private addBasicJSDocTemplates(content: string): string {
     // This is a very basic implementation that adds JSDoc to exported functions
     // A production version would use TypeScript AST for accuracy
-    
+
     // For now, we'll just return the original content to avoid making incorrect changes
     // In a real implementation, this would:
     // 1. Parse the TypeScript file
     // 2. Find exported functions without JSDoc
     // 3. Insert appropriate JSDoc templates
-    
+
     // Since we don't want to risk corrupting files, we'll indicate this needs human input
     return content; // No automatic changes for safety
   }
@@ -278,7 +278,7 @@ export class ImprovementExecutor {
     const dir = sourceFilePath.substring(0, sourceFilePath.lastIndexOf('/\\'));
     const base = sourceFilePath.substring(sourceFilePath.lastIndexOf('/\\') + 1);
     const nameWithoutExt = base.replace(/\.(ts|tsx)$/, '');
-    
+
     // Place test file alongside source file
     return join(dir, `${nameWithoutExt}.test.ts`);
   }
@@ -289,7 +289,7 @@ export class ImprovementExecutor {
   private generateTestFileTemplate(sourceFilePath: string): string {
     const relativePath = this.relativePath(sourceFilePath);
     const baseName = this.getBaseName(sourceFilePath);
-    
+
     return `import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // Import the module or function being tested
 // import { functionName } from '${relativePath.replace('\\.test\\.ts$', '')}';
@@ -334,8 +334,8 @@ describe('${baseName}', () => {
    * Get relative path from root
    */
   private relativePath(filePath: string): string {
-    return filePath.startsWith(this.rootDir) 
-      ? filePath.substring(this.rootDir.length + 1) 
+    return filePath.startsWith(this.rootDir)
+      ? filePath.substring(this.rootDir.length + 1)
       : filePath;
   }
 
@@ -354,10 +354,10 @@ describe('${baseName}', () => {
     try {
       // Check if we're in a git repository
       execSync('git rev-parse --git-dir', { stdio: 'ignore' });
-      
+
       // Create and checkout the branch
       execSync(`git checkout -b "${branchName}"`);
-      
+
       return true;
     } catch (error) {
       // Not in a git repo or other error
@@ -374,10 +374,10 @@ describe('${baseName}', () => {
       for (const file of files) {
         execSync(`git add "${join(this.rootDir, file)}"`);
       }
-      
+
       // Commit
       execSync(`git commit -m "${message}"`);
-      
+
       return true;
     } catch (error) {
       return false;

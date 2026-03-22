@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useCallback, useState } from "react";
-import bs58 from "bs58";
+import { useCallback, useState } from 'react';
+import bs58 from 'bs58';
 import {
   PublicKey,
   Connection,
   Transaction,
   TransactionInstruction,
   SystemProgram,
-} from "@solana/web3.js";
+} from '@solana/web3.js';
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountIdempotentInstruction,
@@ -17,25 +17,25 @@ import {
   getAssociatedTokenAddress,
   TOKEN_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
-} from "@solana/spl-token";
-import { useConnectedStandardWallets } from "@privy-io/react-auth/solana";
+} from '@solana/spl-token';
+import { useConnectedStandardWallets } from '@privy-io/react-auth/solana';
 
 let cachedRpcUrl: string | null = null;
-let cachedSolanaChain: "solana:mainnet" | "solana:devnet" | "solana:testnet" | null = null;
+let cachedSolanaChain: 'solana:mainnet' | 'solana:devnet' | 'solana:testnet' | null = null;
 
 function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     setTimeout(resolve, ms);
   });
 }
 
 function isBlockheightExpiryError(error: unknown): boolean {
   const message =
-    error instanceof Error ? error.message.toLowerCase() : String(error || "").toLowerCase();
+    error instanceof Error ? error.message.toLowerCase() : String(error || '').toLowerCase();
   return (
-    message.includes("block height exceeded") ||
-    message.includes("transactionexpiredblockheightexceedederror") ||
-    message.includes("blockhash not found")
+    message.includes('block height exceeded') ||
+    message.includes('transactionexpiredblockheightexceedederror') ||
+    message.includes('blockhash not found')
   );
 }
 
@@ -47,7 +47,10 @@ async function hasConfirmedSignature(connection: Connection, signature: string):
   if (status.value.err) {
     throw new Error(`Transaction failed: ${JSON.stringify(status.value.err)}`);
   }
-  return status.value.confirmationStatus === "confirmed" || status.value.confirmationStatus === "finalized";
+  return (
+    status.value.confirmationStatus === 'confirmed' ||
+    status.value.confirmationStatus === 'finalized'
+  );
 }
 
 async function confirmWithFallback(
@@ -62,13 +65,15 @@ async function confirmWithFallback(
   // 45 attempts * 2s = 90 seconds
   for (let i = 0; i < 45; i += 1) {
     if (await hasConfirmedSignature(connection, signature)) {
-      console.log("[Solana] Transaction confirmed via signature polling.");
+      console.log('[Solana] Transaction confirmed via signature polling.');
       return;
     }
     await sleep(2000);
   }
 
-  throw new Error("Transaction confirmation timeout. Please check your wallet history - it may have succeeded but the network is slow.");
+  throw new Error(
+    'Transaction confirmation timeout. Please check your wallet history - it may have succeeded but the network is slow.'
+  );
 }
 
 async function resolveRpcUrl(): Promise<string> {
@@ -76,31 +81,34 @@ async function resolveRpcUrl(): Promise<string> {
     return cachedRpcUrl;
   }
 
-  if (typeof window !== "undefined") {
+  if (typeof window !== 'undefined') {
     cachedRpcUrl = `${window.location.origin}/api/solana-rpc`;
     return cachedRpcUrl;
   }
 
-  cachedRpcUrl =
-    process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
+  cachedRpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.devnet.solana.com';
   return cachedRpcUrl;
 }
 
-function inferChainFromNetwork(networkRaw: string | undefined): "solana:mainnet" | "solana:devnet" | "solana:testnet" {
-  const normalized = (networkRaw || "").toLowerCase();
-  if (normalized.includes("mainnet")) return "solana:mainnet";
-  if (normalized.includes("testnet")) return "solana:testnet";
-  return "solana:devnet";
+function inferChainFromNetwork(
+  networkRaw: string | undefined
+): 'solana:mainnet' | 'solana:devnet' | 'solana:testnet' {
+  const normalized = (networkRaw || '').toLowerCase();
+  if (normalized.includes('mainnet')) return 'solana:mainnet';
+  if (normalized.includes('testnet')) return 'solana:testnet';
+  return 'solana:devnet';
 }
 
-async function resolveSolanaChain(): Promise<"solana:mainnet" | "solana:devnet" | "solana:testnet"> {
+async function resolveSolanaChain(): Promise<
+  'solana:mainnet' | 'solana:devnet' | 'solana:testnet'
+> {
   if (cachedSolanaChain) {
     return cachedSolanaChain;
   }
 
   try {
-    if (typeof window !== "undefined") {
-      const response = await fetch("/api/config", { cache: "no-store" });
+    if (typeof window !== 'undefined') {
+      const response = await fetch('/api/config', { cache: 'no-store' });
       if (response.ok) {
         const data = (await response.json()) as { solanaNetwork?: string };
         cachedSolanaChain = inferChainFromNetwork(data.solanaNetwork);
@@ -115,7 +123,6 @@ async function resolveSolanaChain(): Promise<"solana:mainnet" | "solana:devnet" 
   return cachedSolanaChain;
 }
 
-
 export function useSPLTransfer() {
   const [sending, setSending] = useState(false);
   const { wallets } = useConnectedStandardWallets();
@@ -123,7 +130,7 @@ export function useSPLTransfer() {
   const transfer = useCallback(
     async (params: {
       mint?: string | null;
-      paymentAsset?: "spl" | "sol";
+      paymentAsset?: 'spl' | 'sol';
       recipient: string;
       amount: string;
       decimals: number;
@@ -137,27 +144,29 @@ export function useSPLTransfer() {
 
         const rpcUrl = await resolveRpcUrl();
         const connection = new Connection(rpcUrl, {
-          commitment: "confirmed",
+          commitment: 'confirmed',
         });
 
         let fromWallet: PublicKey;
         if (standardWallet) {
           fromWallet = new PublicKey(standardWallet.address);
         } else {
-          throw new Error("No supported Solana wallet found. Connect a wallet via Privy to continue.");
+          throw new Error(
+            'No supported Solana wallet found. Connect a wallet via Privy to continue.'
+          );
         }
         const toWallet = new PublicKey(params.recipient);
-        const paymentAsset = params.paymentAsset || "spl";
+        const paymentAsset = params.paymentAsset || 'spl';
 
         const tx = new Transaction();
 
-        if (paymentAsset === "sol") {
+        if (paymentAsset === 'sol') {
           const amountLamports = BigInt(params.amount);
           if (amountLamports <= BigInt(0)) {
-            throw new Error("Invalid SOL amount");
+            throw new Error('Invalid SOL amount');
           }
           if (amountLamports > BigInt(Number.MAX_SAFE_INTEGER)) {
-            throw new Error("SOL amount is too large");
+            throw new Error('SOL amount is too large');
           }
 
           tx.add(
@@ -168,16 +177,14 @@ export function useSPLTransfer() {
             })
           );
 
-          const burnAmountLamports = params.burnAmount
-            ? BigInt(params.burnAmount)
-            : BigInt(0);
+          const burnAmountLamports = params.burnAmount ? BigInt(params.burnAmount) : BigInt(0);
           if (burnAmountLamports > BigInt(0)) {
             if (burnAmountLamports > BigInt(Number.MAX_SAFE_INTEGER)) {
-              throw new Error("SOL burn amount is too large");
+              throw new Error('SOL burn amount is too large');
             }
             const burnRecipient = params.burnRecipient
               ? new PublicKey(params.burnRecipient)
-              : new PublicKey("1nc1nerator11111111111111111111111111111111");
+              : new PublicKey('1nc1nerator11111111111111111111111111111111');
 
             tx.add(
               SystemProgram.transfer({
@@ -189,28 +196,31 @@ export function useSPLTransfer() {
           }
         } else {
           if (!params.mint) {
-            throw new Error("Missing token mint for SPL transfer");
+            throw new Error('Missing token mint for SPL transfer');
           }
 
           const mint = new PublicKey(params.mint.trim());
-          const mintAccountInfo = await connection.getAccountInfo(mint, "confirmed");
+          const mintAccountInfo = await connection.getAccountInfo(mint, 'confirmed');
           if (!mintAccountInfo) {
             throw new Error(`Token mint not found on selected Solana network (${rpcUrl})`);
           }
 
           const ownerStr = mintAccountInfo.owner.toBase58();
           // Literal constants for Solana Token Programs to ensure matches regardless of library version
-          const TOKEN_PROGRAM_ID_STR = "TokenkegQfeZyiNwAJbVNBH4DQ3RBN24rcnEiS76vT";
-          const TOKEN_2022_PROGRAM_ID_STR = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
+          const TOKEN_PROGRAM_ID_STR = 'TokenkegQfeZyiNwAJbVNBH4DQ3RBN24rcnEiS76vT';
+          const TOKEN_2022_PROGRAM_ID_STR = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
 
-          const tokenProgramId = (ownerStr === TOKEN_PROGRAM_ID_STR)
-            ? TOKEN_PROGRAM_ID
-            : (ownerStr === TOKEN_2022_PROGRAM_ID_STR)
-              ? TOKEN_2022_PROGRAM_ID
-              : null;
+          const tokenProgramId =
+            ownerStr === TOKEN_PROGRAM_ID_STR
+              ? TOKEN_PROGRAM_ID
+              : ownerStr === TOKEN_2022_PROGRAM_ID_STR
+                ? TOKEN_2022_PROGRAM_ID
+                : null;
 
           if (!tokenProgramId) {
-            throw new Error(`The address ${mint.toBase58()} is not a valid Token Mint. It is owned by ${ownerStr}, which is not a recognized Solana Token Program. Ensure you are on the correct network (${rpcUrl}).`);
+            throw new Error(
+              `The address ${mint.toBase58()} is not a valid Token Mint. It is owned by ${ownerStr}, which is not a recognized Solana Token Program. Ensure you are on the correct network (${rpcUrl}).`
+            );
           }
 
           const fromATA = await getAssociatedTokenAddress(
@@ -229,13 +239,13 @@ export function useSPLTransfer() {
           );
 
           const [fromAccountInfo, toAccountInfo] = await Promise.all([
-            connection.getAccountInfo(fromATA, "confirmed"),
-            connection.getAccountInfo(toATA, "confirmed"),
+            connection.getAccountInfo(fromATA, 'confirmed'),
+            connection.getAccountInfo(toATA, 'confirmed'),
           ]);
 
           if (!fromAccountInfo) {
             throw new Error(
-              "Source token account not found for this mint. Ensure your wallet holds this token on the selected network."
+              'Source token account not found for this mint. Ensure your wallet holds this token on the selected network.'
             );
           }
 
@@ -265,9 +275,7 @@ export function useSPLTransfer() {
           );
           tx.add(transferIx);
 
-          const burnAmount = params.burnAmount
-            ? BigInt(params.burnAmount)
-            : BigInt(0);
+          const burnAmount = params.burnAmount ? BigInt(params.burnAmount) : BigInt(0);
           if (burnAmount > BigInt(0)) {
             tx.add(
               createBurnCheckedInstruction(
@@ -286,12 +294,13 @@ export function useSPLTransfer() {
         // Add memo instruction
         const memoIx = new TransactionInstruction({
           keys: [{ pubkey: fromWallet, isSigner: true, isWritable: false }],
-          programId: new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"),
-          data: Buffer.from(params.memo, "utf-8"),
+          programId: new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'),
+          data: Buffer.from(params.memo, 'utf-8'),
         });
 
         // Get fresh blockhash
-        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+        const { blockhash, lastValidBlockHeight } =
+          await connection.getLatestBlockhash('confirmed');
         tx.recentBlockhash = blockhash;
         tx.feePayer = fromWallet;
         tx.add(memoIx);
@@ -309,7 +318,7 @@ export function useSPLTransfer() {
           });
           signature = bs58.encode(result.signature);
         } else {
-          throw new Error("Standard wallet signing failed: No wallet available");
+          throw new Error('Standard wallet signing failed: No wallet available');
         }
 
         // manual polling logic (no WebSockets)
@@ -317,7 +326,7 @@ export function useSPLTransfer() {
 
         return signature;
       } catch (error) {
-        console.error("Transfer error:", error);
+        console.error('Transfer error:', error);
         throw error;
       } finally {
         setSending(false);

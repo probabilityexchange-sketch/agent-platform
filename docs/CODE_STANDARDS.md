@@ -13,18 +13,21 @@ This document defines the coding standards and style guidelines for the Randi Ag
 ## TypeScript Guidelines
 
 ### Type Safety
+
 - Use strict mode (enabled in tsconfig.json)
 - Avoid `any` type; use `unknown` if necessary
 - Export types and interfaces for public APIs
 - Use interfaces for object shapes, types for unions
 
 ### Code Style
+
 - Use `const` over `let` where possible
 - Use arrow functions for callbacks and handlers
 - Prefer async/await over promise chains
 - Use template literals for string interpolation
 
 ### Naming Conventions
+
 - Use PascalCase for types, interfaces, and components
 - Use camelCase for variables, functions, and methods
 - Use UPPER_CASE for constants
