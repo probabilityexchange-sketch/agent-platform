@@ -14,28 +14,14 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated && sessionReady) {
-      // Poll /api/auth/me to verify the cookie is actually visible to the server
-      // before redirecting. The Set-Cookie from syncSession() might not be
-      // committed to the browser's cookie jar immediately, causing the middleware
-      // to redirect back to /login in a race condition.
-      const verifyAndRedirect = async () => {
-        const maxAttempts = 10;
-        for (let i = 0; i < maxAttempts; i++) {
-          try {
-            const res = await fetch('/api/auth/me', { credentials: 'include' });
-            if (res.ok && !res.redirected) {
-              router.replace('/dashboard');
-              return;
-            }
-          } catch {
-            // Continue polling
-          }
-          await new Promise(r => setTimeout(r, 200));
-        }
-        // Fallback: redirect anyway after polling exhausts
+      // The useAuth hook has already verified the session via polling.
+      // We do a final short delay before redirecting to ensure the next
+      // navigation sees the browser's updated cookie jar.
+      const redirect = async () => {
+        await new Promise(r => setTimeout(r, 300));
         router.replace('/dashboard');
       };
-      verifyAndRedirect();
+      redirect();
     }
   }, [isAuthenticated, sessionReady, router]);
 
