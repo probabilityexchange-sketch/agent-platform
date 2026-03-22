@@ -22,28 +22,41 @@ sanitize_url() {
 }
 
 # Prefer non-pooling URL for schema push (DDL needs direct connection)
-# Use a series of checks to determine which name was selected
+# We will iterate through candidates and pick the first one that has a password.
+# If none have a password, we'll pick the first non-empty one and try to inject.
+CANDIDATES=("POSTGRES_URL_NON_POOLING" "DIRECT_URL" "POSTGRES_PRISMA_URL" "DATABASE_URL")
 RAW_URL=""
 SELECTED_NAME=""
-if [[ -n "${POSTGRES_URL_NON_POOLING:-}" ]]; then
-  RAW_URL="$POSTGRES_URL_NON_POOLING"
-  SELECTED_NAME="POSTGRES_URL_NON_POOLING"
-elif [[ -n "${DIRECT_URL:-}" ]]; then
-  RAW_URL="$DIRECT_URL"
-  SELECTED_NAME="DIRECT_URL"
-elif [[ -n "${POSTGRES_PRISMA_URL:-}" ]]; then
-  RAW_URL="$POSTGRES_PRISMA_URL"
-  SELECTED_NAME="POSTGRES_PRISMA_URL"
-elif [[ -n "${DATABASE_URL:-}" ]]; then
-  RAW_URL="$DATABASE_URL"
-  SELECTED_NAME="DATABASE_URL"
+FALLBACK_URL=""
+FALLBACK_NAME=""
+
+for name in "${CANDIDATES[@]}"; do
+  val="${!name:-}"
+  if [[ -n "$val" ]]; then
+    # Check if it has a password (postgresql://user:pass@host)
+    if [[ "$val" =~ postgresql://[^:]+:[^@]+@ ]]; then
+      RAW_URL="$val"
+      SELECTED_NAME="$name"
+      break
+    fi
+    # If it's the first non-empty one, save as fallback
+    if [[ -z "$FALLBACK_URL" ]]; then
+      FALLBACK_URL="$val"
+      FALLBACK_NAME="$name"
+    fi
+  fi
+done
+
+if [[ -z "$SELECTED_NAME" && -n "$FALLBACK_NAME" ]]; then
+  RAW_URL="$FALLBACK_URL"
+  SELECTED_NAME="$FALLBACK_NAME"
 fi
 
 DB_PUSH_URL="$(sanitize_url "$RAW_URL")"
 
 if [[ -z "$DB_PUSH_URL" ]]; then
   echo "WARNING: No valid database URL found for prisma db push" >&2
-  echo "  Checked in order: POSTGRES_URL_NON_POOLING, DIRECT_URL, POSTGRES_PRISMA_URL, DATABASE_URL" >&2
+  echo "  Checked: POSTGRES_URL_NON_POOLING, DIRECT_URL, POSTGRES_PRISMA_URL, DATABASE_URL" >&2
   echo "  Skipping schema push — tables must exist already" >&2
 else
   echo "Selected database connection source: $SELECTED_NAME" >&2
