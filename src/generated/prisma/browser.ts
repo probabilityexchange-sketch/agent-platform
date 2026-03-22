@@ -123,6 +123,11 @@ export type CryptoAuditLog = Prisma.CryptoAuditLogModel
  */
 export type StorageVolume = Prisma.StorageVolumeModel
 /**
+ * Model ResearchExperiment
+ * 
+ */
+export type ResearchExperiment = Prisma.ResearchExperimentModel
+/**
  * Model FleetStats
  * 
  */

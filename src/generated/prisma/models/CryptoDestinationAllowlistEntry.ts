@@ -508,6 +508,7 @@ export type CryptoDestinationAllowlistEntryCreateOrConnectWithoutUserInput = {
 
 export type CryptoDestinationAllowlistEntryCreateManyUserInputEnvelope = {
   data: Prisma.CryptoDestinationAllowlistEntryCreateManyUserInput | Prisma.CryptoDestinationAllowlistEntryCreateManyUserInput[]
+  skipDuplicates?: boolean
 }
 
 export type CryptoDestinationAllowlistEntryUpsertWithWhereUniqueWithoutUserInput = {
@@ -1304,6 +1305,11 @@ export type CryptoDestinationAllowlistEntryFindManyArgs<ExtArgs extends runtime.
    * Skip the first `n` CryptoDestinationAllowlistEntries.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of CryptoDestinationAllowlistEntries.
+   */
   distinct?: Prisma.CryptoDestinationAllowlistEntryScalarFieldEnum | Prisma.CryptoDestinationAllowlistEntryScalarFieldEnum[]
 }
 
@@ -1337,6 +1343,7 @@ export type CryptoDestinationAllowlistEntryCreateManyArgs<ExtArgs extends runtim
    * The data used to create many CryptoDestinationAllowlistEntries.
    */
   data: Prisma.CryptoDestinationAllowlistEntryCreateManyInput | Prisma.CryptoDestinationAllowlistEntryCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1355,6 +1362,7 @@ export type CryptoDestinationAllowlistEntryCreateManyAndReturnArgs<ExtArgs exten
    * The data used to create many CryptoDestinationAllowlistEntries.
    */
   data: Prisma.CryptoDestinationAllowlistEntryCreateManyInput | Prisma.CryptoDestinationAllowlistEntryCreateManyInput[]
+  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

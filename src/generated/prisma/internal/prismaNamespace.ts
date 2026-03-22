@@ -80,12 +80,12 @@ export type PrismaVersion = {
 }
 
 /**
- * Prisma Client JS version: 7.4.2
- * Query Engine version: 94a226be1cf2967af2541cca5529f0f7ba866919
+ * Prisma Client JS version: 7.5.0
+ * Query Engine version: 280c870be64f457428992c43c1f6d557fab6e29e
  */
 export const prismaVersion: PrismaVersion = {
-  client: "7.4.2",
-  engine: "94a226be1cf2967af2541cca5529f0f7ba866919"
+  client: "7.5.0",
+  engine: "280c870be64f457428992c43c1f6d557fab6e29e"
 }
 
 /**
@@ -405,6 +405,7 @@ export const ModelName = {
   CryptoDestinationAllowlistEntry: 'CryptoDestinationAllowlistEntry',
   CryptoAuditLog: 'CryptoAuditLog',
   StorageVolume: 'StorageVolume',
+  ResearchExperiment: 'ResearchExperiment',
   FleetStats: 'FleetStats'
 } as const
 
@@ -421,7 +422,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "session" | "container" | "chatSession" | "agentRuntime" | "chatMessage" | "tokenTransaction" | "agentConfig" | "agentRental" | "userAgentPreference" | "toolApproval" | "workflow" | "workflowRun" | "workflowSchedule" | "policyDecision" | "approvalRequest" | "policyAuditLog" | "cryptoGuardrailConfig" | "cryptoDestinationAllowlistEntry" | "cryptoAuditLog" | "storageVolume" | "fleetStats"
+    modelProps: "user" | "session" | "container" | "chatSession" | "agentRuntime" | "chatMessage" | "tokenTransaction" | "agentConfig" | "agentRental" | "userAgentPreference" | "toolApproval" | "workflow" | "workflowRun" | "workflowSchedule" | "policyDecision" | "approvalRequest" | "policyAuditLog" | "cryptoGuardrailConfig" | "cryptoDestinationAllowlistEntry" | "cryptoAuditLog" | "storageVolume" | "researchExperiment" | "fleetStats"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1979,6 +1980,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ResearchExperiment: {
+      payload: Prisma.$ResearchExperimentPayload<ExtArgs>
+      fields: Prisma.ResearchExperimentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ResearchExperimentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResearchExperimentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ResearchExperimentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResearchExperimentPayload>
+        }
+        findFirst: {
+          args: Prisma.ResearchExperimentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResearchExperimentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ResearchExperimentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResearchExperimentPayload>
+        }
+        findMany: {
+          args: Prisma.ResearchExperimentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResearchExperimentPayload>[]
+        }
+        create: {
+          args: Prisma.ResearchExperimentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResearchExperimentPayload>
+        }
+        createMany: {
+          args: Prisma.ResearchExperimentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ResearchExperimentCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResearchExperimentPayload>[]
+        }
+        delete: {
+          args: Prisma.ResearchExperimentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResearchExperimentPayload>
+        }
+        update: {
+          args: Prisma.ResearchExperimentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResearchExperimentPayload>
+        }
+        deleteMany: {
+          args: Prisma.ResearchExperimentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ResearchExperimentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ResearchExperimentUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResearchExperimentPayload>[]
+        }
+        upsert: {
+          args: Prisma.ResearchExperimentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResearchExperimentPayload>
+        }
+        aggregate: {
+          args: Prisma.ResearchExperimentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateResearchExperiment>
+        }
+        groupBy: {
+          args: Prisma.ResearchExperimentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ResearchExperimentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ResearchExperimentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ResearchExperimentCountAggregateOutputType> | number
+        }
+      }
+    }
     FleetStats: {
       payload: Prisma.$FleetStatsPayload<ExtArgs>
       fields: Prisma.FleetStatsFieldRefs
@@ -2083,6 +2158,9 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
  */
 
 export const TransactionIsolationLevel = runtime.makeStrictEnum({
+  ReadUncommitted: 'ReadUncommitted',
+  ReadCommitted: 'ReadCommitted',
+  RepeatableRead: 'RepeatableRead',
   Serializable: 'Serializable'
 } as const)
 
@@ -2481,6 +2559,29 @@ export const StorageVolumeScalarFieldEnum = {
 export type StorageVolumeScalarFieldEnum = (typeof StorageVolumeScalarFieldEnum)[keyof typeof StorageVolumeScalarFieldEnum]
 
 
+export const ResearchExperimentScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  objective: 'objective',
+  status: 'status',
+  baseConfig: 'baseConfig',
+  mutatedConfig: 'mutatedConfig',
+  baseScores: 'baseScores',
+  mutatedScores: 'mutatedScores',
+  comparisonScore: 'comparisonScore',
+  gitBranch: 'gitBranch',
+  commitSha: 'commitSha',
+  budgetMinutes: 'budgetMinutes',
+  maxIterations: 'maxIterations',
+  startedAt: 'startedAt',
+  completedAt: 'completedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ResearchExperimentScalarFieldEnum = (typeof ResearchExperimentScalarFieldEnum)[keyof typeof ResearchExperimentScalarFieldEnum]
+
+
 export const FleetStatsScalarFieldEnum = {
   id: 'id',
   nodeId: 'nodeId',
@@ -2506,6 +2607,14 @@ export const SortOrder = {
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+export const QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+} as const
+
+export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
 export const NullsOrder = {
   first: 'first',
   last: 'last'
@@ -2528,6 +2637,13 @@ export type StringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 
 
 
 /**
+ * Reference to a field of type 'String[]'
+ */
+export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'String[]'>
+    
+
+
+/**
  * Reference to a field of type 'Int'
  */
 export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
@@ -2535,9 +2651,23 @@ export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'In
 
 
 /**
+ * Reference to a field of type 'Int[]'
+ */
+export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+/**
  * Reference to a field of type 'DateTime'
  */
 export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
+    
+
+
+/**
+ * Reference to a field of type 'DateTime[]'
+ */
+export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
     
 
 
@@ -2556,9 +2686,23 @@ export type BigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 
 
 
 /**
+ * Reference to a field of type 'BigInt[]'
+ */
+export type ListBigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt[]'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+/**
+ * Reference to a field of type 'Float[]'
+ */
+export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
     
 
 /**
@@ -2677,6 +2821,7 @@ export type GlobalOmitConfig = {
   cryptoDestinationAllowlistEntry?: Prisma.CryptoDestinationAllowlistEntryOmit
   cryptoAuditLog?: Prisma.CryptoAuditLogOmit
   storageVolume?: Prisma.StorageVolumeOmit
+  researchExperiment?: Prisma.ResearchExperimentOmit
   fleetStats?: Prisma.FleetStatsOmit
 }
 

@@ -458,6 +458,7 @@ export type UserAgentPreferenceCreateOrConnectWithoutUserInput = {
 
 export type UserAgentPreferenceCreateManyUserInputEnvelope = {
   data: Prisma.UserAgentPreferenceCreateManyUserInput | Prisma.UserAgentPreferenceCreateManyUserInput[]
+  skipDuplicates?: boolean
 }
 
 export type UserAgentPreferenceUpsertWithWhereUniqueWithoutUserInput = {
@@ -1232,6 +1233,11 @@ export type UserAgentPreferenceFindManyArgs<ExtArgs extends runtime.Types.Extens
    * Skip the first `n` UserAgentPreferences.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of UserAgentPreferences.
+   */
   distinct?: Prisma.UserAgentPreferenceScalarFieldEnum | Prisma.UserAgentPreferenceScalarFieldEnum[]
 }
 
@@ -1265,6 +1271,7 @@ export type UserAgentPreferenceCreateManyArgs<ExtArgs extends runtime.Types.Exte
    * The data used to create many UserAgentPreferences.
    */
   data: Prisma.UserAgentPreferenceCreateManyInput | Prisma.UserAgentPreferenceCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1283,6 +1290,7 @@ export type UserAgentPreferenceCreateManyAndReturnArgs<ExtArgs extends runtime.T
    * The data used to create many UserAgentPreferences.
    */
   data: Prisma.UserAgentPreferenceCreateManyInput | Prisma.UserAgentPreferenceCreateManyInput[]
+  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

@@ -72,6 +72,7 @@ export const ModelName = {
   CryptoDestinationAllowlistEntry: 'CryptoDestinationAllowlistEntry',
   CryptoAuditLog: 'CryptoAuditLog',
   StorageVolume: 'StorageVolume',
+  ResearchExperiment: 'ResearchExperiment',
   FleetStats: 'FleetStats'
 } as const
 
@@ -82,6 +83,9 @@ export type ModelName = (typeof ModelName)[keyof typeof ModelName]
  */
 
 export const TransactionIsolationLevel = runtime.makeStrictEnum({
+  ReadUncommitted: 'ReadUncommitted',
+  ReadCommitted: 'ReadCommitted',
+  RepeatableRead: 'RepeatableRead',
   Serializable: 'Serializable'
 } as const)
 
@@ -480,6 +484,29 @@ export const StorageVolumeScalarFieldEnum = {
 export type StorageVolumeScalarFieldEnum = (typeof StorageVolumeScalarFieldEnum)[keyof typeof StorageVolumeScalarFieldEnum]
 
 
+export const ResearchExperimentScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  objective: 'objective',
+  status: 'status',
+  baseConfig: 'baseConfig',
+  mutatedConfig: 'mutatedConfig',
+  baseScores: 'baseScores',
+  mutatedScores: 'mutatedScores',
+  comparisonScore: 'comparisonScore',
+  gitBranch: 'gitBranch',
+  commitSha: 'commitSha',
+  budgetMinutes: 'budgetMinutes',
+  maxIterations: 'maxIterations',
+  startedAt: 'startedAt',
+  completedAt: 'completedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ResearchExperimentScalarFieldEnum = (typeof ResearchExperimentScalarFieldEnum)[keyof typeof ResearchExperimentScalarFieldEnum]
+
+
 export const FleetStatsScalarFieldEnum = {
   id: 'id',
   nodeId: 'nodeId',
@@ -503,6 +530,14 @@ export const SortOrder = {
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+} as const
+
+export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
 
 
 export const NullsOrder = {

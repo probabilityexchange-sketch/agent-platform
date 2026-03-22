@@ -762,6 +762,7 @@ export type ApprovalRequestCreateOrConnectWithoutUserInput = {
 
 export type ApprovalRequestCreateManyUserInputEnvelope = {
   data: Prisma.ApprovalRequestCreateManyUserInput | Prisma.ApprovalRequestCreateManyUserInput[]
+  skipDuplicates?: boolean
 }
 
 export type ApprovalRequestUpsertWithWhereUniqueWithoutUserInput = {
@@ -848,6 +849,7 @@ export type ApprovalRequestCreateOrConnectWithoutSessionInput = {
 
 export type ApprovalRequestCreateManySessionInputEnvelope = {
   data: Prisma.ApprovalRequestCreateManySessionInput | Prisma.ApprovalRequestCreateManySessionInput[]
+  skipDuplicates?: boolean
 }
 
 export type ApprovalRequestUpsertWithWhereUniqueWithoutSessionInput = {
@@ -911,6 +913,7 @@ export type ApprovalRequestCreateOrConnectWithoutWorkflowInput = {
 
 export type ApprovalRequestCreateManyWorkflowInputEnvelope = {
   data: Prisma.ApprovalRequestCreateManyWorkflowInput | Prisma.ApprovalRequestCreateManyWorkflowInput[]
+  skipDuplicates?: boolean
 }
 
 export type ApprovalRequestUpsertWithWhereUniqueWithoutWorkflowInput = {
@@ -1929,6 +1932,11 @@ export type ApprovalRequestFindManyArgs<ExtArgs extends runtime.Types.Extensions
    * Skip the first `n` ApprovalRequests.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of ApprovalRequests.
+   */
   distinct?: Prisma.ApprovalRequestScalarFieldEnum | Prisma.ApprovalRequestScalarFieldEnum[]
 }
 
@@ -1962,6 +1970,7 @@ export type ApprovalRequestCreateManyArgs<ExtArgs extends runtime.Types.Extensio
    * The data used to create many ApprovalRequests.
    */
   data: Prisma.ApprovalRequestCreateManyInput | Prisma.ApprovalRequestCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1980,6 +1989,7 @@ export type ApprovalRequestCreateManyAndReturnArgs<ExtArgs extends runtime.Types
    * The data used to create many ApprovalRequests.
    */
   data: Prisma.ApprovalRequestCreateManyInput | Prisma.ApprovalRequestCreateManyInput[]
+  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

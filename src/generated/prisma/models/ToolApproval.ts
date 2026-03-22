@@ -476,6 +476,7 @@ export type ToolApprovalCreateOrConnectWithoutSessionInput = {
 
 export type ToolApprovalCreateManySessionInputEnvelope = {
   data: Prisma.ToolApprovalCreateManySessionInput | Prisma.ToolApprovalCreateManySessionInput[]
+  skipDuplicates?: boolean
 }
 
 export type ToolApprovalUpsertWithWhereUniqueWithoutSessionInput = {
@@ -1261,6 +1262,11 @@ export type ToolApprovalFindManyArgs<ExtArgs extends runtime.Types.Extensions.In
    * Skip the first `n` ToolApprovals.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of ToolApprovals.
+   */
   distinct?: Prisma.ToolApprovalScalarFieldEnum | Prisma.ToolApprovalScalarFieldEnum[]
 }
 
@@ -1294,6 +1300,7 @@ export type ToolApprovalCreateManyArgs<ExtArgs extends runtime.Types.Extensions.
    * The data used to create many ToolApprovals.
    */
   data: Prisma.ToolApprovalCreateManyInput | Prisma.ToolApprovalCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1312,6 +1319,7 @@ export type ToolApprovalCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Ex
    * The data used to create many ToolApprovals.
    */
   data: Prisma.ToolApprovalCreateManyInput | Prisma.ToolApprovalCreateManyInput[]
+  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

@@ -860,6 +860,7 @@ export type WorkflowScheduleCreateOrConnectWithoutUserInput = {
 
 export type WorkflowScheduleCreateManyUserInputEnvelope = {
   data: Prisma.WorkflowScheduleCreateManyUserInput | Prisma.WorkflowScheduleCreateManyUserInput[]
+  skipDuplicates?: boolean
 }
 
 export type WorkflowScheduleUpsertWithWhereUniqueWithoutUserInput = {
@@ -2027,6 +2028,11 @@ export type WorkflowScheduleFindManyArgs<ExtArgs extends runtime.Types.Extension
    * Skip the first `n` WorkflowSchedules.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of WorkflowSchedules.
+   */
   distinct?: Prisma.WorkflowScheduleScalarFieldEnum | Prisma.WorkflowScheduleScalarFieldEnum[]
 }
 
@@ -2060,6 +2066,7 @@ export type WorkflowScheduleCreateManyArgs<ExtArgs extends runtime.Types.Extensi
    * The data used to create many WorkflowSchedules.
    */
   data: Prisma.WorkflowScheduleCreateManyInput | Prisma.WorkflowScheduleCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -2078,6 +2085,7 @@ export type WorkflowScheduleCreateManyAndReturnArgs<ExtArgs extends runtime.Type
    * The data used to create many WorkflowSchedules.
    */
   data: Prisma.WorkflowScheduleCreateManyInput | Prisma.WorkflowScheduleCreateManyInput[]
+  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

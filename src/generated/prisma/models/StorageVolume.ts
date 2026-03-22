@@ -520,6 +520,7 @@ export type StorageVolumeCreateOrConnectWithoutUserInput = {
 
 export type StorageVolumeCreateManyUserInputEnvelope = {
   data: Prisma.StorageVolumeCreateManyUserInput | Prisma.StorageVolumeCreateManyUserInput[]
+  skipDuplicates?: boolean
 }
 
 export type StorageVolumeUpsertWithWhereUniqueWithoutUserInput = {
@@ -1305,6 +1306,11 @@ export type StorageVolumeFindManyArgs<ExtArgs extends runtime.Types.Extensions.I
    * Skip the first `n` StorageVolumes.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of StorageVolumes.
+   */
   distinct?: Prisma.StorageVolumeScalarFieldEnum | Prisma.StorageVolumeScalarFieldEnum[]
 }
 
@@ -1338,6 +1344,7 @@ export type StorageVolumeCreateManyArgs<ExtArgs extends runtime.Types.Extensions
    * The data used to create many StorageVolumes.
    */
   data: Prisma.StorageVolumeCreateManyInput | Prisma.StorageVolumeCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1356,6 +1363,7 @@ export type StorageVolumeCreateManyAndReturnArgs<ExtArgs extends runtime.Types.E
    * The data used to create many StorageVolumes.
    */
   data: Prisma.StorageVolumeCreateManyInput | Prisma.StorageVolumeCreateManyInput[]
+  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

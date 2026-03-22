@@ -630,6 +630,7 @@ export type TokenTransactionCreateOrConnectWithoutUserInput = {
 
 export type TokenTransactionCreateManyUserInputEnvelope = {
   data: Prisma.TokenTransactionCreateManyUserInput | Prisma.TokenTransactionCreateManyUserInput[]
+  skipDuplicates?: boolean
 }
 
 export type TokenTransactionUpsertWithWhereUniqueWithoutUserInput = {
@@ -1459,6 +1460,11 @@ export type TokenTransactionFindManyArgs<ExtArgs extends runtime.Types.Extension
    * Skip the first `n` TokenTransactions.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of TokenTransactions.
+   */
   distinct?: Prisma.TokenTransactionScalarFieldEnum | Prisma.TokenTransactionScalarFieldEnum[]
 }
 
@@ -1492,6 +1498,7 @@ export type TokenTransactionCreateManyArgs<ExtArgs extends runtime.Types.Extensi
    * The data used to create many TokenTransactions.
    */
   data: Prisma.TokenTransactionCreateManyInput | Prisma.TokenTransactionCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1510,6 +1517,7 @@ export type TokenTransactionCreateManyAndReturnArgs<ExtArgs extends runtime.Type
    * The data used to create many TokenTransactions.
    */
   data: Prisma.TokenTransactionCreateManyInput | Prisma.TokenTransactionCreateManyInput[]
+  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

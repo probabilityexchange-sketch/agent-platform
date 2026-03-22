@@ -1204,6 +1204,11 @@ export type FleetStatsFindManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * Skip the first `n` FleetStats.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of FleetStats.
+   */
   distinct?: Prisma.FleetStatsScalarFieldEnum | Prisma.FleetStatsScalarFieldEnum[]
 }
 
@@ -1233,6 +1238,7 @@ export type FleetStatsCreateManyArgs<ExtArgs extends runtime.Types.Extensions.In
    * The data used to create many FleetStats.
    */
   data: Prisma.FleetStatsCreateManyInput | Prisma.FleetStatsCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1251,6 +1257,7 @@ export type FleetStatsCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Exte
    * The data used to create many FleetStats.
    */
   data: Prisma.FleetStatsCreateManyInput | Prisma.FleetStatsCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**

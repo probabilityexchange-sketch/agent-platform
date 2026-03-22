@@ -564,6 +564,7 @@ export type AgentRentalCreateOrConnectWithoutRenterInput = {
 
 export type AgentRentalCreateManyRenterInputEnvelope = {
   data: Prisma.AgentRentalCreateManyRenterInput | Prisma.AgentRentalCreateManyRenterInput[]
+  skipDuplicates?: boolean
 }
 
 export type AgentRentalUpsertWithWhereUniqueWithoutRenterInput = {
@@ -626,6 +627,7 @@ export type AgentRentalCreateOrConnectWithoutAgentInput = {
 
 export type AgentRentalCreateManyAgentInputEnvelope = {
   data: Prisma.AgentRentalCreateManyAgentInput | Prisma.AgentRentalCreateManyAgentInput[]
+  skipDuplicates?: boolean
 }
 
 export type AgentRentalUpsertWithWhereUniqueWithoutAgentInput = {
@@ -1448,6 +1450,11 @@ export type AgentRentalFindManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Skip the first `n` AgentRentals.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of AgentRentals.
+   */
   distinct?: Prisma.AgentRentalScalarFieldEnum | Prisma.AgentRentalScalarFieldEnum[]
 }
 
@@ -1481,6 +1488,7 @@ export type AgentRentalCreateManyArgs<ExtArgs extends runtime.Types.Extensions.I
    * The data used to create many AgentRentals.
    */
   data: Prisma.AgentRentalCreateManyInput | Prisma.AgentRentalCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1499,6 +1507,7 @@ export type AgentRentalCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Ext
    * The data used to create many AgentRentals.
    */
   data: Prisma.AgentRentalCreateManyInput | Prisma.AgentRentalCreateManyInput[]
+  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

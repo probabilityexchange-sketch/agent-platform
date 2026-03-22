@@ -688,6 +688,7 @@ export type PolicyDecisionCreateOrConnectWithoutUserInput = {
 
 export type PolicyDecisionCreateManyUserInputEnvelope = {
   data: Prisma.PolicyDecisionCreateManyUserInput | Prisma.PolicyDecisionCreateManyUserInput[]
+  skipDuplicates?: boolean
 }
 
 export type PolicyDecisionUpsertWithWhereUniqueWithoutUserInput = {
@@ -771,6 +772,7 @@ export type PolicyDecisionCreateOrConnectWithoutSessionInput = {
 
 export type PolicyDecisionCreateManySessionInputEnvelope = {
   data: Prisma.PolicyDecisionCreateManySessionInput | Prisma.PolicyDecisionCreateManySessionInput[]
+  skipDuplicates?: boolean
 }
 
 export type PolicyDecisionUpsertWithWhereUniqueWithoutSessionInput = {
@@ -1691,6 +1693,11 @@ export type PolicyDecisionFindManyArgs<ExtArgs extends runtime.Types.Extensions.
    * Skip the first `n` PolicyDecisions.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of PolicyDecisions.
+   */
   distinct?: Prisma.PolicyDecisionScalarFieldEnum | Prisma.PolicyDecisionScalarFieldEnum[]
 }
 
@@ -1724,6 +1731,7 @@ export type PolicyDecisionCreateManyArgs<ExtArgs extends runtime.Types.Extension
    * The data used to create many PolicyDecisions.
    */
   data: Prisma.PolicyDecisionCreateManyInput | Prisma.PolicyDecisionCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1742,6 +1750,7 @@ export type PolicyDecisionCreateManyAndReturnArgs<ExtArgs extends runtime.Types.
    * The data used to create many PolicyDecisions.
    */
   data: Prisma.PolicyDecisionCreateManyInput | Prisma.PolicyDecisionCreateManyInput[]
+  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */
