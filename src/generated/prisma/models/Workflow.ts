@@ -1887,6 +1887,11 @@ export type WorkflowFindManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Skip the first `n` Workflows.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of Workflows.
+   */
   distinct?: Prisma.WorkflowScalarFieldEnum | Prisma.WorkflowScalarFieldEnum[]
 }
 

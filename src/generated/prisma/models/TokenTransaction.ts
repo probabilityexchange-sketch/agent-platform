@@ -1460,6 +1460,11 @@ export type TokenTransactionFindManyArgs<ExtArgs extends runtime.Types.Extension
    * Skip the first `n` TokenTransactions.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of TokenTransactions.
+   */
   distinct?: Prisma.TokenTransactionScalarFieldEnum | Prisma.TokenTransactionScalarFieldEnum[]
 }
 

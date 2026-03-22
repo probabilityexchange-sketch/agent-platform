@@ -72,6 +72,7 @@ export const ModelName = {
   CryptoDestinationAllowlistEntry: 'CryptoDestinationAllowlistEntry',
   CryptoAuditLog: 'CryptoAuditLog',
   StorageVolume: 'StorageVolume',
+  ResearchExperiment: 'ResearchExperiment',
   FleetStats: 'FleetStats'
 } as const
 
@@ -481,6 +482,29 @@ export const StorageVolumeScalarFieldEnum = {
 } as const
 
 export type StorageVolumeScalarFieldEnum = (typeof StorageVolumeScalarFieldEnum)[keyof typeof StorageVolumeScalarFieldEnum]
+
+
+export const ResearchExperimentScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  objective: 'objective',
+  status: 'status',
+  baseConfig: 'baseConfig',
+  mutatedConfig: 'mutatedConfig',
+  baseScores: 'baseScores',
+  mutatedScores: 'mutatedScores',
+  comparisonScore: 'comparisonScore',
+  gitBranch: 'gitBranch',
+  commitSha: 'commitSha',
+  budgetMinutes: 'budgetMinutes',
+  maxIterations: 'maxIterations',
+  startedAt: 'startedAt',
+  completedAt: 'completedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ResearchExperimentScalarFieldEnum = (typeof ResearchExperimentScalarFieldEnum)[keyof typeof ResearchExperimentScalarFieldEnum]
 
 
 export const FleetStatsScalarFieldEnum = {

@@ -2028,6 +2028,11 @@ export type WorkflowScheduleFindManyArgs<ExtArgs extends runtime.Types.Extension
    * Skip the first `n` WorkflowSchedules.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of WorkflowSchedules.
+   */
   distinct?: Prisma.WorkflowScheduleScalarFieldEnum | Prisma.WorkflowScheduleScalarFieldEnum[]
 }
 

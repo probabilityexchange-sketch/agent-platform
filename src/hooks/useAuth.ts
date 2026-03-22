@@ -168,28 +168,21 @@ export function useAuth() {
     sharedSyncAttempts += 1;
     const serverConfirmed = await syncSession();
 
-    if (serverConfirmed) {
-      // The server returned 200 with Set-Cookie. Trust it immediately.
-      // Polling /api/auth/me right after causes a race — the browser's
-      // cookie jar may not have committed the cookie yet, and the poll
-      // request arrives without it, returning 401 and triggering a retry
-      // loop that makes the user see a second login prompt.
-      //
-      // Give the browser a single tick to process the Set-Cookie header,
-      // then mark the session as synced. The middleware will see the cookie
-      // on the next real navigation.
-      await new Promise<void>(resolve => window.setTimeout(resolve, 100));
-      sharedSessionSynced = true;
-      sharedNextRetryAt = 0;
-      sharedSyncAttempts = 0;
-      setSessionSynced(true);
-      notifySynced();
-      return;
+    if (!serverConfirmed) {
+      throw new SessionSyncError("Failed to initiate server session.");
     }
 
-    // Fallback: if syncSession didn't confirm, poll for cookie visibility
+    // After calling syncSession, the server has sent a Set-Cookie header.
+    // However, the browser's cookie jar may not have committed the cookie yet.
+    // We MUST verify that the cookie is actually visible to subsequent requests
+    // by polling /api/auth/me before we mark the session as synced.
+    //
+    // If we mark it synced too early, the router will redirect to /dashboard,
+    // and the middleware will see no cookie, redirecting the user back to /login.
     const confirmDeadline = Date.now() + SESSION_CONFIRM_TIMEOUT_MS;
+    let pollCount = 0;
     while (!(await hasServerSession())) {
+      pollCount++;
       if (Date.now() >= confirmDeadline) {
         throw new SessionSyncError(
           'Session was created but not yet visible to protected requests. Please retry.',
@@ -199,6 +192,16 @@ export function useAuth() {
       }
 
       await new Promise<void>(resolve => window.setTimeout(resolve, SESSION_CONFIRM_POLL_MS));
+    }
+
+    // CRITICAL: Even after the first successful poll, give the browser one more
+    // moment to settle. This "cooldown" significantly reduces race conditions
+    // during fast client-side transitions.
+    if (pollCount > 0) {
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 500));
+    } else {
+      // If it worked on the very first try, still give it a tiny bit of air
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 200));
     }
 
     sharedSessionSynced = true;

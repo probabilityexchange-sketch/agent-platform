@@ -22,22 +22,47 @@ sanitize_url() {
 }
 
 # Prefer non-pooling URL for schema push (DDL needs direct connection)
-RAW_URL="${POSTGRES_URL_NON_POOLING:-${DIRECT_URL:-${POSTGRES_PRISMA_URL:-${DATABASE_URL:-}}}}"
+# We will iterate through candidates and pick the first one that has a password.
+# If none have a password, we'll pick the first non-empty one and try to inject.
+CANDIDATES=("POSTGRES_URL_NON_POOLING" "DIRECT_URL" "POSTGRES_PRISMA_URL" "DATABASE_URL")
+RAW_URL=""
+SELECTED_NAME=""
+FALLBACK_URL=""
+FALLBACK_NAME=""
+
+for name in "${CANDIDATES[@]}"; do
+  val="${!name:-}"
+  if [[ -n "$val" ]]; then
+    # Check if it has a password (postgresql://user:pass@host)
+    if [[ "$val" =~ postgresql://[^:]+:[^@]+@ ]]; then
+      RAW_URL="$val"
+      SELECTED_NAME="$name"
+      break
+    fi
+    # If it's the first non-empty one, save as fallback
+    if [[ -z "$FALLBACK_URL" ]]; then
+      FALLBACK_URL="$val"
+      FALLBACK_NAME="$name"
+    fi
+  fi
+done
+
+if [[ -z "$SELECTED_NAME" && -n "$FALLBACK_NAME" ]]; then
+  RAW_URL="$FALLBACK_URL"
+  SELECTED_NAME="$FALLBACK_NAME"
+fi
+
 DB_PUSH_URL="$(sanitize_url "$RAW_URL")"
 
 if [[ -z "$DB_PUSH_URL" ]]; then
   echo "WARNING: No valid database URL found for prisma db push" >&2
-  echo "  Checked in order: POSTGRES_URL_NON_POOLING, DIRECT_URL, POSTGRES_PRISMA_URL, DATABASE_URL" >&2
-  echo "  Current state of variables:" >&2
-  [[ -n "${POSTGRES_URL_NON_POOLING:-}" ]] && echo "    POSTGRES_URL_NON_POOLING: detected (len: ${#POSTGRES_URL_NON_POOLING})" >&2
-  [[ -n "${DIRECT_URL:-}" ]] && echo "    DIRECT_URL: detected (len: ${#DIRECT_URL})" >&2
-  [[ -n "${POSTGRES_PRISMA_URL:-}" ]] && echo "    POSTGRES_PRISMA_URL: detected (len: ${#POSTGRES_PRISMA_URL})" >&2
-  [[ -n "${DATABASE_URL:-}" ]] && echo "    DATABASE_URL: detected (len: ${#DATABASE_URL})" >&2
+  echo "  Checked: POSTGRES_URL_NON_POOLING, DIRECT_URL, POSTGRES_PRISMA_URL, DATABASE_URL" >&2
   echo "  Skipping schema push — tables must exist already" >&2
 else
+  echo "Selected database connection source: $SELECTED_NAME" >&2
   # Debug: Check if the URL contains a password (look for colon after postgresql:// and before @host)
   if [[ "$DB_PUSH_URL" =~ postgresql://[^:]+:@ ]]; then
-    echo "CRITICAL: Detected empty password in DB_PUSH_URL!" >&2
+    echo "CRITICAL: Detected empty password in $SELECTED_NAME!" >&2
     if [[ -n "${POSTGRES_PASSWORD:-}" ]]; then
       echo "  Attempting to inject POSTGRES_PASSWORD..." >&2
       # Inject password between colon and @ (matches the :@ pattern)
@@ -45,6 +70,8 @@ else
       echo "  Injection successful (URL hint: ${DB_PUSH_URL%%@*}@...)" >&2
     else
       echo "  ERROR: POSTGRES_PASSWORD is also missing. Auth will likely fail." >&2
+      echo "  Set POSTGRES_PASSWORD in your Vercel environment variables." >&2
+      exit 1
     fi
   fi
   echo "Running prisma db push (source: ${DB_PUSH_URL%%@*}@...)" >&2

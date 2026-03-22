@@ -1932,6 +1932,11 @@ export type ApprovalRequestFindManyArgs<ExtArgs extends runtime.Types.Extensions
    * Skip the first `n` ApprovalRequests.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of ApprovalRequests.
+   */
   distinct?: Prisma.ApprovalRequestScalarFieldEnum | Prisma.ApprovalRequestScalarFieldEnum[]
 }
 

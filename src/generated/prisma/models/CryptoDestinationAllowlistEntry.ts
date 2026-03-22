@@ -1305,6 +1305,11 @@ export type CryptoDestinationAllowlistEntryFindManyArgs<ExtArgs extends runtime.
    * Skip the first `n` CryptoDestinationAllowlistEntries.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of CryptoDestinationAllowlistEntries.
+   */
   distinct?: Prisma.CryptoDestinationAllowlistEntryScalarFieldEnum | Prisma.CryptoDestinationAllowlistEntryScalarFieldEnum[]
 }
 
