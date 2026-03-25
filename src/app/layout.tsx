@@ -12,35 +12,35 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   icons: {
     icon: [
-      { url: "/favicon-lobster.ico?v=3", sizes: "any" },
-      { url: "/icon-192.png?v=3", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png?v=3", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/apple-touch-icon.png?v=3", sizes: "180x180", type: "image/png" },
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "/",
-    title: "Randi - Launch AI Agents Instantly",
-    description: "Connect your Solana wallet, deposit tokens, and spin up hosted AI agent containers instantly.",
+    title: "Randi - Your Autonomous AI Employee",
+    description: "Launch hardened AI agent containers instantly. Enterprise-grade orchestration powered by Solana.",
     siteName: "Randi",
     images: [
       {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
+        url: "/twitter-banner.svg",
+        width: 1500,
+        height: 500,
         alt: "Randi - AI Agent Platform",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Randi - Launch AI Agents Instantly",
-    description: "Connect your Solana wallet, deposit tokens, and spin up hosted AI agent containers instantly.",
-    images: ["/og-image.png"],
+    title: "Randi - Your Autonomous AI Employee",
+    description: "Launch hardened AI agent containers instantly. Enterprise-grade orchestration powered by Solana.",
+    images: ["/twitter-banner.svg"],
   },
   robots: {
     index: true,
