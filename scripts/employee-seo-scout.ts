@@ -1,4 +1,4 @@
-import { getComposioClient } from "../src/lib/composio/client";
+import { getComposioClient, resolveComposioUserId } from "../src/lib/composio/client";
 
 /**
  * Randi Employee: The SEO Scout
@@ -9,7 +9,7 @@ import { getComposioClient } from "../src/lib/composio/client";
  */
 
 const SEO_SPREADSHEET_ID = process.env.SEO_SPREADSHEET_ID;
-const SHEETS_ENTITY_ID = process.env.AUDITOR_ENTITY_ID || "auditor-employee";
+const SHEETS_ENTITY_ID = resolveComposioUserId("seo-scout-employee");
 const TARGET_URLS = ["https://randi.agency"];
 const POLL_INTERVAL_MS = 86400_000; // 24 hours (daily audit)
 

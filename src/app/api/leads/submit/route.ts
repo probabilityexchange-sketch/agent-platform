@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getComposioClient } from '@/lib/composio/client';
+import { getComposioClient, resolveComposioUserId } from '@/lib/composio/client';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/utils/rate-limit';
 
 const leadSubmitSchema = z.object({
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     }
 
     const SPREADSHEET_ID = process.env.AUDITOR_SPREADSHEET_ID;
-    const ENTITY_ID = process.env.AUDITOR_ENTITY_ID || 'auditor-employee';
+    const ENTITY_ID = resolveComposioUserId("agency-bridge");
 
     if (!SPREADSHEET_ID) {
       console.error('AUDITOR_SPREADSHEET_ID is not configured');

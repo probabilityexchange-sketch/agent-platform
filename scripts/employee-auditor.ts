@@ -1,4 +1,4 @@
-import { getComposioClient } from "../src/lib/composio/client";
+import { getComposioClient, resolveComposioUserId } from "../src/lib/composio/client";
 import { CodeAnalyzer } from "../src/lib/self-maintenance/analyzer";
 import { execSync } from "child_process";
 import { existsSync, rmSync, mkdirSync } from "fs";
@@ -13,7 +13,7 @@ import path from "path";
  */
 
 const SPREADSHEET_ID = process.env.AUDITOR_SPREADSHEET_ID;
-const SHEETS_ENTITY_ID = process.env.AUDITOR_ENTITY_ID || "auditor-employee";
+const SHEETS_ENTITY_ID = resolveComposioUserId("auditor-employee");
 const POLL_INTERVAL_MS = 60_000; // 1 minute
 
 async function runAuditor() {

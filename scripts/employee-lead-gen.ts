@@ -1,4 +1,4 @@
-import { getComposioClient } from "../src/lib/composio/client";
+import { getComposioClient, resolveComposioUserId } from "../src/lib/composio/client";
 import { execSync } from "child_process";
 
 /**
@@ -9,7 +9,7 @@ import { execSync } from "child_process";
  */
 
 const LEAD_SHEET_ID = process.env.LEAD_GEN_SPREADSHEET_ID;
-const SHEETS_ENTITY_ID = process.env.AUDITOR_ENTITY_ID || "auditor-employee";
+const SHEETS_ENTITY_ID = resolveComposioUserId("lead-gen-employee");
 const POLL_INTERVAL_MS = 3600_000; // 1 hour (avoid spamming/rate limits)
 
 const KEYWORDS = [
