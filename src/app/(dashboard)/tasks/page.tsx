@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 
 export default function TasksPage() {
   const [project, setProject] = useState("agent-platform");
@@ -10,7 +10,7 @@ export default function TasksPage() {
   const [selfMaintStatus, setSelfMaintStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [selfMaintMessage, setSelfMaintMessage] = useState("");
 
-  const handleSpawnTask = async (e: React.FormEvent) => {
+  const handleSpawnTask = async (e: FormEvent) => {
     e.preventDefault();
     setStatus("loading");
     setMessage("");
