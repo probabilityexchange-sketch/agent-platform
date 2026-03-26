@@ -203,13 +203,21 @@ interface ParsedAgentToolConfig {
   fallbackTools: string[];
 }
 
-export function resolveComposioUserId(userId: string): string {
+export function resolveComposioUserId(userId: string, agentSlug?: string): string {
   const override = process.env.COMPOSIO_ENTITY_ID?.trim();
   if (override) return override;
+  
   const normalizedUserId = userId?.trim();
   if (!normalizedUserId) {
     throw new Error("Missing authenticated user id for Composio user mapping");
   }
+
+  if (agentSlug) {
+    // Sanitize slug for entity ID compatibility
+    const cleanSlug = agentSlug.toLowerCase().replace(/[^a-z0-9]/g, "_");
+    return `${normalizedUserId}_${cleanSlug}`;
+  }
+
   return normalizedUserId;
 }
 
@@ -333,11 +341,12 @@ async function fetchToolBySlug(
 
 export async function getAgentToolsFromConfig(
   rawConfig: string | null | undefined,
-  userId: string
+  userId: string,
+  agentSlug?: string
 ): Promise<ComposioTool[]> {
   const composioClient = await getComposioClient();
   if (!composioClient) return [];
-  const resolvedUserId = resolveComposioUserId(userId);
+  const resolvedUserId = resolveComposioUserId(userId, agentSlug);
 
   const parsed = parseAgentToolConfig(rawConfig);
   if (
@@ -412,13 +421,14 @@ export async function getAgentToolsFromConfig(
 export async function executeOpenAIToolCall(
   userId: string,
   toolCall: { type?: string; function?: { name: string; arguments: string } } | { name: string; arguments: string | Record<string, unknown> },
-  runtimeUrl?: string
+  runtimeUrl?: string,
+  agentSlug?: string
 ): Promise<string> {
   const composioClient = await getComposioClient();
   if (!composioClient) {
     return JSON.stringify({ error: "COMPOSIO_API_KEY is not configured." });
   }
-  const resolvedUserId = resolveComposioUserId(userId);
+  const resolvedUserId = resolveComposioUserId(userId, agentSlug);
 
   let toolName: string;
   let toolArgs: Record<string, unknown>;

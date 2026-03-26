@@ -1,18 +1,5 @@
 import "dotenv/config";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../src/generated/prisma/client";
-
-const connectionString =
-  process.env.DIRECT_URL?.trim() ||
-  process.env.POSTGRES_URL_NON_POOLING?.trim() ||
-  process.env.DATABASE_URL?.trim() ||
-  process.env.POSTGRES_PRISMA_URL?.trim() ||
-  process.env.POSTGRES_URL?.trim() ||
-  "";
-
-const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString }),
-});
+import { prisma } from "../src/lib/db/prisma";
 
 async function main() {
   // 0. Ensure a System User exists to own the default agents
@@ -137,14 +124,18 @@ async function main() {
     "Do NOT say you can't do something or that it's not configured. Just use your tools.",
     "",
     "## When to Delegate",
-    "Only use 'delegate_to_specialist' for tasks requiring a different agent's deep expertise:",
+    "Use 'delegate_to_specialist' or 'conduct_specialists' for tasks requiring a different agent's deep expertise:",
     "- 'code-assistant': Complex programming with GitHub repo integration",
     "- 'token-launcher': Launching tokens on Base via Clawnch",
+    "- 'seo-assistant': Auditing websites for SEO health and recommendations",
+    "- 'audit-assistant': Security auditing code and smart contracts",
+    "",
+    "Use 'conduct_specialists' when you need to run MULTIPLE specialists in parallel (e.g., 'Audit this code for security AND check its SEO').",
     "When you delegate, provide a bounded taskSummary, the exact subQuery, expectedOutput, scopeNotes, and completionCriteria.",
     "Delegate only a narrow subtask the specialist can complete truthfully, then merge the structured result without overstating it.",
     "",
     "## Multi-Step Requests",
-    "If a user asks for multiple things (e.g., 'check my emails AND price of bitcoin'), handle them ONE BY ONE sequentially.",
+    "If a user asks for multiple things (e.g., 'check my emails AND price of bitcoin'), handle them ONE BY ONE sequentially, or use 'conduct_specialists' if they are independent specialist tasks.",
     "Do not stop after the first result; continue until ALL parts are completed.",
     "",
     "## Other Tools",
@@ -156,7 +147,7 @@ async function main() {
 
   const leadTools = JSON.stringify({
     toolkits: ["googlecalendar", "slack", "notion", "gmail", "prompmate", "hackernews", "coinmarketcap", "github", "telegram"],
-    tools: ["delegate_to_specialist", "spawn_autonomous_developer", "browse_web", "list_available_skills", "load_skill_context"],
+    tools: ["delegate_to_specialist", "conduct_specialists", "spawn_autonomous_developer", "browse_web", "list_available_skills", "load_skill_context"],
   });
 
   const leadAgent = await prisma.agentConfig.upsert({
@@ -207,7 +198,75 @@ async function main() {
     },
   });
 
-  console.log("Seeded agents:", { researchAgent, codeAgent, productivityAgent, leadAgent, tokenLauncherAgent });
+  // 6. SEO Assistant
+  const seoAgent = await prisma.agentConfig.upsert({
+    where: { slug: "seo-assistant" },
+    update: {
+      systemPrompt: "You are an expert SEO specialist. Analyze websites for SEO health and provide actionable recommendations. Use browse_web to inspect pages.",
+      tools: JSON.stringify({
+        toolkits: ["googlesheets"],
+        tools: ["browse_web"],
+      }),
+      defaultModel: "meta-llama/llama-3.3-70b-instruct:free",
+      active: true,
+      description: "Specializes in auditing websites for SEO, analyzing meta tags, page speed, and keywords.",
+      ownerId: systemUser.id,
+    },
+    create: {
+      slug: "seo-assistant",
+      name: "SEO Assistant",
+      description: "Specializes in auditing websites for SEO, analyzing meta tags, page speed, and keywords.",
+      image: "randi/seo-assistant",
+      internalPort: 80,
+      tokensPerHour: 0,
+      memoryLimit: BigInt(0),
+      cpuLimit: BigInt(0),
+      systemPrompt: "You are an expert SEO specialist. Analyze websites for SEO health and provide actionable recommendations. Use browse_web to inspect pages.",
+      tools: JSON.stringify({
+        toolkits: ["googlesheets"],
+        tools: ["browse_web"],
+      }),
+      defaultModel: "meta-llama/llama-3.3-70b-instruct:free",
+      active: true,
+      ownerId: systemUser.id,
+    },
+  });
+
+  // 7. Audit Assistant
+  const auditAgent = await prisma.agentConfig.upsert({
+    where: { slug: "audit-assistant" },
+    update: {
+      systemPrompt: "You are an expert security auditor. Analyze code for vulnerabilities and best practices. Use browse_web to research common exploits and patches.",
+      tools: JSON.stringify({
+        toolkits: ["github"],
+        tools: ["browse_web"],
+      }),
+      defaultModel: "meta-llama/llama-3.3-70b-instruct:free",
+      active: true,
+      description: "Specializes in auditing code and smart contracts for security and best practices.",
+      ownerId: systemUser.id,
+    },
+    create: {
+      slug: "audit-assistant",
+      name: "Audit Assistant",
+      description: "Specializes in auditing code and smart contracts for security and best practices.",
+      image: "randi/audit-assistant",
+      internalPort: 80,
+      tokensPerHour: 0,
+      memoryLimit: BigInt(0),
+      cpuLimit: BigInt(0),
+      systemPrompt: "You are an expert security auditor. Analyze code for vulnerabilities and best practices. Use browse_web to research common exploits and patches.",
+      tools: JSON.stringify({
+        toolkits: ["github"],
+        tools: ["browse_web"],
+      }),
+      defaultModel: "meta-llama/llama-3.3-70b-instruct:free",
+      active: true,
+      ownerId: systemUser.id,
+    },
+  });
+
+  console.log("Seeded agents:", { researchAgent, codeAgent, productivityAgent, leadAgent, tokenLauncherAgent, seoAgent, auditAgent });
 }
 
 main()

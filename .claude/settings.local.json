@@ -39,7 +39,12 @@
       "WebFetch(domain:www.randi.chat)",
       "Bash(pnpm typecheck:*)",
       "Bash(npx tsc:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(gh pr:*)",
+      "Bash(grep -rn \"requireAuth\\\\|withAuth\\\\|getServerSession\\\\|verifyToken\\\\|checkAuth\" /home/billy/projects/Randi-Chat/randi-agent/src/app/api --include=*.ts -l)",
+      "Bash(grep -rL \"requireAuth\\\\|withAuth\\\\|getServerSession\\\\|verifyToken\\\\|checkAuth\\\\|privyToken\\\\|CRON_SECRET\\\\|ADMIN_SECRET\\\\|x-admin\\\\|x-cron\" /home/billy/projects/Randi-Chat/randi-agent/src/app/api --include=*.ts)",
+      "Bash(git -C /home/billy/projects/Randi-Chat/randi-agent ls-files *.env .env.*)",
+      "Bash(npm audit:*)"
     ]
   }
 }
