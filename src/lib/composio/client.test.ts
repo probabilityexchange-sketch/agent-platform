@@ -224,12 +224,12 @@ describe('getComposioClient', () => {
     // Override module mock to simulate real env-var-dependent behavior
     vi.mocked(getComposioClient).mockImplementation(async () => {
       if (!process.env.COMPOSIO_API_KEY?.trim()) return null;
-      return mockComposioClient;
+      return mockComposioClient as any;
     });
   });
 
   afterEach(() => {
-    vi.mocked(getComposioClient).mockResolvedValue(mockComposioClient);
+    vi.mocked(getComposioClient).mockResolvedValue(mockComposioClient as any);
     if (originalApiKey !== undefined) {
       process.env.COMPOSIO_API_KEY = originalApiKey;
     } else {
