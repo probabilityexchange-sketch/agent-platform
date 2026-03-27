@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 - **Smart load balancing:** `getBestBridgeNode()` now picks the node with the fewest active containers from live fleet stats, skips nodes at capacity (`totalContainers >= maxContainers`), and resolves URLs via the new node registry — replacing the previous single-node env var approach.
 - **Distributed cleanup lock:** `cleanupExpiredContainers` now uses a `CleanupLock` DB record to prevent concurrent runs across multiple processes/pods. Includes stale-lock TTL recovery (10-minute threshold) so a crashed process can't lock cleanup forever.
 - **`ApiError` / `wrapRoute` utility:** New `src/lib/utils/api-error.ts` providing structured error responses with status codes and machine-readable error codes, plus a `wrapRoute` wrapper for consistent error handling across API routes.
-- **Fleet UI components:** `ConsolidatedProgressCard` and `EmployeeFleetGrid` dashboard components for visualizing fleet health and agent status.
+- **Fleet Dashboard (`/fleet`):** New fleet management UI with consolidated progress cards and a grid view of all your agents — see container counts, status, and node health at a glance.
 - **`BridgeNode` and `CleanupLock` Prisma models:** Schema additions backing the new registry and distributed lock.
 
 ### Fixed
