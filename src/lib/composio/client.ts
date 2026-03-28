@@ -535,15 +535,30 @@ export async function getConnectedIntegrations(userId: string): Promise<string> 
 
   try {
     const resolvedUserId = resolveComposioUserId(userId);
+    console.log(
+      `[Composio] getConnectedIntegrations: userId=${userId}, resolvedUserId=${resolvedUserId}`
+    );
+
     const connectedAccountsResponse = await composioClient.connectedAccounts.list({
       userIds: [resolvedUserId],
       limit: 50,
       orderBy: 'updated_at',
     });
 
+    console.log(
+      `[Composio] Connected accounts response: ${connectedAccountsResponse.items.length} total accounts`
+    );
+
     const activeAccounts = connectedAccountsResponse.items.filter(
       (account: any) => account.status === 'ACTIVE'
     );
+
+    console.log(`[Composio] Active accounts: ${activeAccounts.length}`);
+    for (const account of activeAccounts) {
+      console.log(
+        `[Composio]   - ${(account as any).toolkit?.slug} (status: ${account.status}, id: ${account.id})`
+      );
+    }
 
     if (activeAccounts.length === 0) return '';
 
@@ -585,8 +600,11 @@ export async function getConnectedIntegrations(userId: string): Promise<string> 
 
     if (connectedLabels.length === 0) return '';
 
-    return connectedLabels.join(', ');
-  } catch {
+    const result = connectedLabels.join(', ');
+    console.log(`[Composio] Returning integrations: ${result}`);
+    return result;
+  } catch (err) {
+    console.error(`[Composio] getConnectedIntegrations error:`, err);
     return '';
   }
 }
