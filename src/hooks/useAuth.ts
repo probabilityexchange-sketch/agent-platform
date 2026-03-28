@@ -7,7 +7,7 @@ import { fetchApi } from '@/lib/utils/api';
 const DEFAULT_RETRY_DELAY_MS = 3000;
 const PRIVY_RATE_LIMIT_RETRY_MS = 15000;
 const FINALIZE_TIMEOUT_MS = 12000;
-const SESSION_CONFIRM_TIMEOUT_MS = 5000;
+const SESSION_CONFIRM_TIMEOUT_MS = 15000;
 const SESSION_CONFIRM_POLL_MS = 150;
 const MAX_SYNC_ATTEMPTS = 3;
 
@@ -177,7 +177,7 @@ export function useAuth() {
     const serverConfirmed = await syncSession();
 
     if (!serverConfirmed) {
-      throw new SessionSyncError("Failed to initiate server session.");
+      throw new SessionSyncError('Failed to initiate server session.');
     }
 
     // After calling syncSession, the server has sent a Set-Cookie header.
@@ -206,10 +206,10 @@ export function useAuth() {
     // moment to settle. This "cooldown" significantly reduces race conditions
     // during fast client-side transitions.
     if (pollCount > 0) {
-      await new Promise<void>((resolve) => window.setTimeout(resolve, 500));
+      await new Promise<void>(resolve => window.setTimeout(resolve, 500));
     } else {
       // If it worked on the very first try, still give it a tiny bit of air
-      await new Promise<void>((resolve) => window.setTimeout(resolve, 200));
+      await new Promise<void>(resolve => window.setTimeout(resolve, 200));
     }
 
     sharedSessionSynced = true;
@@ -245,7 +245,14 @@ export function useAuth() {
     // wallet is ready (email login). Waiting for a non-null wallet address ensures
     // syncSession always sends a valid wallet, avoiding a guaranteed first-attempt
     // failure followed by a 3s retry delay.
-    if (!ready || !authenticated || !walletAddress || sessionSynced || localIsLoggingOut || isLoggingOutGlobal)
+    if (
+      !ready ||
+      !authenticated ||
+      !walletAddress ||
+      sessionSynced ||
+      localIsLoggingOut ||
+      isLoggingOutGlobal
+    )
       return;
 
     let cancelled = false;
@@ -271,7 +278,13 @@ export function useAuth() {
           const norm = normalizeSyncError(err);
           sharedSessionSynced = false;
           sharedNextRetryAt = Date.now() + (norm.retryAfterMs ?? DEFAULT_RETRY_DELAY_MS);
+          sharedSyncAttempts += 1;
           setSessionError(norm.message);
+          if (sharedSyncAttempts >= MAX_SYNC_ATTEMPTS) {
+            resetSharedState();
+            setSessionError('Session sync failed. Please sign out and sign in again.');
+            return;
+          }
           throw norm;
         })
         .finally(() => {
@@ -295,7 +308,15 @@ export function useAuth() {
       cancelled = true;
       if (retryTimerRef.current) window.clearTimeout(retryTimerRef.current);
     };
-  }, [ready, authenticated, walletAddress, ensureServerSession, syncRetryTick, sessionSynced, localIsLoggingOut]);
+  }, [
+    ready,
+    authenticated,
+    walletAddress,
+    ensureServerSession,
+    syncRetryTick,
+    sessionSynced,
+    localIsLoggingOut,
+  ]);
 
   // Reset when unauthenticated
   useEffect(() => {

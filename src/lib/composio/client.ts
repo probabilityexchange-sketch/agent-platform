@@ -528,3 +528,65 @@ export function normalizeToolCallArgumentsJson(rawArgs: unknown): string {
     return '{}';
   }
 }
+
+export async function getConnectedIntegrations(userId: string): Promise<string> {
+  const composioClient = await getComposioClient();
+  if (!composioClient) return '';
+
+  try {
+    const resolvedUserId = resolveComposioUserId(userId);
+    const connectedAccountsResponse = await composioClient.connectedAccounts.list({
+      userIds: [resolvedUserId],
+      limit: 50,
+      orderBy: 'updated_at',
+    });
+
+    const activeAccounts = connectedAccountsResponse.items.filter(
+      (account: any) => account.status === 'ACTIVE'
+    );
+
+    if (activeAccounts.length === 0) return '';
+
+    const connectedSlugs = new Set<string>();
+    for (const account of activeAccounts) {
+      const slug = (account as any).toolkit?.slug;
+      if (slug) connectedSlugs.add(slug);
+    }
+
+    // Map toolkit slugs to friendly names
+    const slugToLabel: Record<string, string> = {
+      gmail: 'Gmail',
+      googlecalendar: 'Google Calendar',
+      googlesheets: 'Google Sheets',
+      googledocs: 'Google Docs',
+      googledrive: 'Google Drive',
+      notion: 'Notion',
+      slack: 'Slack',
+      github: 'GitHub',
+      hackernews: 'Hacker News',
+      coinmarketcap: 'CoinMarketCap',
+      telegram: 'Telegram',
+      supabase: 'Supabase',
+      vercel: 'Vercel',
+      firecrawl: 'Firecrawl',
+      firehose: 'Firehose',
+      stripe: 'Stripe',
+      discord: 'Discord',
+      linear: 'Linear',
+      jira: 'Jira',
+      zoom: 'Zoom',
+      reddit: 'Reddit',
+      twitter: 'Twitter',
+      youtube: 'YouTube',
+      openweather: 'OpenWeather',
+    };
+
+    const connectedLabels = [...connectedSlugs].map(slug => slugToLabel[slug] || slug).sort();
+
+    if (connectedLabels.length === 0) return '';
+
+    return connectedLabels.join(', ');
+  } catch {
+    return '';
+  }
+}

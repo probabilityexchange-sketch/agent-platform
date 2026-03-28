@@ -18,6 +18,7 @@ import {
   executeOpenAIToolCall,
   resolveComposioUserId,
   getAgentToolsFromConfig,
+  getConnectedIntegrations,
 } from '@/lib/composio/client';
 import { VercelProvider } from '@composio/vercel';
 import { getRandiContext } from '@/lib/randi/context';
@@ -28,6 +29,7 @@ import { requiresApproval, describeToolCall } from '@/lib/composio/approval-rule
 import { parseAgentSkills, buildSkillsContext } from '@/lib/skills/loader';
 import { KILO_COMPOSIO_CHEAT_SHEET } from '@/lib/skills/tool-cheat-sheet';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/utils/rate-limit';
+import { getMemoryClient, isMemoryConfigured } from '@/lib/memory/client';
 
 // ---------------------------------------------------------------------------
 // CONFIG & SCHEMAS
@@ -364,11 +366,43 @@ export async function POST(req: NextRequest) {
     console.log(
       `[Chat] FINAL tool count: ${Object.keys(tools).length} -> ${Object.keys(tools).join(', ')}`
     );
+
+    // Fetch dynamically connected integrations from Composio
+    let connectedIntegrationsContext = '';
+    try {
+      const connectedIntegrations = await getConnectedIntegrations(auth.userId);
+      if (connectedIntegrations) {
+        connectedIntegrationsContext = `\n\n## Your Connected Integrations\nYou have the following integrations connected via Composio:\n${connectedIntegrations}\nUse these tools when the user's request requires them.`;
+      }
+    } catch {
+      // Fail silently - chat will work without the integrations context
+    }
+
+    let memoryContext = '';
+    if (isMemoryConfigured()) {
+      try {
+        const memoryClient = getMemoryClient();
+        const combinedQuery =
+          `${message} ${history.map((m: ModelMessage) => m.content).join(' ')}`.slice(-1000);
+        const [userMemories, agentMemories] = await Promise.all([
+          memoryClient.recallMemories({ userId: auth.userId, query: combinedQuery }),
+          memoryClient.recallAgentMemories(combinedQuery),
+        ]);
+        const userCtx = userMemories.success ? userMemories.data : '';
+        const agentCtx = agentMemories.success ? agentMemories.data : '';
+        memoryContext = [userCtx, agentCtx].filter(Boolean).join('\n\n---\n\n');
+      } catch (memErr) {
+        console.warn('[Chat] Memory recall failed, continuing without:', memErr);
+      }
+    }
+
     let finalSystemPrompt =
       agent.systemPrompt +
       '\n\n' +
       randiContext +
       userCustomContext +
+      (connectedIntegrationsContext || '') +
+      (memoryContext ? '\n\n---\n# MEMORY CONTEXT\n\n' + memoryContext : '') +
       '\n\n' +
       skillsContext +
       (tools ? '\n\n' + TOOL_USAGE_SYSTEM_INSTRUCTION : '');
@@ -420,6 +454,25 @@ export async function POST(req: NextRequest) {
             },
           ],
         });
+
+        if (isMemoryConfigured()) {
+          fetch(`${process.env.OPENVIKING_SERVER_URL || 'http://localhost:1933'}/session/commit`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${process.env.OPENVIKING_API_KEY}`,
+            },
+            body: JSON.stringify({
+              userId: auth.userId,
+              sessionId: currentSessionId,
+              messages: [
+                ...history,
+                { role: 'user', content: message },
+                { role: 'assistant', content: text },
+              ],
+            }),
+          }).catch(err => console.warn('[Chat] Memory commit failed:', err));
+        }
       },
     });
 
