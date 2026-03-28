@@ -3,22 +3,43 @@ import { prisma } from '../src/lib/db/prisma';
 
 async function main() {
   // 0. Seed credit packages
-  const tokenMint = process.env.TOKEN_MINT || process.env.NEXT_PUBLIC_TOKEN_MINT || "So11111111111111111111111111111111111111112";
+  const tokenMint =
+    process.env.TOKEN_MINT ||
+    process.env.NEXT_PUBLIC_TOKEN_MINT ||
+    'So11111111111111111111111111111111111111112';
 
   await prisma.creditPackage.upsert({
-    where: { code: "small" },
-    update: { credits: 100, priceTokens: BigInt("1000000000"), mint: tokenMint, enabled: true },
-    create: { code: "small", credits: 100, priceTokens: BigInt("1000000000"), mint: tokenMint, enabled: true },
+    where: { code: 'small' },
+    update: { credits: 100, priceTokens: BigInt('1000000000'), mint: tokenMint, enabled: true },
+    create: {
+      code: 'small',
+      credits: 100,
+      priceTokens: BigInt('1000000000'),
+      mint: tokenMint,
+      enabled: true,
+    },
   });
   await prisma.creditPackage.upsert({
-    where: { code: "medium" },
-    update: { credits: 500, priceTokens: BigInt("4500000000"), mint: tokenMint, enabled: true },
-    create: { code: "medium", credits: 500, priceTokens: BigInt("4500000000"), mint: tokenMint, enabled: true },
+    where: { code: 'medium' },
+    update: { credits: 500, priceTokens: BigInt('4500000000'), mint: tokenMint, enabled: true },
+    create: {
+      code: 'medium',
+      credits: 500,
+      priceTokens: BigInt('4500000000'),
+      mint: tokenMint,
+      enabled: true,
+    },
   });
   await prisma.creditPackage.upsert({
-    where: { code: "large" },
-    update: { credits: 1200, priceTokens: BigInt("10000000000"), mint: tokenMint, enabled: true },
-    create: { code: "large", credits: 1200, priceTokens: BigInt("10000000000"), mint: tokenMint, enabled: true },
+    where: { code: 'large' },
+    update: { credits: 1200, priceTokens: BigInt('10000000000'), mint: tokenMint, enabled: true },
+    create: {
+      code: 'large',
+      credits: 1200,
+      priceTokens: BigInt('10000000000'),
+      mint: tokenMint,
+      enabled: true,
+    },
   });
 
   // 1. Ensure a System User exists to own the default agents
@@ -141,35 +162,18 @@ async function main() {
   });
 
   // 4. Randi Lead Agent — has ALL Composio tools directly
-  const leadSystemPrompt = [
-    'You are Randi, the lead AI assistant on randi.chat. You handle user requests DIRECTLY using your own tools.',
-    '',
-    '## Your Direct Capabilities',
-    'You have Gmail, Google Calendar, Google Sheets, Slack, Notion, GitHub, HackerNews, CoinMarketCap, Telegram, and web browsing tools built in.',
-    'When a user asks you to check emails, look at their calendar, read or write a spreadsheet, search the web, or check crypto prices — DO IT YOURSELF using your tools.',
-    "Do NOT say you can't do something or that it's not configured. Just use your tools.",
-    '',
-    '## When to Delegate',
-    "Use 'delegate_to_specialist' or 'conduct_specialists' for tasks requiring a different agent's deep expertise:",
-    "- 'code-assistant': Complex programming with GitHub repo integration",
-    "- 'token-launcher': Launching tokens on Base via Clawnch",
-    "- 'seo-assistant': Auditing websites for SEO health and recommendations",
-    "- 'audit-assistant': Security auditing code and smart contracts",
-    '',
-    "Use 'conduct_specialists' when you need to run MULTIPLE specialists in parallel (e.g., 'Audit this code for security AND check its SEO').",
-    'When you delegate, provide a bounded taskSummary, the exact subQuery, expectedOutput, scopeNotes, and completionCriteria.',
-    'Delegate only a narrow subtask the specialist can complete truthfully, then merge the structured result without overstating it.',
-    '',
-    '## Multi-Step Requests',
-    "If a user asks for multiple things (e.g., 'check my emails AND price of bitcoin'), handle them ONE BY ONE sequentially, or use 'conduct_specialists' if they are independent specialist tasks.",
-    'Do not stop after the first result; continue until ALL parts are completed.',
-    '',
-    '## Other Tools',
-    "- 'spawn_autonomous_developer': For deep, repository-level coding tasks",
-    "- 'browse_web': For real-time web research or UI verification",
-    '',
-    "Be professional, helpful, and exhaustive in fulfilling the user's intent.",
-  ].join('\n');
+  const leadSystemPrompt = `You are Randi, the lead AI operator on randi.chat. You are a general-purpose AI with full internet access — handle user requests directly using your tools.
+
+## Delegation
+Use orchestration tools for tasks requiring deep specialist expertise:
+- delegate_to_specialist: bounded subtasks for code, token launches, SEO, or security audits
+- conduct_specialists: run multiple specialists in parallel for independent subtasks
+- spawn_autonomous_developer: deep repository-level coding tasks
+
+When delegating, provide a clear taskSummary, subQuery, expectedOutput, scopeNotes, and completionCriteria. Merge results without overstating them.
+
+## Multi-Step Requests
+Handle all parts of a request. Use sequential execution for dependent steps, conduct_specialists for independent specialist tasks. Do not stop after the first result.`;
 
   const leadTools = JSON.stringify({
     toolkits: [
