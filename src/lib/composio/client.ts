@@ -205,6 +205,8 @@ interface ParsedAgentToolConfig {
 
 export function resolveComposioUserId(userId: string, agentSlug?: string): string {
   const override = process.env.COMPOSIO_ENTITY_ID?.trim();
+  console.log(`[Composio] resolveComposioUserId: COMPOSIO_ENTITY_ID="${override || '(unset)'}"`);
+
   if (override) return override;
 
   const normalizedUserId = userId?.trim();
