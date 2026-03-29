@@ -196,6 +196,7 @@ Handle all parts of a request. Use sequential execution for dependent steps, con
       'list_available_skills',
       'load_skill_context',
     ],
+    skills: ['audit-pipeline'],
   });
 
   const leadAgent = await prisma.agentConfig.upsert({

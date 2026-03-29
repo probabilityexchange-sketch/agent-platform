@@ -18,37 +18,38 @@
  * All other skills are treated as knowledge skills and injected as system prompt context.
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Skills that have callable MCP/tool integrations (action skills).
 // These are NOT injected as text — they are registered as tools in the chat route.
-export const ACTION_SKILLS = new Set(["clawnch"]);
+export const ACTION_SKILLS = new Set(['clawnch']);
 
 // Skills that are purely knowledge-based (injected as system prompt context).
 // All skills NOT in ACTION_SKILLS are treated as knowledge skills.
 export const KNOWLEDGE_SKILLS = [
-  "ai-agent-generation",
-  "composio-dev",
-  "vercel-expert",
-  "supabase-expert",
-  "react-expert",
-  "openrouter-llm",
-  "privy-auth",
-  "ux-design",
-  "connectors-available",
-  "find-arbitrage-opps",
-  "find-xemm-opps",
-  "hummingbot",
-  "hummingbot-deploy",
-  "hummingbot-developer",
-  "hummingbot-heartbeat",
-  "lp-agent",
-  "slides-generator",
-  "polymarket",
+  'ai-agent-generation',
+  'composio-dev',
+  'vercel-expert',
+  'supabase-expert',
+  'react-expert',
+  'openrouter-llm',
+  'privy-auth',
+  'ux-design',
+  'connectors-available',
+  'find-arbitrage-opps',
+  'find-xemm-opps',
+  'hummingbot',
+  'hummingbot-deploy',
+  'hummingbot-developer',
+  'hummingbot-heartbeat',
+  'lp-agent',
+  'slides-generator',
+  'polymarket',
+  'audit-pipeline',
 ];
 
-const SKILLS_DIR = path.join(process.cwd(), "skills");
+const SKILLS_DIR = path.join(process.cwd(), 'skills');
 
 /**
  * Read a skill's SKILL.md file and return its content.
@@ -56,12 +57,12 @@ const SKILLS_DIR = path.join(process.cwd(), "skills");
  */
 export function readSkillFile(skillName: string): string | null {
   try {
-    const skillPath = path.join(SKILLS_DIR, skillName, "SKILL.md");
+    const skillPath = path.join(SKILLS_DIR, skillName, 'SKILL.md');
     if (!fs.existsSync(skillPath)) {
       console.warn(`[skills] Skill file not found: ${skillPath}`);
       return null;
     }
-    return fs.readFileSync(skillPath, "utf-8");
+    return fs.readFileSync(skillPath, 'utf-8');
   } catch (err) {
     console.error(`[skills] Failed to read skill '${skillName}':`, err);
     return null;
@@ -84,7 +85,7 @@ export function parseAgentSkills(toolsJson: string | null): string[] {
   try {
     const config = JSON.parse(toolsJson);
     if (!Array.isArray(config.skills)) return [];
-    return config.skills.filter((s: unknown) => typeof s === "string");
+    return config.skills.filter((s: unknown) => typeof s === 'string');
   } catch {
     return [];
   }
@@ -98,25 +99,23 @@ export function parseAgentSkills(toolsJson: string | null): string[] {
  * string if no knowledge skills are configured.
  */
 export function buildSkillsContext(skillNames: string[]): string {
-  const knowledgeSkills = skillNames.filter((s) => !ACTION_SKILLS.has(s));
-  if (knowledgeSkills.length === 0) return "";
+  const knowledgeSkills = skillNames.filter(s => !ACTION_SKILLS.has(s));
+  if (knowledgeSkills.length === 0) return '';
 
   const sections: string[] = [];
 
   for (const skillName of knowledgeSkills) {
     const content = readSkillFile(skillName);
     if (!content) continue;
-    sections.push(
-      `\n\n---\n## Skill: ${skillName}\n\n${content.trim()}`
-    );
+    sections.push(`\n\n---\n## Skill: ${skillName}\n\n${content.trim()}`);
   }
 
-  if (sections.length === 0) return "";
+  if (sections.length === 0) return '';
 
   return (
     `\n\n---\n# Available Skills\n\nYou have been equipped with the following expert skills. ` +
     `Use this knowledge to provide accurate, expert-level guidance in these domains:\n` +
-    sections.join("")
+    sections.join('')
   );
 }
 
@@ -125,5 +124,5 @@ export function buildSkillsContext(skillNames: string[]): string {
  * These should be registered as MCP tools in the chat route.
  */
 export function getActionSkills(skillNames: string[]): string[] {
-  return skillNames.filter((s) => ACTION_SKILLS.has(s));
+  return skillNames.filter(s => ACTION_SKILLS.has(s));
 }
