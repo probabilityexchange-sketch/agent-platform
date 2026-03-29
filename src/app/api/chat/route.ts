@@ -82,7 +82,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
-    const body = await req.json();
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch (parseErr: any) {
+      console.error('[Chat] Failed to parse request body:', parseErr.message);
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    }
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
@@ -341,7 +347,7 @@ export async function POST(req: NextRequest) {
           history.push({
             role: 'assistant',
             content: m.content,
-            toolCalls: m.toolCalls ? JSON.parse(m.toolCalls) : undefined,
+            toolCalls: m.toolCalls ? (() => { try { return JSON.parse(m.toolCalls!); } catch { return undefined; } })() : undefined,
           } as any);
         } else if (m.role === 'user' || m.role === 'system') {
           history.push({ role: m.role as any, content: m.content });
