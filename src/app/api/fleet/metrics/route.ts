@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Format response for frontend consumption
-    const formattedStats = stats.map(stat => ({
+    const formattedStats = stats.map((stat: any) => ({
       nodeId: stat.nodeId,
       nodeRegion: stat.nodeRegion,
       totalContainers: stat.totalContainers,

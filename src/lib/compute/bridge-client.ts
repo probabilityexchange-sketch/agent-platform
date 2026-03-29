@@ -168,7 +168,12 @@ export class ComputeBridgeClient {
  */
 export async function getBestBridgeNode(): Promise<ComputeBridgeClient | null> {
   const apiKey = process.env.COMPUTE_BRIDGE_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.warn(
+      '[Compute] getBestBridgeNode: COMPUTE_BRIDGE_API_KEY is not set — bridge unavailable'
+    );
+    return null;
+  }
 
   try {
     // Look for nodes that reported in the last 5 minutes
@@ -180,7 +185,7 @@ export async function getBestBridgeNode(): Promise<ComputeBridgeClient | null> {
 
     // Deduplicate to get latest per node
     const seen = new Set<string>();
-    const latestStats = stats.filter(s => {
+    const latestStats = stats.filter((s: any) => {
       if (seen.has(s.nodeId)) return false;
       seen.add(s.nodeId);
       return true;
@@ -188,21 +193,21 @@ export async function getBestBridgeNode(): Promise<ComputeBridgeClient | null> {
 
     if (latestStats.length > 0) {
       // Resolve registry entries for all candidate nodes in one batch
-      const nodeIds = latestStats.map(s => s.nodeId);
+      const nodeIds = latestStats.map((s: any) => s.nodeId);
       const registryNodes = await prisma.bridgeNode.findMany({
         where: { nodeId: { in: nodeIds }, status: 'ACTIVE' },
       });
-      const registryMap = new Map(registryNodes.map(n => [n.nodeId, n]));
+      const registryMap = new Map<string, any>(registryNodes.map((n: any) => [n.nodeId, n]));
 
       // Pick node with least containers, skipping nodes at or over capacity
-      const eligible = latestStats.filter(s => {
+      const eligible = latestStats.filter((s: any) => {
         const reg = registryMap.get(s.nodeId);
         if (reg && s.totalContainers >= reg.maxContainers) return false;
         return true;
       });
 
       const candidates = eligible.length > 0 ? eligible : latestStats;
-      const best = candidates.reduce((prev, curr) =>
+      const best = candidates.reduce((prev: any, curr: any) =>
         curr.totalContainers < prev.totalContainers ? curr : prev
       );
 
@@ -211,8 +216,8 @@ export async function getBestBridgeNode(): Promise<ComputeBridgeClient | null> {
 
       if (registryNode) {
         return new ComputeBridgeClient({
-          baseUrl: registryNode.url,
-          apiKey: registryNode.apiKey || apiKey,
+          baseUrl: (registryNode as any).url,
+          apiKey: (registryNode as any).apiKey || apiKey,
           nodeId: best.nodeId,
         });
       }
@@ -228,14 +233,32 @@ export async function getBestBridgeNode(): Promise<ComputeBridgeClient | null> {
       if (baseUrl) {
         return new ComputeBridgeClient({ baseUrl, apiKey, nodeId: best.nodeId });
       }
+
+      console.warn(
+        `[Compute] getBestBridgeNode: node "${best.nodeId}" has no registry entry and COMPUTE_BRIDGE_URL is not set. ` +
+          `Register this node via POST /api/nodes or set COMPUTE_BRIDGE_URL.`
+      );
+    } else {
+      const defaultUrl = process.env.COMPUTE_BRIDGE_URL;
+      if (defaultUrl) {
+        return new ComputeBridgeClient({ baseUrl: defaultUrl, apiKey });
+      }
+      console.warn(
+        '[Compute] getBestBridgeNode: no nodes reported fleet stats in the last 5 minutes and COMPUTE_BRIDGE_URL is not set. ' +
+          'Check that the bridge server is running and PLATFORM_URL/COMPUTE_BRIDGE_API_KEY are configured on the EC2 host.'
+      );
+      return null;
     }
   } catch (err) {
-    console.error('Failed to resolve best bridge node:', err);
+    console.error('[Compute] getBestBridgeNode: error resolving bridge node:', err);
   }
 
   // Ultimate fallback
   const defaultUrl = process.env.COMPUTE_BRIDGE_URL;
-  if (!defaultUrl) return null;
+  if (!defaultUrl) {
+    console.warn('[Compute] getBestBridgeNode: COMPUTE_BRIDGE_URL is not set — bridge unavailable');
+    return null;
+  }
   return new ComputeBridgeClient({ baseUrl: defaultUrl, apiKey });
 }
 

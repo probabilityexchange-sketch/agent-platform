@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
 
     const { apiKey: _, ...safeNode } = node;
     return NextResponse.json({ node: safeNode }, { status: 201 });
-  } catch (err) {
+  } catch (err: any) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       return NextResponse.json({ error: 'Node already registered' }, { status: 409 });
     }

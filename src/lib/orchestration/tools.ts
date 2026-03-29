@@ -610,7 +610,7 @@ export async function executeOrchestrationToolCall(
 
       let totalEstimatedCost = 0;
       const slugToModel: Record<string, string> = {};
-      agentConfigs.forEach(a => {
+      agentConfigs.forEach((a: any) => {
         const cost = getCallCost(a.defaultModel).finalCost;
         totalEstimatedCost += cost;
         slugToModel[a.slug] = a.defaultModel;

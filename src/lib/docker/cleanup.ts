@@ -129,7 +129,7 @@ async function runCleanup() {
         where: { dockerId: { in: allContainers.map(c => c.Id) } },
         select: { dockerId: true },
       })
-    ).map(c => c.dockerId)
+    ).map((c: any) => c.dockerId)
   );
 
   for (const info of allContainers) {

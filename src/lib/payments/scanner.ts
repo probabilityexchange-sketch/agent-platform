@@ -36,7 +36,7 @@ export class TransactionScanner {
       where: { txSignature: { in: validSigs } },
       select: { txSignature: true },
     });
-    const processedSet = new Set(existingTxs.map(t => t.txSignature));
+    const processedSet = new Set(existingTxs.map((t: any) => t.txSignature));
 
     const txsToProcess: Array<{ sig: string; memo: string | null }> = [];
     for (const sig of validSigs) {
@@ -59,12 +59,12 @@ export class TransactionScanner {
             include: { user: true },
           })
         : [];
-    const intentByMemo = new Map(pendingIntents.map(i => [i.memo, i]));
+    const intentByMemo = new Map<string, any>(pendingIntents.map((i: any) => [i.memo, i]));
 
     let processedCount = 0;
     for (const { sig, memo } of txsToProcess) {
       if (!memo || !memo.startsWith('ap:')) continue;
-      const intent = intentByMemo.get(memo);
+      const intent = intentByMemo.get(memo) as any;
       if (!intent) continue;
 
       const tx = await connection.getParsedTransaction(sig, {
@@ -82,7 +82,7 @@ export class TransactionScanner {
           BigInt(postBalance.uiTokenAmount.amount) - BigInt(preBalance.uiTokenAmount.amount);
       }
 
-      await prisma.$transaction(async tx => {
+      await prisma.$transaction(async (tx: any) => {
         await tx.tokenTransaction.update({
           where: { id: intent.id },
           data: { status: 'CONFIRMED', txSignature: sig, tokenAmount: actualTokenAmount },

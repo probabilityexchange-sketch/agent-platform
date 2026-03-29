@@ -340,14 +340,22 @@ export async function POST(req: NextRequest) {
         take: MAX_HISTORY,
         select: { role: true, content: true, toolCalls: true },
       });
-      stored.reverse().forEach(m => {
+      stored.reverse().forEach((m: { role: string; content: string; toolCalls: string | null }) => {
         if (m.role === 'tool' && m.toolCalls) {
           history.push({ role: 'tool', content: m.content, toolCallId: m.toolCalls } as any);
         } else if (m.role === 'assistant') {
           history.push({
             role: 'assistant',
             content: m.content,
-            toolCalls: m.toolCalls ? (() => { try { return JSON.parse(m.toolCalls!); } catch { return undefined; } })() : undefined,
+            toolCalls: m.toolCalls
+              ? (() => {
+                  try {
+                    return JSON.parse(m.toolCalls!);
+                  } catch {
+                    return undefined;
+                  }
+                })()
+              : undefined,
           } as any);
         } else if (m.role === 'user' || m.role === 'system') {
           history.push({ role: m.role as any, content: m.content });

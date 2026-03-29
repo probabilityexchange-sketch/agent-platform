@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/db/prisma";
-import { getCallCost, AGENT_PRICING, type AgentTier } from "@/lib/tokenomics";
+import { prisma } from '@/lib/db/prisma';
+import { getCallCost, AGENT_PRICING, type AgentTier } from '@/lib/tokenomics';
 
 export interface StepCost {
   stepId: string;
@@ -16,7 +16,7 @@ export interface WorkflowCostEstimate {
   disclaimer: string;
 }
 
-const DEFAULT_MODEL = "meta-llama/llama-3.3-70b-instruct:free";
+const DEFAULT_MODEL = 'meta-llama/llama-3.3-70b-instruct:free';
 
 export function getDefaultModelCost() {
   return getCallCost(DEFAULT_MODEL).finalCost;
@@ -27,10 +27,10 @@ export function getModelCost(model: string) {
 }
 
 function getTierFromModel(model: string): AgentTier {
-  if (model.includes(":free")) return "STANDARD";
-  if (model.includes("gpt-4o") || model.includes("claude-3-sonnet")) return "PREMIUM";
-  if (model.includes("o1") || model.includes("claude-3-opus")) return "ULTRA";
-  return "STANDARD";
+  if (model.includes(':free')) return 'STANDARD';
+  if (model.includes('gpt-4o') || model.includes('claude-3-sonnet')) return 'PREMIUM';
+  if (model.includes('o1') || model.includes('claude-3-opus')) return 'ULTRA';
+  return 'STANDARD';
 }
 
 export function estimateWorkflowCost(params: {
@@ -44,57 +44,58 @@ export function estimateWorkflowCost(params: {
 }): WorkflowCostEstimate {
   const model = params.model ?? DEFAULT_MODEL;
   const baseCallCost = getModelCost(model);
-  
-  const breakdown: StepCost[] = params.steps.map((step) => {
+
+  const breakdown: StepCost[] = params.steps.map(step => {
     let estimatedTokens = baseCallCost;
     let note: string | undefined;
 
-    if (step.kind === "research") {
-      estimatedTokens = getModelCost("gpt-4o");
-      note = "Using PREMIUM for research (deep analysis)";
-    } else if (step.kind === "action" || step.kind === "financial") {
+    if (step.kind === 'research') {
+      estimatedTokens = getModelCost('gpt-4o');
+      note = 'Using PREMIUM for research (deep analysis)';
+    } else if (step.kind === 'action' || step.kind === 'financial') {
       estimatedTokens = baseCallCost;
-      note = "Base action cost";
-    } else if (step.kind === "decision") {
+      note = 'Base action cost';
+    } else if (step.kind === 'decision') {
       estimatedTokens = baseCallCost;
-      note = "Decision step cost";
-    } else if (step.kind === "notify" || step.kind === "report") {
-      estimatedTokens = getCallCost("llama-3.3-70b-instruct:free").finalCost;
-      note = "Using STANDARD for notification (lightweight)";
-    } else if (step.kind === "monitor") {
-      estimatedTokens = getCallCost("gpt-4o").finalCost;
-      note = "Using PREMIUM for monitoring (ongoing checks)";
+      note = 'Decision step cost';
+    } else if (step.kind === 'notify' || step.kind === 'report') {
+      estimatedTokens = getCallCost('llama-3.3-70b-instruct:free').finalCost;
+      note = 'Using STANDARD for notification (lightweight)';
+    } else if (step.kind === 'monitor') {
+      estimatedTokens = getCallCost('gpt-4o').finalCost;
+      note = 'Using PREMIUM for monitoring (ongoing checks)';
     }
 
     if (step.toolHints && step.toolHints.length > 0) {
-      note = note 
-        ? `${note}; tool costs NOT YET PRICED`
-        : "Tool costs NOT YET PRICED";
+      note = note ? `${note}; tool costs NOT YET PRICED` : 'Tool costs NOT YET PRICED';
     }
 
     return {
       stepId: step.id,
       description: step.description,
       estimatedTokens,
-      model: getTierFromModel(estimatedTokens === getCallCost("gpt-4o").finalCost ? "gpt-4o" : 
-                  estimatedTokens === getCallCost("llama-3.3-70b-instruct:free").finalCost ? "llama-3.3-70b-instruct:free" : model),
+      model: getTierFromModel(
+        estimatedTokens === getCallCost('gpt-4o').finalCost
+          ? 'gpt-4o'
+          : estimatedTokens === getCallCost('llama-3.3-70b-instruct:free').finalCost
+            ? 'llama-3.3-70b-instruct:free'
+            : model
+      ),
       note,
     };
   });
 
   const totalEstimate = breakdown.reduce((sum, step) => sum + step.estimatedTokens, 0);
 
-  const hasExternalTools = params.steps.some(
-    (step) => step.toolHints && step.toolHints.length > 0
-  );
+  const hasExternalTools = params.steps.some(step => step.toolHints && step.toolHints.length > 0);
 
   return {
     totalEstimate,
     breakdown,
     isMinimum: hasExternalTools,
     disclaimer: hasExternalTools
-      ? "This is a minimum/conservative estimate. External tool execution costs are not yet included and may significantly increase actual cost."
-      : "This is a minimum/conservative estimate based on known model costs only.",
+      ? 'This is a minimum/conservative estimate. External tool execution costs are not yet included and may significantly increase actual cost.'
+      : 'This is a minimum/conservative estimate based on known model costs only.',
   };
 }
 
@@ -113,21 +114,19 @@ export function estimateWorkflowRunCost(params: {
       totalEstimate: fallbackCost,
       breakdown: [
         {
-          stepId: "unknown",
-          description: "Unable to parse workflow plan",
+          stepId: 'unknown',
+          description: 'Unable to parse workflow plan',
           estimatedTokens: fallbackCost,
-          note: "Fallback estimate using STANDARD tier",
+          note: 'Fallback estimate using STANDARD tier',
         },
       ],
       isMinimum: true,
-      disclaimer: "Could not parse workflow plan. This is a fallback minimum estimate.",
+      disclaimer: 'Could not parse workflow plan. This is a fallback minimum estimate.',
     };
   }
 }
 
-export async function logWorkflowRunActualCost(params: {
-  workflowRunId: string;
-}): Promise<number> {
+export async function logWorkflowRunActualCost(params: { workflowRunId: string }): Promise<number> {
   const workflowRun = await prisma.workflowRun.findUnique({
     where: { id: params.workflowRunId },
     select: {
@@ -144,7 +143,7 @@ export async function logWorkflowRunActualCost(params: {
   const transactions = await prisma.tokenTransaction.findMany({
     where: {
       userId: workflowRun.userId,
-      type: "USAGE",
+      type: 'USAGE',
       createdAt: {
         gte: workflowRun.startedAt,
         lte: workflowRun.finishedAt,
@@ -155,15 +154,13 @@ export async function logWorkflowRunActualCost(params: {
     },
   });
 
-  const totalActual = Math.abs(
-    transactions.reduce((sum, tx) => sum + tx.amount, 0)
-  );
+  const totalActual = Math.abs(transactions.reduce((sum: any, tx: any) => sum + tx.amount, 0));
 
   await prisma.workflowRun.update({
     where: { id: params.workflowRunId },
-    data: { 
+    data: {
       actualTokens: totalActual,
-      costAttributionMethod: "time_window_attributed"
+      costAttributionMethod: 'time_window_attributed',
     },
   });
 
