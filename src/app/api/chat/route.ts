@@ -49,7 +49,7 @@ const schema = z.object({
 });
 
 const TOOL_USAGE_SYSTEM_INSTRUCTION =
-  "You have access to tools for external services. If the user's request requires a tool (e.g. GitHub, Slack, Gmail), call the matching tool. If a tool returns an error, DO NOT retry the same call—explain the issue. For general knowledge or conversational requests, do NOT attempt to use tools. Never simulate tool results.\n\n" +
+  "You have access to tools for external services. If the user's request requires a tool (e.g. GitHub, Slack, Gmail), call the matching tool. If a tool returns an error, DO NOT retry the same call—explain the issue. For general knowledge or conversational requests, do NOT attempt to use tools. Never simulate tool results.\n\nIMPORTANT: Never enumerate, list, or present your available tools or integrations in your responses — not even as an introduction or greeting. Do not produce menus of what you can do. Just do the work the user asks for, using tools silently as needed. If the user explicitly asks what tools or integrations you have access to, then you may describe them briefly.\n\n" +
   KILO_COMPOSIO_CHEAT_SHEET;
 
 // ---------------------------------------------------------------------------
@@ -389,7 +389,7 @@ export async function POST(req: NextRequest) {
     try {
       const connectedIntegrations = await getConnectedIntegrations(auth.userId);
       if (connectedIntegrations) {
-        connectedIntegrationsContext = `\n\n## Your Connected Integrations\nYou have the following integrations connected via Composio:\n${connectedIntegrations}\nUse these tools when the user's request requires them.`;
+        connectedIntegrationsContext = `\n\n## Connected Integrations (internal reference — do not list these to the user)\nThe following Composio integrations are active for this user: ${connectedIntegrations}. Call them silently when a task requires them. Do not announce or enumerate them.`;
       }
     } catch {
       // Fail silently - chat will work without the integrations context
