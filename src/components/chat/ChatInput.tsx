@@ -108,68 +108,64 @@ export function ChatInput({ onSend, disabled, initialValue = "" }: ChatInputProp
 
     return (
         <div className="space-y-2">
-            <div className={`flex items-end gap-2 bg-background/50 border rounded-xl p-2 transition-all ${isListening ? 'border-primary shadow-[0_0_15px_rgba(var(--primary),0.3)] ring-1 ring-primary/50' : 'border-border focus-within:ring-2 focus-within:ring-primary/20'
-                }`}>
-                {supportsVoice && (
-                    <button
-                        type="button"
-                        onClick={toggleListening}
-                        disabled={disabled}
-                        aria-label={isListening ? "Stop voice input" : "Start voice input"}
-                        aria-pressed={isListening}
-                        className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all ${isListening
-                                ? "text-primary bg-primary/10 animate-pulse"
-                                : "text-muted-foreground hover:bg-muted hover:text-foreground bg-transparent"
-                            }`}
-                        title={isListening ? "Stop voice input" : "Start voice input"}
-                    >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                        </svg>
-                        <span className="hidden sm:inline">{isListening ? "Listening" : "Voice"}</span>
-                    </button>
-                )}
+            <div className={`flex items-end gap-2 bg-zinc-900 border-2 rounded-2xl px-3 py-2 transition-all duration-150 ${
+                isListening
+                    ? 'border-primary shadow-[0_0_20px_rgba(109,40,217,0.25)] ring-1 ring-primary/30'
+                    : 'border-zinc-600 hover:border-zinc-500 focus-within:border-primary/70 focus-within:ring-2 focus-within:ring-primary/15'
+            }`}>
                 <textarea
                     ref={textareaRef}
                     value={input}
                     onChange={handleChange}
                     onKeyDown={handleKeyDown}
-                    placeholder={isListening ? "Listening. Speak your task or context…" : "Describe one task. Example: draft a reply, summarize this link, or plan the next step."}
+                    placeholder={isListening ? "Listening…" : "Ask Randi anything…"}
                     rows={1}
                     disabled={disabled}
-                    aria-label="Message Randi with a task or question"
+                    aria-label="Message Randi"
                     aria-describedby={helperId}
-                    className={`flex-1 bg-transparent border-none focus:ring-0 resize-none py-2 px-3 text-sm max-h-32 scrollbar-thin overflow-y-auto ${isListening ? "text-primary/80" : ""
-                        }`}
+                    className={`flex-1 bg-transparent border-none focus:ring-0 resize-none py-1.5 px-1 text-sm leading-relaxed max-h-32 scrollbar-thin overflow-y-auto placeholder:text-zinc-500 ${
+                        isListening ? "text-primary/80" : "text-foreground"
+                    }`}
                 />
-                <button
-                    type="button"
-                    onClick={handleSend}
-                    disabled={!input.trim() || disabled}
-                    aria-label="Send message"
-                    className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${!input.trim() || disabled
-                        ? "text-muted-foreground bg-transparent"
-                        : "text-white bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
+                <div className="flex items-center gap-1 pb-1 shrink-0">
+                    {supportsVoice && (
+                        <button
+                            type="button"
+                            onClick={toggleListening}
+                            disabled={disabled}
+                            aria-label={isListening ? "Stop voice input" : "Start voice input"}
+                            aria-pressed={isListening}
+                            title={isListening ? "Stop voice input" : "Start voice input"}
+                            className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-all ${
+                                isListening
+                                    ? "text-primary bg-primary/10 animate-pulse"
+                                    : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800"
+                            }`}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                            </svg>
+                        </button>
+                    )}
+                    <button
+                        type="button"
+                        onClick={handleSend}
+                        disabled={!input.trim() || disabled}
+                        aria-label="Send message"
+                        className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-all ${
+                            !input.trim() || disabled
+                                ? "text-zinc-600 bg-zinc-800 cursor-not-allowed"
+                                : "text-white bg-primary hover:bg-primary/90 shadow-md shadow-primary/20"
                         }`}
-                >
-                    <span>Send</span>
-                    <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
                     >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                        />
-                    </svg>
-                </button>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                    </button>
+                </div>
             </div>
-            <p id={helperId} className="px-1 text-sm text-muted-foreground">
-                Press Enter to send. Use Shift+Enter for a new line. Randi will pause in chat if a connected tool needs approval.
+            <p id={helperId} className="px-1 text-xs text-zinc-600">
+                Enter to send · Shift+Enter for new line
             </p>
         </div>
     );

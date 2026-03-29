@@ -13,6 +13,7 @@ import {
 import { CLAWNCH_TOOLS, executeClawnchTool, isClawnchTool } from '@/lib/skills/clawnch-tools';
 import { AGENTCARD_TOOLS, executeAgentCardTool, isAgentCardTool } from '@/lib/agentcard/tools';
 import { RESEARCH_TOOLS, executeResearchTool, isResearchTool } from '@/lib/research/tools';
+import { SEO_TOOLS, executeSEOTool, isSEOTool } from '@/lib/seo/dataforseo';
 import {
   getComposioClient,
   executeOpenAIToolCall,
@@ -277,6 +278,16 @@ export async function POST(req: NextRequest) {
         description: rt.function.description,
         inputSchema: z.any(),
         execute: async (args: any) => executeResearchTool(rt.function.name, args),
+      });
+    });
+
+    // Add SEO Tools (DataForSEO: keyword data, backlinks, SERP features)
+    SEO_TOOLS.forEach(st => {
+      if (st.type !== 'function') return;
+      (tools as any)[st.function.name] = tool({
+        description: st.function.description,
+        inputSchema: z.any(),
+        execute: async (args: any) => executeSEOTool(st.function.name, args),
       });
     });
 

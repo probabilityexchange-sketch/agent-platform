@@ -162,23 +162,41 @@ async function main() {
   });
 
   // 4. Randi Lead Agent — has ALL Composio tools directly
-  const leadSystemPrompt = `You are Randi, the lead AI operator on randi.chat. You are a general-purpose AI with full internet access — handle user requests directly using your tools.
+  const leadSystemPrompt = `You are Randi, an elite AI employee operating on randi.chat. You handle real work on the internet — SEO, research, content, outreach, and automation — with the precision of a seasoned professional.
+
+## Your Primary Expertise: SEO
+You are built to be the best SEO operator in the business. When a user mentions a website, keyword, or ranking goal, default to your SEO Expert skill methodology. Your first client is randi.agency — know its rankings, track its health, and proactively surface opportunities.
+
+SEO task patterns:
+- "audit [site]" → run technical SEO audit using browse_web + produce structured report
+- "research keywords for [topic]" → use SerpAPI + DataForSEO, classify by intent, score by opportunity
+- "write [page/post] for [keyword]" → apply content framework, optimize for target keyword
+- "analyze competitors for [site]" → SerpAPI SERP analysis + backlink gap identification
+- "check backlinks for [domain]" → DataForSEO backlink summary + opportunity list
+
+## Tool Priority
+1. Answer directly if you already know it
+2. Use tools: browse_web for pages, SerpAPI for SERPs, DataForSEO for keyword/backlink data, Google Analytics for traffic
+3. Delegate to specialists for deep coding, token launches, or security audits
+4. Save outputs to Google Sheets/Docs for client delivery
 
 ## Delegation
 Use orchestration tools for tasks requiring deep specialist expertise:
-- delegate_to_specialist: bounded subtasks for code, token launches, SEO, or security audits
+- delegate_to_specialist: bounded subtasks for code, token launches, SEO deep dives, or security audits
 - conduct_specialists: run multiple specialists in parallel for independent subtasks
 - spawn_autonomous_developer: deep repository-level coding tasks
 
 When delegating, provide a clear taskSummary, subQuery, expectedOutput, scopeNotes, and completionCriteria. Merge results without overstating them.
 
 ## Multi-Step Requests
-Handle all parts of a request. Use sequential execution for dependent steps, conduct_specialists for independent specialist tasks. Do not stop after the first result.`;
+Handle all parts of a request. Use sequential execution for dependent steps, conduct_specialists for independent specialist tasks. Do not stop after the first result. Always deliver complete, actionable output.`;
 
   const leadTools = JSON.stringify({
     toolkits: [
       'googlecalendar',
       'googlesheets',
+      'googledocs',
+      'googledrive',
       'slack',
       'notion',
       'gmail',
@@ -187,6 +205,8 @@ Handle all parts of a request. Use sequential execution for dependent steps, con
       'coinmarketcap',
       'github',
       'telegram',
+      'serpapi',
+      'googleanalytics',
     ],
     tools: [
       'delegate_to_specialist',
@@ -195,8 +215,11 @@ Handle all parts of a request. Use sequential execution for dependent steps, con
       'browse_web',
       'list_available_skills',
       'load_skill_context',
+      'seo_keyword_data',
+      'seo_backlinks_summary',
+      'seo_serp_features',
     ],
-    skills: ['audit-pipeline'],
+    skills: ['audit-pipeline', 'seo-expert'],
   });
 
   const leadAgent = await prisma.agentConfig.upsert({
@@ -251,44 +274,58 @@ Handle all parts of a request. Use sequential execution for dependent steps, con
   });
 
   // 6. SEO Assistant
+  const seoSystemPrompt = `You are an elite SEO specialist operating as part of the Randi platform. You deliver real SEO results — not generic advice, but systematic audits, data-backed keyword strategies, backlink analysis, and publish-ready content.
+
+## What You Do
+- **Technical Audits**: Crawl sites with browse_web, check every technical SEO factor, score health, and output a client-ready report
+- **Keyword Research**: Use SerpAPI for SERP analysis and DataForSEO for volumes/difficulty — surface opportunities ranked by impact
+- **Backlink Analysis**: Use DataForSEO to analyze referring domains, spot toxic links, and identify outreach targets
+- **Content Creation**: Write SEO-optimized pages and posts using the pillar/cluster model — always publish-ready
+
+## Your Primary Client
+randi.agency is the home base. Know it, track it, and proactively identify what will move its rankings.
+
+## Deliverables
+Every output should be client-ready:
+- Audits → structured report (Technical Health Score, Quick Wins, Action Plan)
+- Keyword research → scored table with intent classification
+- Content → full draft with optimized title, meta, H1, headers, and body
+- Backlinks → domain overview + top 5 outreach targets
+
+## Tools
+Use browse_web to inspect pages, SerpAPI for SERP data, DataForSEO for keyword/backlink data, Google Analytics for traffic, Google Sheets/Docs for client deliverables.`;
+
+  const seoTools = JSON.stringify({
+    toolkits: ['serpapi', 'googleanalytics', 'googlesheets', 'googledocs'],
+    tools: ['browse_web', 'seo_keyword_data', 'seo_backlinks_summary', 'seo_serp_features'],
+    skills: ['seo-expert'],
+  });
+
   const seoAgent = await prisma.agentConfig.upsert({
     where: { slug: 'seo-assistant' },
     update: {
-      name: 'SEO Assistant',
+      name: 'SEO Specialist',
       description:
-        'Specializes in auditing websites for SEO, analyzing meta tags, page speed, and keywords.',
-      image: 'randi/seo-assistant',
-      internalPort: 80,
-      tokensPerHour: 0,
-      memoryLimit: BigInt(0),
-      cpuLimit: BigInt(0),
-      systemPrompt:
-        'You are an expert SEO specialist. Analyze websites for SEO health and provide actionable recommendations. Use browse_web to inspect pages.',
-      tools: JSON.stringify({
-        toolkits: ['googlesheets'],
-        tools: ['browse_web'],
-      }),
-      defaultModel: 'meta-llama/llama-3.3-70b-instruct:free',
+        'Elite SEO operator: technical audits, keyword research, backlink analysis, and content creation. Powered by SerpAPI and DataForSEO.',
+      systemPrompt: seoSystemPrompt,
+      tools: seoTools,
+      defaultModel: 'anthropic/claude-3.5-sonnet',
       active: true,
       ownerId: systemUser.id,
     },
     create: {
       slug: 'seo-assistant',
-      name: 'SEO Assistant',
+      name: 'SEO Specialist',
       description:
-        'Specializes in auditing websites for SEO, analyzing meta tags, page speed, and keywords.',
+        'Elite SEO operator: technical audits, keyword research, backlink analysis, and content creation. Powered by SerpAPI and DataForSEO.',
       image: 'randi/seo-assistant',
       internalPort: 80,
       tokensPerHour: 0,
       memoryLimit: BigInt(0),
       cpuLimit: BigInt(0),
-      systemPrompt:
-        'You are an expert SEO specialist. Analyze websites for SEO health and provide actionable recommendations. Use browse_web to inspect pages.',
-      tools: JSON.stringify({
-        toolkits: ['googlesheets'],
-        tools: ['browse_web'],
-      }),
-      defaultModel: 'meta-llama/llama-3.3-70b-instruct:free',
+      systemPrompt: seoSystemPrompt,
+      tools: seoTools,
+      defaultModel: 'anthropic/claude-3.5-sonnet',
       active: true,
       ownerId: systemUser.id,
     },

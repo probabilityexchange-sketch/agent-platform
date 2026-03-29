@@ -24,12 +24,6 @@ interface SessionPayload {
   };
 }
 
-const CHAT_GUIDANCE = [
-  "Start with one specific task or outcome.",
-  "Randi can think, draft, summarize, and plan before taking action.",
-  "If a connected tool needs a sensitive step, review it in chat before continuing.",
-];
-
 export default function ChatSessionPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -264,37 +258,16 @@ export default function ChatSessionPage() {
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-sm font-medium text-emerald-400">
-              Sensitive tool actions pause for review
-            </span>
-            <span className="rounded-full border border-border bg-background/40 px-3 py-1.5 text-sm font-medium text-muted-foreground">
-              {toolsLoading ? "Checking tools…" : `${connectedCount} tool${connectedCount === 1 ? "" : "s"} ready`}
-            </span>
-            <span className="rounded-full border border-border bg-background/40 px-3 py-1.5 text-sm font-medium text-muted-foreground">
-              {currentModelLabel}
-            </span>
+          <div className="flex items-center gap-2">
+            {!toolsLoading && connectedCount > 0 && (
+              <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400">
+                {connectedCount} tool{connectedCount === 1 ? "" : "s"}
+              </span>
+            )}
+            <Link href="/integrations" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+              {connectedCount > 0 ? "Manage" : "Connect tools"}
+            </Link>
           </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {CHAT_GUIDANCE.map((item) => (
-            <span
-              key={item}
-              className="rounded-full border border-border bg-background/40 px-3 py-1.5 text-sm text-muted-foreground"
-            >
-              {item}
-            </span>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap gap-3 text-sm">
-          <Link href="/integrations" className="font-semibold text-primary hover:underline">
-            {connectedCount > 0 ? "Manage tools" : "Connect tools"}
-          </Link>
-          <Link href="/how-it-works" className="font-semibold text-primary hover:underline">
-            Getting Started
-          </Link>
         </div>
 
         {sessionError && (
