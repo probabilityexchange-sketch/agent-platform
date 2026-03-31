@@ -73,7 +73,15 @@
       "Bash(git merge:*)",
       "Bash(tee /tmp/ship_vitest.txt)",
       "Bash(npx vitest:*)",
-      "Bash(apt list:*)"
+      "Bash(apt list:*)",
+      "Bash(grep -E \"\\\\.ts$\")",
+      "Bash(ls -la /home/billy/projects/randi-agent/src/app/\\\\\\(dashboard\\\\\\)/)",
+      "mcp__claude_ai_Vercel__list_teams",
+      "mcp__claude_ai_Vercel__list_projects",
+      "mcp__claude_ai_Vercel__list_deployments",
+      "Skill(investigate)",
+      "Skill(gstack-upgrade)",
+      "Bash(echo \"EXIT:$?\")"
     ]
   }
 }

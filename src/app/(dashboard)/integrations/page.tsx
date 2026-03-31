@@ -68,25 +68,25 @@ function StatusBadge({ status }: { status: string }) {
 function connectionSummary(integration: IntegrationItem) {
   if (integration.connected) {
     if (integration.connectedAccountCount > 1) {
-      return `${integration.connectedAccountCount} accounts connected and ready for chat.`;
+      return `${integration.connectedAccountCount} accounts connected and ready in chat.`;
     }
 
     if (integration.connectedAccountCount === 1) {
-      return "1 account connected. Randi can now access this app.";
+      return "1 account connected. Ready in chat.";
     }
 
-    return "Connected and ready for chat actions.";
+    return "Connected and ready in chat.";
   }
 
   if (!integration.hasAuthConfig) {
-    return "Not yet configured for this workspace.";
+    return "Not configured for this workspace.";
   }
 
   if (integration.connectedStatus === "INITIATED" || integration.connectedStatus === "INITIALIZING") {
-    return "Connection in progress. Complete the authorization window.";
+    return "Connection in progress. Finish OAuth to complete setup.";
   }
 
-  return "Connect to enable chat capabilities for this app.";
+  return "Connect with OAuth to use this app in chat.";
 }
 
 function IntegrationCard({
@@ -103,9 +103,9 @@ function IntegrationCard({
   const isConnected = integration.connected;
   const canConnect = integration.hasAuthConfig;
   const capabilities = integration.capabilities.length > 0 
-    ? integration.capabilities 
-    : ["Use inside chat after connecting", "Let Randi work in this app"];
-  const suggestedPrompt = integration.suggestedPrompt || "Help me use this connected tool inside chat.";
+    ? integration.capabilities.slice(0, 2)
+    : ["Use in chat after connecting", "Let Randi handle this app"];
+  const suggestedPrompt = integration.suggestedPrompt || "Show me how to use this tool in chat.";
 
   return (
     <div
@@ -145,7 +145,7 @@ function IntegrationCard({
         <div className="space-y-4">
           {/* Capabilities */}
           <div className="rounded-2xl border border-border/40 bg-background/30 p-4">
-            <h4 className="text-xs font-semibold text-muted-foreground">Capabilities</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground">Good for</h4>
             <ul className="mt-2.5 space-y-2">
               {capabilities.map((capability) => (
                 <li key={capability} className="flex items-center gap-2 text-sm text-foreground/80">
@@ -158,7 +158,7 @@ function IntegrationCard({
 
           {/* Status & Trust */}
           <div className="rounded-2xl border border-border/40 bg-background/30 p-4">
-            <h4 className="text-xs font-semibold text-muted-foreground">Status and safety</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground">Status</h4>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               {connectionSummary(integration)}
             </p>
@@ -167,7 +167,7 @@ function IntegrationCard({
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
-                Requires approval for sensitive actions
+                Sensitive actions still need approval
               </div>
             )}
             {!isConnected && !canConnect && (
@@ -180,7 +180,7 @@ function IntegrationCard({
           {/* Suggested prompt after connection */}
           {isConnected && (
             <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-4 transition-colors hover:bg-emerald-500/[0.08]">
-              <h4 className="text-xs font-semibold text-emerald-400/90">Try it in chat</h4>
+              <h4 className="text-xs font-semibold text-emerald-400/90">Use in chat</h4>
               <p className="mt-2 text-sm italic leading-relaxed text-foreground/90">
                 &ldquo;{suggestedPrompt}&rdquo;
               </p>
@@ -392,9 +392,12 @@ function IntegrationsPageContent() {
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
             Integrations
           </div>
-          <h1 className="text-4xl font-black tracking-tight sm:text-5xl">Connect your tools</h1>
+          <h1 className="text-4xl font-black tracking-tight sm:text-5xl">Connect the tools you need</h1>
           <p className="max-w-2xl text-lg text-muted-foreground leading-relaxed">
-            Enable Randi to read, draft, and act across your favorite apps. Connections are secure and require your approval for sensitive actions.
+            Randi can work with 1,000+ tools through OAuth. Connect only the apps you want to use.
+          </p>
+          <p className="max-w-2xl text-sm text-muted-foreground/80">
+            Each integration is manually authorized for your workspace.
           </p>
         </div>
 
@@ -403,7 +406,7 @@ function IntegrationsPageContent() {
             Open chat
           </Link>
           <Link href="/how-it-works" className="inline-flex h-12 items-center justify-center rounded-2xl border border-border bg-background px-6 text-sm font-bold transition-all hover:bg-muted">
-            Getting Started
+            How it works
           </Link>
         </div>
       </div>
@@ -417,7 +420,7 @@ function IntegrationsPageContent() {
           </div>
           <p className="mt-4 text-sm font-semibold text-muted-foreground/80">Connected tools</p>
           <p className="mt-1 text-4xl font-black tracking-tight">{loading ? "—" : connectedCount}</p>
-          <p className="mt-2 text-sm text-muted-foreground">Ready for real actions in chat.</p>
+          <p className="mt-2 text-sm text-muted-foreground">Ready to use in chat.</p>
         </div>
         
         <div className="group rounded-3xl border border-border bg-card/40 p-6 transition-colors hover:bg-card/60">
@@ -428,7 +431,7 @@ function IntegrationsPageContent() {
           </div>
           <p className="mt-4 text-sm font-semibold text-muted-foreground/80">Apps available</p>
           <p className="mt-1 text-4xl font-black tracking-tight">{loading ? "—" : availableCount}</p>
-          <p className="mt-2 text-sm text-muted-foreground">Only connect what you actually use.</p>
+          <p className="mt-2 text-sm text-muted-foreground">Connect only what you actually need.</p>
         </div>
 
         <div className="group rounded-3xl border border-border bg-card/40 p-6 transition-colors hover:bg-card/60">
@@ -439,7 +442,7 @@ function IntegrationsPageContent() {
           </div>
           <p className="mt-4 text-sm font-semibold text-muted-foreground/80">Approval review</p>
           <p className="mt-1 text-xl font-black tracking-tight">Review & Approve</p>
-          <p className="mt-2 text-sm text-muted-foreground">Randi only acts when you say it&apos;s okay.</p>
+          <p className="mt-2 text-sm text-muted-foreground">Randi only acts when you approve it.</p>
         </div>
       </div>
 
@@ -484,7 +487,7 @@ function IntegrationsPageContent() {
                 <input
                   id="integration-search"
                   type="text"
-                  placeholder="Find by app name or description..."
+                  placeholder="Search apps like Gmail, GitHub, or Slack..."
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
                   className="w-full rounded-2xl border border-border bg-background px-11 py-3.5 text-sm transition-all focus:border-primary/40 focus:outline-none focus:ring-4 focus:ring-primary/5 placeholder:text-muted-foreground/60"

@@ -21,22 +21,23 @@ export default function CreditsPage() {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-6">
-        <h1 className="text-4xl font-black italic">CREDITS</h1>
+      <div className="p-6 space-y-6 max-w-6xl mx-auto">
+        <h1 className="text-4xl font-black italic tracking-tighter">CREDITS</h1>
         <div className="bg-card border border-border rounded-xl p-8 text-center text-muted-foreground animate-pulse">
-          Synchronizing ledger...
+          Building your plan chooser...
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-2xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
+    <div className="p-6 space-y-6 max-w-6xl mx-auto">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="text-4xl font-black italic tracking-tighter">CREDITS</h1>
-          <p className="text-muted-foreground mt-1 font-medium">
-            Fuel your autonomous agents with $RANDI credits.
+          <p className="mt-2 max-w-2xl text-muted-foreground font-medium">
+            Choose a fixed USD plan, see the live $RANDI quote, and fund the agent without thinking
+            about token math.
           </p>
         </div>
         {priceUsd && (

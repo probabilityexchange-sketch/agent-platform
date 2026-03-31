@@ -1,4 +1,7 @@
-import { Prisma, PrismaClient } from "@/generated/prisma/client";
+import { Prisma, PrismaClient } from '@/generated/prisma/client';
+import { getUsagePackageDefinition } from '@/lib/credits/usage-packages';
+import { quoteTokenAmountForUsd } from '@/lib/payments/token-pricing';
+import { TOKEN_DECIMALS } from '@/lib/tokenomics';
 
 export interface VerificationDeps {
   prisma: PrismaClient;
@@ -21,12 +24,23 @@ export async function createPurchaseIntent(params: {
   });
 
   if (!pkg) {
-    throw new Error("PACKAGE_NOT_FOUND");
+    throw new Error('PACKAGE_NOT_FOUND');
   }
+
+  const packageDefinition = getUsagePackageDefinition(pkg.code);
+  if (!packageDefinition) {
+    throw new Error('PACKAGE_NOT_FOUND');
+  }
+
+  const quote = await quoteTokenAmountForUsd({
+    usdAmount: packageDefinition.usdPrice,
+    tokenMint: pkg.mint,
+    tokenDecimals: TOKEN_DECIMALS,
+  });
 
   const treasury = process.env.TREASURY_WALLET;
   if (!treasury) {
-    throw new Error("TREASURY_WALLET is not configured");
+    throw new Error('TREASURY_WALLET is not configured');
   }
 
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
@@ -35,10 +49,10 @@ export async function createPurchaseIntent(params: {
     data: {
       userId: params.userId,
       packageId: pkg.id,
-      expectedAmount: pkg.priceTokens,
+      expectedAmount: quote.tokenAmountBaseUnits,
       mint: pkg.mint,
       treasury,
-      status: "PENDING",
+      status: 'PENDING',
       expiresAt,
     },
     select: {
@@ -57,7 +71,7 @@ export async function verifyAndCreditIntent(
     userId: string;
     intentId: string;
     txSig: string;
-  },
+  }
 ) {
   return deps.prisma.$transaction(async (tx: any) => {
     await tx.$queryRaw`SELECT id FROM "PurchaseIntent" WHERE id = ${params.intentId} FOR UPDATE`;
@@ -68,26 +82,26 @@ export async function verifyAndCreditIntent(
     });
 
     if (!intent || intent.userId !== params.userId) {
-      throw new Error("INTENT_NOT_FOUND");
+      throw new Error('INTENT_NOT_FOUND');
     }
 
-    if (intent.status === "CONFIRMED") {
+    if (intent.status === 'CONFIRMED') {
       return {
-        status: "already_confirmed" as const,
+        status: 'already_confirmed' as const,
         intent,
       };
     }
 
-    if (intent.status !== "PENDING") {
+    if (intent.status !== 'PENDING') {
       throw new Error(`INTENT_${intent.status}`);
     }
 
     if (intent.expiresAt < new Date()) {
       await tx.purchaseIntent.update({
         where: { id: intent.id },
-        data: { status: "EXPIRED" },
+        data: { status: 'EXPIRED' },
       });
-      throw new Error("INTENT_EXPIRED");
+      throw new Error('INTENT_EXPIRED');
     }
 
     await deps.verifyOnChain({
@@ -103,37 +117,42 @@ export async function verifyAndCreditIntent(
         where: { id: intent.id },
         data: {
           txSig: params.txSig,
-          status: "CONFIRMED",
+          status: 'CONFIRMED',
           confirmedAt: new Date(),
         },
       });
+
+      const wholeCredits = Number(
+        (intent.expectedAmount + BigInt(10 ** TOKEN_DECIMALS) - BigInt(1)) /
+          BigInt(10 ** TOKEN_DECIMALS)
+      );
 
       await tx.creditLedger.create({
         data: {
           userId: intent.userId,
           intentId: intent.id,
-          delta: intent.package.credits,
+          delta: wholeCredits,
           reason: `purchase:${intent.package.code}`,
         },
       });
 
       await tx.user.update({
         where: { id: intent.userId },
-        data: { creditBalance: { increment: intent.package.credits } },
+        data: { creditBalance: { increment: wholeCredits } },
       });
 
       return {
-        status: "confirmed" as const,
-        creditsAdded: intent.package.credits,
+        status: 'confirmed' as const,
+        creditsAdded: wholeCredits,
       };
     } catch (error: unknown) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
-        (error as Prisma.PrismaClientKnownRequestError).code === "P2002"
+        (error as Prisma.PrismaClientKnownRequestError).code === 'P2002'
       ) {
         const fresh = await tx.purchaseIntent.findUnique({ where: { id: intent.id } });
-        if (fresh?.status === "CONFIRMED") {
-          return { status: "already_confirmed" as const, intent: fresh };
+        if (fresh?.status === 'CONFIRMED') {
+          return { status: 'already_confirmed' as const, intent: fresh };
         }
       }
       throw error;
