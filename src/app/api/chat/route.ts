@@ -1,5 +1,14 @@
 import { aiOpenRouter } from '@/lib/ai/openrouter';
-import { streamText, tool, stepCountIs, type ToolSet, type ModelMessage } from 'ai';
+import {
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  generateId,
+  streamText,
+  tool,
+  stepCountIs,
+  type ToolSet,
+  type ModelMessage,
+} from 'ai';
 import { handleNonStandardChat } from '@/lib/ai/resilience';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
@@ -31,6 +40,10 @@ import { parseAgentSkills, buildSkillsContext } from '@/lib/skills/loader';
 import { KILO_COMPOSIO_CHEAT_SHEET } from '@/lib/skills/tool-cheat-sheet';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/utils/rate-limit';
 import { getMemoryClient, isMemoryConfigured } from '@/lib/memory/client';
+import {
+  formatConnectedIntegrationsAnswer,
+  isConnectedIntegrationsQuestion,
+} from './integration-response';
 
 // ---------------------------------------------------------------------------
 // CONFIG & SCHEMAS
@@ -394,13 +407,55 @@ export async function POST(req: NextRequest) {
 
     // Fetch dynamically connected integrations from Composio
     let connectedIntegrationsContext = '';
+    let connectedIntegrations = '';
     try {
-      const connectedIntegrations = await getConnectedIntegrations(auth.userId);
+      connectedIntegrations = await getConnectedIntegrations(auth.userId);
       if (connectedIntegrations) {
         connectedIntegrationsContext = `\n\n## Connected Integrations (internal reference — do not list these to the user)\nThe following Composio integrations are active for this user: ${connectedIntegrations}. Call them silently when a task requires them. Do not announce or enumerate them.`;
       }
     } catch {
       // Fail silently - chat will work without the integrations context
+    }
+
+    if (isConnectedIntegrationsQuestion(message)) {
+      const answer = formatConnectedIntegrationsAnswer(connectedIntegrations);
+      const stream = createUIMessageStream({
+        execute: async ({ writer }) => {
+          const responseId = generateId();
+          writer.write({ type: 'text-start', id: responseId });
+          writer.write({ type: 'text-delta', id: responseId, delta: answer });
+          writer.write({ type: 'text-end', id: responseId });
+
+          let currentSessionId = existingSession?.id;
+          if (!currentSessionId) {
+            const newSession = await prisma.chatSession.create({
+              data: {
+                userId: auth.userId,
+                agentId: agent.id,
+                title: message.substring(0, 50),
+              },
+            });
+            currentSessionId = newSession.id;
+          }
+          if (!currentSessionId) {
+            throw new Error('Failed to create chat session');
+          }
+
+          await prisma.chatMessage.createMany({
+            data: [
+              { sessionId: currentSessionId, role: 'user', content: message },
+              {
+                sessionId: currentSessionId,
+                role: 'assistant',
+                content: answer,
+                toolCalls: null,
+              },
+            ],
+          });
+        },
+      });
+
+      return createUIMessageStreamResponse({ stream });
     }
 
     let memoryContext = '';
