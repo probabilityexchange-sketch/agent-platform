@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/db/prisma';
-import { getCallCost, toLamports, getCreditPacks } from '@/lib/tokenomics';
-
-export { getCreditPacks };
+import { getCallCost, toLamports } from '@/lib/tokenomics';
+import { USAGE_PACKAGE_DEFINITIONS } from '@/lib/credits/usage-packages';
+export { getLiveUsagePackages as getCreditPacks } from '@/lib/credits/usage-packages';
 
 /**
  * Deduct tokens from user balance for an agent call.
@@ -85,8 +85,7 @@ export async function depositTokens(
   baseTokenAmount: bigint,
   memo: string
 ): Promise<void> {
-  const packs = getCreditPacks();
-  const pack = packs.find(p => p.id === packId);
+  const pack = USAGE_PACKAGE_DEFINITIONS.find(p => p.code === packId);
 
   // Calculate bonus if pack found
   let bonusMultiplier = 1.0;
