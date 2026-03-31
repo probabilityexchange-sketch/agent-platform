@@ -66,6 +66,12 @@ export default function LandingPage() {
               Get Started for Free
             </Link>
           )}
+          <Link
+            href="/free-audit"
+            className="px-8 py-3 border border-border hover:border-primary/40 bg-card hover:bg-card/80 text-foreground rounded-lg font-semibold text-lg transition-all"
+          >
+            Free local audit
+          </Link>
           <a
             href={xUrl}
             target="_blank"

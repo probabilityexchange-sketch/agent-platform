@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { fetchApi } from '@/lib/utils/api';
-
-const DEFAULT_RETRY_DELAY_MS = 3000;
-const PRIVY_RATE_LIMIT_RETRY_MS = 15000;
-const FINALIZE_TIMEOUT_MS = 12000;
-const SESSION_CONFIRM_TIMEOUT_MS = 15000;
-const SESSION_CONFIRM_POLL_MS = 150;
-const MAX_SYNC_ATTEMPTS = 3;
+import {
+  DEFAULT_RETRY_DELAY_MS,
+  FINALIZE_TIMEOUT_MS,
+  MAX_SYNC_ATTEMPTS,
+  PRIVY_RATE_LIMIT_RETRY_MS,
+  SESSION_CONFIRM_POLL_MS,
+  SESSION_CONFIRM_TIMEOUT_MS,
+  buildSyncFailureState,
+} from './auth-sync';
 
 // Module-level deduplication — protects against multiple hook instances
 let sharedSessionSynced = false;
@@ -54,11 +56,7 @@ function normalizeSyncError(error: unknown): SessionSyncError {
 }
 
 export function useAuth() {
-  const [isClient, setIsClient] = useState(false);
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
+  const demoAuthBypass = process.env.NEXT_PUBLIC_DEMO_AUTH_BYPASS === 'true';
   const privy = usePrivy();
   const { ready, authenticated, user, login, logout, getAccessToken } = privy;
 
@@ -66,6 +64,12 @@ export function useAuth() {
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [sessionSynced, setSessionSynced] = useState(sharedSessionSynced);
   const [localIsLoggingOut, setLocalIsLoggingOut] = useState(false);
+  const [demoUser, setDemoUser] = useState<{ id: string; walletAddress: string | null } | null>(
+    null
+  );
+  const [demoLoading, setDemoLoading] = useState(Boolean(demoAuthBypass));
+  const [demoSessionReady, setDemoSessionReady] = useState(!demoAuthBypass);
+  const [demoAuthenticated, setDemoAuthenticated] = useState(false);
   const retryTimerRef = useRef<number | null>(null);
   const finalizeTimerRef = useRef<number | null>(null);
 
@@ -77,6 +81,67 @@ export function useAuth() {
       syncedListeners.delete(listener);
     };
   }, []);
+
+  useEffect(() => {
+    if (!demoAuthBypass) return;
+
+    let cancelled = false;
+
+    function decodeJwtPayload(token: string): { sub?: string; wallet?: string } | null {
+      const parts = token.split('.');
+      if (parts.length < 2) return null;
+      const payload = parts[1]
+        .replace(/-/g, '+')
+        .replace(/_/g, '/')
+        .padEnd(Math.ceil(parts[1].length / 4) * 4, '=');
+
+      try {
+        return JSON.parse(atob(payload)) as { sub?: string; wallet?: string };
+      } catch {
+        return null;
+      }
+    }
+
+    function readCookie(name: string): string | null {
+      const cookie = document.cookie
+        .split(';')
+        .map((part) => part.trim())
+        .find((part) => part.startsWith(`${name}=`));
+      return cookie ? cookie.slice(name.length + 1) : null;
+    }
+
+    async function checkDemoSession() {
+      setDemoLoading(true);
+      try {
+        const token = readCookie('auth-token');
+        const payload = token ? decodeJwtPayload(token) : null;
+        const resolvedUser = payload?.sub
+          ? { id: payload.sub, walletAddress: payload.wallet ?? null }
+          : null;
+
+        if (!cancelled) {
+          setDemoUser(resolvedUser);
+          setDemoAuthenticated(Boolean(resolvedUser));
+          setDemoSessionReady(true);
+        }
+      } catch {
+        if (!cancelled) {
+          setDemoUser(null);
+          setDemoAuthenticated(false);
+          setDemoSessionReady(true);
+        }
+      } finally {
+        if (!cancelled) {
+          setDemoLoading(false);
+        }
+      }
+    }
+
+    void checkDemoSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [demoAuthBypass, syncRetryTick]);
 
   const primaryWallet = useMemo(() => {
     if (!user) return null;
@@ -221,6 +286,7 @@ export function useAuth() {
 
   // finalizeTimer loop
   useEffect(() => {
+    if (demoAuthBypass) return;
     if (!ready || !authenticated || sessionSynced || localIsLoggingOut) {
       if (finalizeTimerRef.current) {
         window.clearTimeout(finalizeTimerRef.current);
@@ -241,6 +307,7 @@ export function useAuth() {
 
   // Sync Loop Effect
   useEffect(() => {
+    if (demoAuthBypass) return;
     // walletAddress guard: Privy may set authenticated=true before the embedded
     // wallet is ready (email login). Waiting for a non-null wallet address ensures
     // syncSession always sends a valid wallet, avoiding a guaranteed first-attempt
@@ -277,10 +344,10 @@ export function useAuth() {
         .catch(err => {
           const norm = normalizeSyncError(err);
           sharedSessionSynced = false;
-          sharedNextRetryAt = Date.now() + (norm.retryAfterMs ?? DEFAULT_RETRY_DELAY_MS);
-          sharedSyncAttempts += 1;
+          const failureState = buildSyncFailureState(sharedSyncAttempts, Date.now(), norm.retryAfterMs);
+          sharedNextRetryAt = failureState.nextRetryAt;
           setSessionError(norm.message);
-          if (sharedSyncAttempts >= MAX_SYNC_ATTEMPTS) {
+          if (failureState.exhausted) {
             resetSharedState();
             setSessionError('Session sync failed. Please sign out and sign in again.');
             return;
@@ -320,6 +387,7 @@ export function useAuth() {
 
   // Reset when unauthenticated
   useEffect(() => {
+    if (demoAuthBypass) return;
     if (ready && !authenticated && !localIsLoggingOut) {
       resetSharedState();
       setSessionSynced(false);
@@ -327,6 +395,11 @@ export function useAuth() {
   }, [authenticated, ready, localIsLoggingOut]);
 
   const signIn = useCallback(async () => {
+    if (demoAuthBypass) {
+      setDemoLoading(true);
+      setSyncRetryTick((v) => v + 1);
+      return;
+    }
     if (authenticated) {
       if (!sessionSynced) {
         sharedNextRetryAt = 0;
@@ -337,9 +410,18 @@ export function useAuth() {
       return;
     }
     await login();
-  }, [authenticated, sessionSynced, login]);
+  }, [authenticated, sessionSynced, login, demoAuthBypass]);
 
   const signOut = useCallback(async () => {
+    if (demoAuthBypass) {
+      setDemoLoading(true);
+      setDemoAuthenticated(false);
+      setDemoUser(null);
+      setDemoSessionReady(false);
+      document.cookie = 'auth-token=; Max-Age=0; path=/';
+      setDemoLoading(false);
+      return;
+    }
     if (localIsLoggingOut || isLoggingOutGlobal) return;
     setLocalIsLoggingOut(true);
     isLoggingOutGlobal = true;
@@ -356,7 +438,7 @@ export function useAuth() {
       isLoggingOutGlobal = false;
       setLocalIsLoggingOut(false);
     }
-  }, [logout, localIsLoggingOut]);
+  }, [logout, localIsLoggingOut, demoAuthBypass]);
 
   const retrySessionSync = useCallback(() => {
     sharedNextRetryAt = 0;
@@ -366,12 +448,14 @@ export function useAuth() {
   }, []);
 
   return {
-    user: user
+    user: demoAuthBypass
+      ? demoUser
+      : user
       ? { id: user.id, walletAddress: user.wallet?.address || primaryWallet?.address }
       : null,
-    loading: !ready || localIsLoggingOut,
-    isAuthenticated: authenticated,
-    sessionReady: !authenticated || sessionSynced,
+    loading: demoAuthBypass ? demoLoading : !ready || localIsLoggingOut,
+    isAuthenticated: demoAuthBypass ? demoAuthenticated : authenticated,
+    sessionReady: demoAuthBypass ? demoSessionReady : !authenticated || sessionSynced,
     sessionError,
     retrySessionSync,
     signIn,

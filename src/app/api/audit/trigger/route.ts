@@ -13,24 +13,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { getComposioClient, resolveComposioUserId } from '@/lib/composio/client';
+import { auditLeadSchema } from '@/lib/audit/schema';
+import { queueAuditLead } from '@/lib/audit/queue';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/utils/rate-limit';
-
-// ─── Schema ──────────────────────────────────────────────────────────────────
-const auditTriggerSchema = z.object({
-  businessName: z.string().min(1),
-  businessType: z.string().optional().default(''),
-  city: z.string().optional().default(''),
-  website: z.string().url(),
-  contactName: z.string().optional().default(''),
-  email: z.string().email(),
-  biggestChallenge: z.string().optional().default(''),
-  docId: z.string().optional().default(''),
-  source: z.string().default('randi-agency-form'),
-});
-
-export type AuditTriggerPayload = z.infer<typeof auditTriggerSchema>;
 
 // ─── CORS helper ─────────────────────────────────────────────────────────────
 function corsHeaders() {
@@ -71,7 +56,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400, headers: corsHeaders() });
   }
 
-  const parsed = auditTriggerSchema.safeParse(body);
+  const parsed = auditLeadSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? 'Invalid payload' },
@@ -80,88 +65,17 @@ export async function POST(req: NextRequest) {
   }
 
   const lead = parsed.data;
-  const ts = new Date().toISOString();
-
-  // 4. Get Composio client
-  const composio = await getComposioClient();
-  if (!composio) {
-    console.error('[AuditTrigger] Composio client not available — COMPOSIO_API_KEY missing?');
-    return NextResponse.json({ error: 'Audit pipeline offline' }, { status: 503, headers: corsHeaders() });
-  }
-
-  const SPREADSHEET_ID = process.env.AUDITOR_SPREADSHEET_ID;
-  const ENTITY_ID = resolveComposioUserId('agency-bridge');
-
-  if (!SPREADSHEET_ID) {
-    console.error('[AuditTrigger] AUDITOR_SPREADSHEET_ID is not configured');
-    return NextResponse.json({ error: 'Configuration error' }, { status: 500, headers: corsHeaders() });
-  }
 
   console.log(`[AuditTrigger] New lead received: ${lead.businessName} (${lead.email})`);
-
-  // 5. Write PENDING row to Google Sheets "Audit Leads" tab
-  const sheetRow = [
-    ts,
-    lead.businessName,
-    lead.businessType,
-    lead.city,
-    lead.website,
-    lead.contactName,
-    lead.email,
-    lead.biggestChallenge,
-    '',  // Lead Score     — Randi fills in
-    '',  // GBP Verified   — Randi fills in
-    '',  // GBP Rating     — Randi fills in
-    '',  // GBP Reviews    — Randi fills in
-    '',  // AI Overview    — Randi fills in
-    '',  // Competitor 1   — Randi fills in
-    '',  // Competitor 2   — Randi fills in
-    '',  // Competitor 3   — Randi fills in
-    '',  // Top Quick Win  — Randi fills in
-    '',  // Audit Report   — Randi fills in
-    'PENDING',
-    lead.docId,
-  ];
-
   try {
-    await (composio as any).tools.execute('GOOGLESHEETS_APPEND_VALUES', {
-      userId: ENTITY_ID,
-      arguments: {
-        spreadsheet_id: SPREADSHEET_ID,
-        range: 'Audit Leads!A:T',
-        values: [sheetRow],
-      },
+    await queueAuditLead({
+      ...lead,
+      source: lead.source || 'randi-agency-form',
     });
     console.log(`[AuditTrigger] Row written to Sheets for ${lead.businessName}`);
   } catch (err: any) {
     console.error('[AuditTrigger] Failed to write to Sheets:', err.message);
-    // Non-fatal — still send Telegram ping and return success
-  }
-
-  // 6. Telegram ping to Billy — immediate notification
-  const adminChatId = process.env.AUDITOR_TELEGRAM_CHAT_ID;
-  if (adminChatId) {
-    try {
-      await (composio as any).tools.execute('TELEGRAM_SEND_MESSAGE', {
-        userId: ENTITY_ID,
-        arguments: {
-          chat_id: adminChatId,
-          text:
-            `🔥 *New Audit Request — Randi is on it!*\n\n` +
-            `*Business:* ${lead.businessName}\n` +
-            `*Type:* ${lead.businessType || 'N/A'}\n` +
-            `*City:* ${lead.city || 'N/A'}\n` +
-            `*Website:* ${lead.website}\n` +
-            `*Contact:* ${lead.contactName} (${lead.email})\n` +
-            `*Challenge:* ${lead.biggestChallenge || 'N/A'}\n\n` +
-            `_Randi is running the AI SEO audit now. You'll get a full report shortly._`,
-          parse_mode: 'Markdown',
-        },
-      });
-      console.log(`[AuditTrigger] Telegram ping sent for ${lead.businessName}`);
-    } catch (err: any) {
-      console.warn('[AuditTrigger] Telegram ping failed:', err.message);
-    }
+    return NextResponse.json({ error: 'Audit pipeline offline' }, { status: 503, headers: corsHeaders() });
   }
 
   return NextResponse.json(
