@@ -13,7 +13,7 @@ Randi gives you:
 
 1. Open the app and sign in.
 2. Go to `Integrations` and connect the tools you need.
-3. Go to `Chat` and start a session with an agent.
+3. Go to `Chat` and start a session with an agent, or use the launcher shortcuts to open a prefilled prompt.
 4. Go to `Credits` when you need to top up usage balance.
 5. Go to `Agents` if you want to launch a dedicated containerized agent instance.
 
@@ -27,7 +27,7 @@ Randi gives you:
 
 ## Chat
 
-- Start chat from the Chat page.
+- Start chat from the Chat page using a launcher shortcut or a fresh session.
 - Existing sessions keep message history.
 - If an agent has tools configured and connected, the assistant can call those tools.
 
@@ -44,14 +44,14 @@ If you see `No auth config found for this toolkit`, the project admin must creat
 
 ## Credits
 
-- Packages are shown with USD value.
+- Packages are shown as three fixed USD tiers quoted into live $RANDI at checkout.
 - Token amount is quoted at checkout time.
 - Balance updates after verified on-chain payment.
 - If payment fails, capture the error and transaction signature before filing a ticket.
 
 ## Agents
 
-- Launches an isolated container for selected hours.
+- Launches an isolated container for selected hours, or lets you jump into chat with that agent first.
 - Each launch gets a unique subdomain URL.
 - Launch can fail with rate-limit (HTTP 429) if too many rapid launch attempts are made in a short window.
 

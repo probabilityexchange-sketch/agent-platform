@@ -1,11 +1,11 @@
 # Token Payments → Credits
 
-This repository now uses a purchase-intent based flow to credit user balances after verified SPL token payment.
+This repository now uses a purchase-intent based flow to credit user balances after verified SPL token payment, with three fixed USD tiers quoted in live $RANDI.
 
 ## Flow
 
 1. **Create purchase intent**
-   - `POST /api/purchase-intents` with `{ "packageCode": "small|medium|large" }`.
+   - `POST /api/purchase-intents` with `{ "packageCode": "starter|builder|scale" }`.
    - Server stores immutable expectation fields: `expectedAmount`, `mint`, `treasury`, `expiresAt`.
 2. **User sends SPL transfer**
    - Client sends exact `expectedAmount` of `mint` to treasury associated token account.
@@ -40,4 +40,3 @@ This repository now uses a purchase-intent based flow to credit user balances af
 - Seed default packages with:
   - `npm run db:seed`
 - Expired intents are marked `EXPIRED` when verify is attempted after expiration.
-
