@@ -46,7 +46,7 @@
     "@solana/kit": "latest",
     "@solana/spl-token": "^0.4.0",
     "@solana/web3.js": "^1.98.0",
-    "@supabase/supabase-js": "^2.98.0",
+    "@supabase/supabase-js": "^2.101.1",
     "@types/react-syntax-highlighter": "^15.5.13",
     "ai": "^6.0.140",
     "bs58": "^6.0.0",
